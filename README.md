@@ -1,4 +1,5 @@
-content = r'''<p align="center">
+# Create the README from scratch without the raw string prefix issue
+content = """<p align="center">
   <img src="https://img.shields.io/badge/Homepage-Custom%20Widgets-blue?style=for-the-badge&logo=javascript" alt="Homepage Widgets"/>
   <img src="https://img.shields.io/badge/Built%20With-JavaScript%20%7C%20CSS-yellow?style=for-the-badge" alt="Tech Stack"/>
   <img src="https://img.shields.io/badge/Theme-Custom%20CSS-purple?style=for-the-badge" alt="Custom CSS"/>
@@ -89,7 +90,7 @@ homepage/
 │   ├── bookmarks.yaml      # Bookmark entries for quick links
 │   ├── docker.yaml         # Docker container integration settings
 │   └── widgets.yaml        # Widget definitions and layout
-|
+│
 └── public/
     └── assets/
         ├── background/     # Dashboard background images
@@ -172,8 +173,13 @@ This project can be released under the MIT License or whatever license best matc
 <p align="center">
   Built for a custom self-hosted Homepage experience.
 </p>
-'''
+"""
 
 with open('/home/user/README.md', 'w') as f:
     f.write(content)
-print('Done')
+
+# Verify the file starts correctly
+with open('/home/user/README.md', 'r') as f:
+    first_line = f.readline()
+print("First line:", repr(first_line))
+print("File written successfully")
