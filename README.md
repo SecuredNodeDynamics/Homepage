@@ -175,11 +175,3 @@ This project can be released under the MIT License or whatever license best matc
 </p>
 """
 
-with open('/home/user/README.md', 'w') as f:
-    f.write(content)
-
-# Verify the file starts correctly
-with open('/home/user/README.md', 'r') as f:
-    first_line = f.readline()
-print("First line:", repr(first_line))
-print("File written successfully")
