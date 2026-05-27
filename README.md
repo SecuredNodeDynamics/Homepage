@@ -11,7 +11,7 @@
   A collection of custom Homepage widgets and dashboard enhancements built for self-hosted infrastructure, media services, and home lab visibility.
 </p>
 
-***
+---
 
 ## 📋 Overview
 
@@ -21,7 +21,7 @@ Instead of scattering changes across multiple files, this approach keeps functio
 
 > **Built for:** self-hosters, home lab builders, media server admins, and infrastructure engineers.
 
-***
+---
 
 ## ✨ Features
 
@@ -31,7 +31,7 @@ Instead of scattering changes across multiple files, this approach keeps functio
 - **Responsive widget design** — layouts and styling remain clean across different screen sizes
 - **Maintainable structure** — separates behavior from presentation for easier long-term updates
 
-***
+---
 
 ## 🧠 Architecture
 
@@ -43,7 +43,22 @@ The customization approach used in this project is intentionally simple:
 
 This structure works especially well for users who want Homepage to feel more like a polished operations dashboard than a default landing page.
 
-***
+### Asset Organization
+
+Custom images and icons are stored in the Homepage **public** directory. To organize assets properly, create a folder called `assets` inside the public directory, then create the following subfolders inside `assets`:
+
+```text
+homepage/public/assets/
+├── background/   # Dashboard background images
+├── custom/       # Custom widget-specific assets
+├── icons/        # Custom icons for widgets and services
+├── images/       # General images used by widgets
+└── root-assets/  # Shared assets accessible from the root level
+```
+
+This structure keeps all visual assets organized and makes them easy to reference from `custom.js` and `custom.css`.
+
+---
 
 ## 🧩 Widget Focus
 
@@ -58,7 +73,7 @@ These widgets are being designed around real-world self-hosted services and infr
 
 The goal is to surface useful information directly inside Homepage without needing to jump between multiple admin panels.
 
-***
+---
 
 ## ⚙️ File Layout
 
@@ -66,8 +81,13 @@ The goal is to surface useful information directly inside Homepage without needi
 homepage/
 ├── custom.js
 ├── custom.css
-├── images/
-├── icons/
+├── public/
+│   └── assets/
+│       ├── background/
+│       ├── custom/
+│       ├── icons/
+│       ├── images/
+│       └── root-assets/
 └── README.md
 ```
 
@@ -75,9 +95,9 @@ homepage/
 
 - `custom.js` contains the custom Homepage widget logic, JavaScript behavior, API integrations, and rendering flow
 - `custom.css` controls the visual theme of the Homepage dashboard, the page background, shared dashboard styling, and the appearance of each custom widget
-- Supporting folders such as `images/` or `icons/` can store assets used by the widgets or themed dashboard elements
+- `public/assets/` stores all custom images, icons, and visual assets organized into dedicated folders
 
-***
+---
 
 ## 🚀 Design Goals
 
@@ -90,7 +110,7 @@ This project is built around a few core goals:
 
 That means the dashboard is treated as a cohesive interface, not just a grid of disconnected tiles.
 
-***
+---
 
 ## 🛠️ Development Notes
 
@@ -103,25 +123,25 @@ When building new widgets for this setup:
 
 This keeps the workflow straightforward and avoids fragmented styling or duplicated logic.
 
-***
+---
 
 ## 📸 Screenshots
 
 > Screenshot examples can be added here later to show the dashboard theme, background styling, and custom widget layouts in action.
 
-***
+---
 
 ## 🤝 Contributing
 
 Contributions, ideas, and improvements are welcome — especially for self-hosted integrations that fit the Homepage ecosystem. New widgets should follow the same structure: logic in `custom.js`, presentation in `custom.css`, and a consistent dashboard-first design approach.
 
-***
+---
 
 ## 📄 License
 
 This project can be released under the MIT License or whatever license best matches the repository goals.
 
-***
+---
 
 <p align="center">
   Built for a custom self-hosted Homepage experience.
