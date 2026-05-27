@@ -1,5 +1,4 @@
-# Create the README from scratch without the raw string prefix issue
-content = """<p align="center">
+<p align="center">
   <img src="https://img.shields.io/badge/Homepage-Custom%20Widgets-blue?style=for-the-badge&logo=javascript" alt="Homepage Widgets"/>
   <img src="https://img.shields.io/badge/Built%20With-JavaScript%20%7C%20CSS-yellow?style=for-the-badge" alt="Tech Stack"/>
   <img src="https://img.shields.io/badge/Theme-Custom%20CSS-purple?style=for-the-badge" alt="Custom CSS"/>
@@ -46,10 +45,10 @@ This structure works especially well for users who want Homepage to feel more li
 
 ### Asset Organization
 
-Custom images and icons are stored in the Homepage **public** directory. To organize assets properly, create a folder called `assets` inside the public directory, then create the following subfolders inside `assets`:
+Custom images and icons are stored in the **assets** folder located in the Homepage root directory (alongside the `public` folder). To organize assets properly, create the following subfolders inside the `assets` directory:
 
 ```text
-homepage/public/assets/
+homepage/assets/
 ├── background/   # Dashboard background images
 ├── custom/       # Custom widget-specific assets
 ├── icons/        # Custom icons for widgets and services
@@ -78,7 +77,7 @@ The goal is to surface useful information directly inside Homepage without needi
 
 ## File Layout
 
-Homepage is organized into two main directories: the **config** folder (for configuration files and customization scripts) and the **public** folder (for static assets).
+Homepage is organized with the **config** folder (for configuration files and customization scripts), the **assets** folder (for static images and icons), and the **public** folder (for other static assets).
 
 ```text
 homepage/
@@ -91,13 +90,15 @@ homepage/
 │   ├── docker.yaml         # Docker container integration settings
 │   └── widgets.yaml        # Widget definitions and layout
 │
+├── assets/
+│   ├── background/         # Dashboard background images
+│   ├── custom/             # Custom widget-specific assets
+│   ├── icons/              # Custom icons for widgets and services
+│   ├── images/             # General images used by widgets
+│   └── root-assets/        # Shared assets accessible from root level
+│
 └── public/
-    └── assets/
-        ├── background/     # Dashboard background images
-        ├── custom/         # Custom widget-specific assets
-        ├── icons/          # Custom icons for widgets and services
-        ├── images/         # General images used by widgets
-        └── root-assets/    # Shared assets accessible from root level
+    └── (other public files)
 ```
 
 ### File Roles
@@ -114,9 +115,9 @@ homepage/
 | `docker.yaml` | Docker container monitoring and integration |
 | `widgets.yaml` | Widget layout configuration and enabled widgets |
 
-#### public/ Folder
+#### assets/ Folder
 
-- `public/assets/` stores all custom images, icons, and visual assets organized into dedicated folders
+- `assets/` stores all custom images, icons, and visual assets organized into dedicated folders
 - `background/` — dashboard background images
 - `custom/` — widget-specific assets
 - `icons/` — custom icons for services and widgets
@@ -144,7 +145,7 @@ When building new widgets for this setup:
 
 1. Add or extend the widget logic inside `config/custom.js`
 2. Style the widget and any dashboard-wide visual updates inside `config/custom.css`
-3. Reference assets from `public/assets/` in your CSS or JS
+3. Reference assets from `assets/` in your CSS or JS
 4. Keep shared visual patterns consistent so every widget matches the overall Homepage theme
 5. Test changes against the full dashboard to ensure the background, layout, and widgets still feel unified
 
@@ -173,5 +174,3 @@ This project can be released under the MIT License or whatever license best matc
 <p align="center">
   Built for a custom self-hosted Homepage experience.
 </p>
-"""
-
