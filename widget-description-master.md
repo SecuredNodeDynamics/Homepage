@@ -2,7 +2,7 @@
 
 This file consolidates individual widget descriptions into separate sections so each one can be copied into its own document as needed. The sections below were derived from the widget blocks and labels present in `custom.js`.[file:25]
 
-## ![Jellyfin](https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/jellyfin.webp) JELLYFIN RECENTLY ADDED MODULE
+## <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/jellyfin.webp" width="35" height="35" alt="Jellyfin" style="vertical-align:middle"> JELLYFIN RECENTLY ADDED MODULE
 
 ### What it is
 This widget is a custom Homepage module defined inside `custom.js` that replaces or augments a standard service group with a richer interactive panel. It targets the Homepage section named `JELLYFIN-INJECTED`.
@@ -23,7 +23,7 @@ Refreshes on a timer so the dashboard stays current. Uses a MutationObserver to 
 - Source file: `custom.js`.
 - Best used as a standalone section you can copy into its own document later.
 
-## ![Immich](https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/immich.webp) IMMICH ALBUMS WIDGET
+## <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/immich.webp" width="35" height="35" alt="Immich" style="vertical-align:middle"> IMMICH ALBUMS WIDGET
 
 ### What it is
 This widget is a custom Homepage module defined inside `custom.js` that replaces or augments a standard service group with a richer interactive panel.
@@ -43,7 +43,7 @@ Refreshes on a timer so the dashboard stays current. Uses a MutationObserver to 
 - Source file: `custom.js`.
 - Best used as a standalone section you can copy into its own document later.
 
-## ![Navidrome](https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/navidrome.webp) NAVIDROME MUSIC WIDGET
+## <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/navidrome.webp" width="35" height="35" alt="Navidrome" style="vertical-align:middle"> NAVIDROME MUSIC WIDGET
 
 ### What it is
 This widget is a custom Homepage module defined inside `custom.js` that replaces or augments a standard service group with a richer interactive panel.
@@ -63,7 +63,7 @@ Refreshes on a timer so the dashboard stays current. Uses a MutationObserver to 
 - Source file: `custom.js`.
 - Best used as a standalone section you can copy into its own document later.
 
-## ![Wazuh](https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/wazuh.webp) WAZUH SECURITY MONITOR
+## <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/wazuh.webp" width="35" height="35" alt="Wazuh" style="vertical-align:middle"> WAZUH SECURITY MONITOR
 
 ### What it is
 This widget is a custom Homepage module defined inside `custom.js` that replaces or augments a standard service group with a richer interactive panel. It targets the Homepage section named `WAZUH-MONITOR`.
@@ -84,7 +84,7 @@ Refreshes on a timer so the dashboard stays current. Uses a MutationObserver to 
 - Source file: `custom.js`.
 - Best used as a standalone section you can copy into its own document later.
 
-## ![Jellyseerr](https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/jellyseerr.webp) SEERR INJECTED WIDGET
+## <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/jellyseerr.webp" width="35" height="35" alt="Jellyseerr" style="vertical-align:middle"> SEERR INJECTED WIDGET
 
 ### What it is
 This widget is a custom Homepage module defined inside `custom.js` that replaces or augments a standard service group with a richer interactive panel. It targets the Homepage section named `MEDIA-WIDGETS`.
@@ -105,7 +105,7 @@ Refreshes on a timer so the dashboard stays current. Uses a MutationObserver to 
 - Source file: `custom.js`.
 - Best used as a standalone section you can copy into its own document later.
 
-## ![Radarr](https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/radarr.webp) RADARR WIDGET
+## <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/radarr.webp" width="35" height="35" alt="Radarr" style="vertical-align:middle"> RADARR WIDGET
 
 ### What it is
 This widget is a custom Homepage module defined inside `custom.js` that replaces or augments a standard service group with a richer interactive panel. It targets the Homepage section named `ARR — RADARR`.
@@ -126,7 +126,7 @@ Refreshes on a timer so the dashboard stays current. Uses a MutationObserver to 
 - Source file: `custom.js`.
 - Best used as a standalone section you can copy into its own document later.
 
-## ![Sonarr](https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/sonarr.webp) SONARR WIDGET
+## <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/sonarr.webp" width="35" height="35" alt="Sonarr" style="vertical-align:middle"> SONARR WIDGET
 
 ### What it is
 This widget is a custom Homepage module defined inside `custom.js` that replaces or augments a standard service group with a richer interactive panel. It targets the Homepage section named `ARR — SONARR`.
@@ -147,7 +147,7 @@ Refreshes on a timer so the dashboard stays current. Uses a MutationObserver to 
 - Source file: `custom.js`.
 - Best used as a standalone section you can copy into its own document later.
 
-## ![Lidarr](https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/lidarr.webp) LIDARR MEDIA
+## <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/lidarr.webp" width="35" height="35" alt="Lidarr" style="vertical-align:middle"> LIDARR MEDIA
 
 ### What it is
 This widget is a custom Homepage module defined inside `custom.js` that replaces or augments a standard service group with a richer interactive panel. It targets the Homepage section named `LIDARR MEDIA`.
@@ -168,7 +168,7 @@ Refreshes on a timer so the dashboard stays current. Uses a MutationObserver to 
 - Source file: `custom.js`.
 - Best used as a standalone section you can copy into its own document later.
 
-## ![Invest News](https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/investpy.webp) INVEST NEWS
+## <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/investpy.webp" width="35" height="35" alt="Invest News" style="vertical-align:middle"> INVEST NEWS
 
 ### What it is
 This widget is a custom Homepage module defined inside `custom.js` that replaces or augments a standard service group with a richer interactive panel. It targets the Homepage section named `INVEST — NEWS`.
@@ -189,7 +189,7 @@ Refreshes on a timer so the dashboard stays current. Uses a MutationObserver to 
 - Source file: `custom.js`.
 - Best used as a standalone section you can copy into its own document later.
 
-## ![Speedtest Tracker](https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/speedtest-tracker.webp) SPEEDTEST MONITOR WIDGET
+## <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/speedtest-tracker.webp" width="35" height="35" alt="Speedtest Tracker" style="vertical-align:middle"> SPEEDTEST MONITOR WIDGET
 
 ### What it is
 This widget is a custom Homepage module defined inside `custom.js` that replaces or augments a standard service group with a richer interactive panel. It targets the Homepage section named `SPEEDTEST-MONITOR`.
@@ -210,7 +210,7 @@ Refreshes on a timer so the dashboard stays current. Uses a MutationObserver to 
 - Source file: `custom.js`.
 - Best used as a standalone section you can copy into its own document later.
 
-## ![qBittorrent](https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/qbittorrent.webp) QBITTORRENT MANAGER WIDGET
+## <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/qbittorrent.webp" width="35" height="35" alt="qBittorrent" style="vertical-align:middle"> QBITTORRENT MANAGER WIDGET
 
 ### What it is
 This widget is a custom Homepage module defined inside `custom.js` that replaces or augments a standard service group with a richer interactive panel. It targets the Homepage section named `QBIT-MANAGER`.
@@ -231,7 +231,7 @@ Refreshes on a timer so the dashboard stays current. Uses a MutationObserver to 
 - Source file: `custom.js`.
 - Best used as a standalone section you can copy into its own document later.
 
-## ![Cloudflare](https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/cloudflare.webp) CLOUDFLARE TUNNEL WIDGET
+## <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/cloudflare.webp" width="35" height="35" alt="Cloudflare" style="vertical-align:middle"> CLOUDFLARE TUNNEL WIDGET
 
 ### What it is
 This widget is a custom Homepage module defined inside `custom.js` that replaces or augments a standard service group with a richer interactive panel. It targets the Homepage section named `CLOUDFLARE - WIDGET`.
@@ -252,7 +252,7 @@ Refreshes on a timer so the dashboard stays current. Uses a MutationObserver to 
 - Source file: `custom.js`.
 - Best used as a standalone section you can copy into its own document later.
 
-## ![Tracearr](https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/tracearr.webp) TRACEARR WIDGET
+## <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/tracearr.webp" width="35" height="35" alt="Tracearr" style="vertical-align:middle"> TRACEARR WIDGET
 
 ### What it is
 This widget is a custom Homepage module defined inside `custom.js` that replaces or augments a standard service group with a richer interactive panel. It targets the Homepage section named `TRACEARR - WIDGET`.
@@ -273,7 +273,7 @@ Refreshes on a timer so the dashboard stays current. Uses a MutationObserver to 
 - Source file: `custom.js`.
 - Best used as a standalone section you can copy into its own document later.
 
-## ![Prowlarr](https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/prowlarr.webp) PROWLARR WIDGET
+## <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/prowlarr.webp" width="35" height="35" alt="Prowlarr" style="vertical-align:middle"> PROWLARR WIDGET
 
 ### What it is
 This widget is a custom Homepage module defined inside `custom.js` that replaces or augments a standard service group with a richer interactive panel.
@@ -293,7 +293,7 @@ Refreshes on a timer so the dashboard stays current. Uses a MutationObserver to 
 - Source file: `custom.js`.
 - Best used as a standalone section you can copy into its own document later.
 
-## ![Bazarr](https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/bazarr.webp) BAZARR WIDGET
+## <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/bazarr.webp" width="35" height="35" alt="Bazarr" style="vertical-align:middle"> BAZARR WIDGET
 
 ### What it is
 This widget is a custom Homepage module defined inside `custom.js` that replaces or augments a standard service group with a richer interactive panel. It targets the Homepage section named `ARR — BAZARR`.
@@ -314,7 +314,7 @@ Refreshes on a timer so the dashboard stays current. Uses a MutationObserver to 
 - Source file: `custom.js`.
 - Best used as a standalone section you can copy into its own document later.
 
-## ![Wizarr](https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/wizarr.webp) WIZARR WIDGET
+## <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/wizarr.webp" width="35" height="35" alt="Wizarr" style="vertical-align:middle"> WIZARR WIDGET
 
 ### What it is
 This widget is a custom Homepage module defined inside `custom.js` that replaces or augments a standard service group with a richer interactive panel. It targets the Homepage section named `ARR — WIZARR`.
@@ -335,7 +335,7 @@ Refreshes on a timer so the dashboard stays current. Uses a MutationObserver to 
 - Source file: `custom.js`.
 - Best used as a standalone section you can copy into its own document later.
 
-## ![Tdarr](https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/tdarr.webp) TDARR WIDGET
+## <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/tdarr.webp" width="35" height="35" alt="Tdarr" style="vertical-align:middle"> TDARR WIDGET
 
 ### What it is
 This widget is a custom Homepage module defined inside `custom.js` that replaces or augments a standard service group with a richer interactive panel. It targets the Homepage section named `ARR — TDARR`.
