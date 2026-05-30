@@ -1,0 +1,5 @@
+- ARR — RADARR:
+
+    - Radarr Anchor:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/tdarr.webp
+        description: Radarr dual-server widget (injected widget)

@@ -1,0 +1,5 @@
+- NAVIDROME-LIBRARY:
+
+    - Navidrome Anchor:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/navidrome.webp
+        description: Music library (injected widget)

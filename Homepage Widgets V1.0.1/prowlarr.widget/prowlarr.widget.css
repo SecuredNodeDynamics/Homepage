@@ -1,0 +1,385 @@
+/* =====================================================
+   PROWLARR WIDGET
+===================================================== */
+
+.pwr-host {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 16px 18px;
+  border-radius: 20px;
+  color: rgba(255, 255, 255, 0.92);
+  background:
+    radial-gradient(circle at top left, rgba(249, 115, 22, 0.06), transparent 26%),
+    radial-gradient(circle at top right, rgba(251, 146, 60, 0.04), transparent 24%),
+    linear-gradient(180deg, rgba(8, 13, 20, 0.96), rgba(9, 15, 24, 0.92));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 18px 42px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+}
+
+.pwr-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Header ────────────────────────────────────── */
+
+.pwr-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-wrap: wrap;
+}
+
+.pwr-hdr-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pwr-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.pwr-title {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.96);
+  letter-spacing: 0.01em;
+}
+
+.pwr-hdr-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ── Tabs ──────────────────────────────────────── */
+
+.pwr-tabs {
+  display: flex;
+  gap: 3px;
+}
+
+.pwr-tab {
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.45);
+  transition: background 0.14s, color 0.14s, border-color 0.14s;
+  letter-spacing: 0.03em;
+}
+
+.pwr-tab:hover {
+  background: rgba(249, 115, 22, 0.09);
+  color: rgba(249, 115, 22, 0.75);
+  border-color: rgba(249, 115, 22, 0.20);
+}
+
+.pwr-tab--active {
+  background: rgba(249, 115, 22, 0.15) !important;
+  border-color: rgba(249, 115, 22, 0.40) !important;
+  color: rgba(249, 115, 22, 0.95) !important;
+}
+
+/* ── Open button ───────────────────────────────── */
+
+.pwr-open-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 7px;
+  border: 1px solid rgba(249, 115, 22, 0.30);
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.12), rgba(234, 88, 12, 0.12));
+  color: rgba(249, 115, 22, 0.80);
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.pwr-open-link:hover {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.22), rgba(234, 88, 12, 0.22));
+  color: rgba(249, 115, 22, 1.0);
+  border-color: rgba(249, 115, 22, 0.50);
+}
+
+/* ── Body / Loading ────────────────────────────── */
+
+.pwr-body {
+  min-height: 80px;
+}
+
+.pwr-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pwr-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 0;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.40);
+}
+
+@keyframes pwr-spin {
+  to { transform: rotate(360deg); }
+}
+
+.pwr-spin {
+  animation: pwr-spin 1s linear infinite;
+  flex-shrink: 0;
+}
+
+/* ── Overview stats grid ───────────────────────── */
+
+.pwr-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pwr-stat {
+  padding: 12px 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pwr-stat-value {
+  font-size: 1.18rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.96);
+}
+
+.pwr-stat-label {
+  font-size: 0.63rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: rgba(255, 255, 255, 0.34);
+}
+
+.pwr-stat--good .pwr-stat-value  { color: rgba(74, 222, 128, 0.95); }
+.pwr-stat--warn .pwr-stat-value  { color: rgba(251, 191, 36, 0.95); }
+.pwr-stat--active .pwr-stat-value { color: rgba(249, 115, 22, 0.95); }
+
+/* ── Rows (indexers + history) ─────────────────── */
+
+.pwr-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.pwr-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pwr-dot--enabled  { background: rgba(74, 222, 128, 0.90); }
+.pwr-dot--disabled { background: rgba(255, 255, 255, 0.20); }
+
+.pwr-row-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.pwr-row-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.90);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pwr-row-sub {
+  margin-top: 2px;
+  font-size: 0.66rem;
+  color: rgba(255, 255, 255, 0.40);
+}
+
+.pwr-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.pwr-proto {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  border-radius: 5px;
+}
+
+.pwr-proto--torrent {
+  background: rgba(249, 115, 22, 0.12);
+  color: rgba(249, 115, 22, 0.90);
+  border: 1px solid rgba(249, 115, 22, 0.25);
+}
+
+.pwr-proto--usenet {
+  background: rgba(56, 189, 248, 0.12);
+  color: rgba(56, 189, 248, 0.90);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+.pwr-time {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.38);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Stats bars ────────────────────────────────── */
+
+.pwr-stat-row {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pwr-stat-row-name {
+  font-size: 0.80rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.88);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pwr-stat-row-bars {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pwr-bar-track {
+  flex: 1;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.pwr-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.80), rgba(234, 88, 12, 0.90));
+  border-radius: inherit;
+  transition: width 0.3s ease;
+}
+
+.pwr-stat-row-count {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: rgba(249, 115, 22, 0.85);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.pwr-stat-row-detail {
+  display: flex;
+  gap: 12px;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.pwr-stat-fail {
+  color: rgba(251, 191, 36, 0.70);
+}
+
+/* ── Empty / Footer ────────────────────────────── */
+
+.pwr-empty {
+  padding: 18px 14px;
+  text-align: center;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.32);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.pwr-footer {
+  padding-top: 4px;
+  text-align: right;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.20);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* ── Responsive ────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .pwr-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pwr-hdr {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .pwr-hdr-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+.pwr-scroll-inner {
+  max-height: 320px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(249,115,22,0.4) transparent;
+  padding-right: 4px;
+}
+
+.pwr-scroll-inner::-webkit-scrollbar {
+  width: 4px;
+}
+
+.pwr-scroll-inner::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.pwr-scroll-inner::-webkit-scrollbar-thumb {
+  background: rgba(249,115,22,0.4);
+  border-radius: 4px;
+}

@@ -1,0 +1,5 @@
+- MEDIA-WIDGETS:
+
+    - Seerr Anchor:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/seerr.webp
+        description: Requests (injected widget)

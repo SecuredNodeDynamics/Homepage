@@ -1,0 +1,5 @@
+- JELLYFIN - SLIDER:
+
+    - Jellyfin Media Anchor:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/jellyfin.webp
+        description: Jellyfin Slider (injected widget)

@@ -1,0 +1,1049 @@
+/* =====================================================
+JELLYFIN INJECTED WIDGET
+Append to the bottom of custom.css
+===================================================== */
+
+
+/* Host card — glass card matching .service-card styles */
+.jf-monitor-host {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 20px !important;
+  padding: 18px 20px !important;
+  overflow: hidden !important;
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  position: relative;
+  background-color: rgba(12, 16, 22, 0.85);
+  color: rgba(255, 255, 255, 0.92);
+  margin-bottom: 16px;
+  margin-top: 16px;
+}
+
+.jf-monitor-host:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+}
+
+body.light .jf-monitor-host,
+[data-theme="light"] .jf-monitor-host {
+  background-color: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(0, 0, 0, 0.274);
+  color: rgba(8, 12, 18, 0.96);
+}
+
+@media (max-width: 768px) {
+  .jf-monitor-host {
+    border-radius: 16px;
+    padding: 14px;
+  }
+
+  .jf-monitor-host:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+
+/* Shell */
+.jf-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 2px 0;
+}
+
+
+/* Header */
+.jf-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.jf-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.jf-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.jf-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.jf-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+body.light .jf-title,
+[data-theme="light"] .jf-title {
+  color: rgba(8, 12, 18, 0.82);
+}
+
+.jf-open-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 7px;
+  border: 1px solid rgba(34, 197, 94, 0.30);
+  background: rgba(34, 197, 94, 0.08);
+  color: rgba(34, 197, 94, 0.80);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.jf-open-link:hover {
+  background: rgba(34, 197, 94, 0.16);
+  color: rgba(34, 197, 94, 1);
+  border-color: rgba(34, 197, 94, 0.50);
+}
+
+body.light .jf-open-link,
+[data-theme="light"] .jf-open-link {
+  border-color: rgba(22, 163, 74, 0.28);
+  background: rgba(22, 163, 74, 0.07);
+  color: rgba(22, 163, 74, 0.80);
+}
+
+body.light .jf-open-link:hover,
+[data-theme="light"] .jf-open-link:hover {
+  background: rgba(22, 163, 74, 0.14);
+  color: rgba(22, 163, 74, 1);
+  border-color: rgba(22, 163, 74, 0.45);
+}
+
+
+/* Group message button */
+.jf-group-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 7px;
+  border: 1px solid rgba(74, 222, 128, 0.24);
+  background: rgba(74, 222, 128, 0.08);
+  color: rgba(134, 239, 172, 0.92);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.jf-group-toggle:hover,
+.jf-group-toggle--open {
+  background: rgba(74, 222, 128, 0.16);
+  border-color: rgba(74, 222, 128, 0.40);
+  color: rgba(187, 247, 208, 0.98);
+}
+
+body.light .jf-group-toggle,
+[data-theme="light"] .jf-group-toggle {
+  border-color: rgba(22, 163, 74, 0.22);
+  background: rgba(22, 163, 74, 0.06);
+  color: rgba(22, 163, 74, 0.88);
+}
+
+body.light .jf-group-toggle:hover,
+body.light .jf-group-toggle--open,
+[data-theme="light"] .jf-group-toggle:hover,
+[data-theme="light"] .jf-group-toggle--open {
+  background: rgba(22, 163, 74, 0.12);
+  color: rgba(22, 163, 74, 0.96);
+}
+
+
+/* Group composer */
+.jf-group-message {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(74, 222, 128, 0.05);
+  border: 1px solid rgba(74, 222, 128, 0.12);
+}
+
+body.light .jf-group-message,
+[data-theme="light"] .jf-group-message {
+  background: rgba(22, 163, 74, 0.04);
+  border-color: rgba(22, 163, 74, 0.12);
+}
+
+.jf-group-message-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.jf-group-message-target {
+  font-size: 0.66rem;
+  color: rgba(255, 255, 255, 0.46);
+}
+
+body.light .jf-group-message-target,
+[data-theme="light"] .jf-group-message-target {
+  color: rgba(8, 12, 18, 0.42);
+}
+
+
+/* Stat pills row */
+.jf-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.jf-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 99px;
+  background: rgba(0, 164, 220, 0.08);
+  border: 1px solid rgba(0, 164, 220, 0.18);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  white-space: nowrap;
+}
+
+body.light .jf-stat-pill,
+[data-theme="light"] .jf-stat-pill {
+  background: rgba(0, 120, 180, 0.07);
+  border-color: rgba(0, 120, 180, 0.18);
+  color: rgba(8, 12, 18, 0.72);
+}
+
+.jf-stat-value {
+  font-size: 0.80rem;
+  font-weight: 700;
+  color: rgba(0, 164, 220, 0.95);
+}
+
+body.light .jf-stat-value,
+[data-theme="light"] .jf-stat-value {
+  color: rgba(0, 100, 160, 0.95);
+}
+
+
+/* Section label */
+.jf-section-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.28);
+  padding: 4px 2px 2px;
+}
+
+body.light .jf-section-label,
+[data-theme="light"] .jf-section-label {
+  color: rgba(8, 12, 18, 0.32);
+}
+
+
+/* Session card */
+.jf-sessions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.jf-session {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(0, 164, 220, 0.05);
+  border: 1px solid rgba(0, 164, 220, 0.10);
+  transition: background 0.12s;
+}
+
+.jf-session:hover {
+  background: rgba(0, 164, 220, 0.09);
+}
+
+body.light .jf-session,
+[data-theme="light"] .jf-session {
+  background: rgba(0, 120, 180, 0.04);
+  border-color: rgba(0, 120, 180, 0.10);
+}
+
+
+/* Avatar */
+.jf-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 164, 220, 0.25);
+  background: rgba(0, 164, 220, 0.12);
+}
+
+.jf-avatar--art {
+  width: 64px;
+  height: 100px;
+  border-radius: 6px;
+  object-fit: cover;
+  border-color: rgba(0, 164, 220, 0.20);
+}
+
+.jf-avatar-placeholder {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: rgba(0, 164, 220, 0.14);
+  border: 1px solid rgba(0, 164, 220, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(0, 164, 220, 0.85);
+}
+
+
+/* Session body */
+.jf-session-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.jf-session-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.jf-session-title {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.88);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.light .jf-session-title,
+[data-theme="light"] .jf-session-title {
+  color: rgba(8, 12, 18, 0.88);
+}
+
+.jf-state-badge {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 99px;
+  flex-shrink: 0;
+}
+
+.jf-state--playing {
+  background: rgba(74, 222, 128, 0.12);
+  color: #86efac;
+  border: 1px solid rgba(74, 222, 128, 0.25);
+}
+
+.jf-state--paused {
+  background: rgba(251, 191, 36, 0.12);
+  color: #fde68a;
+  border: 1px solid rgba(251, 191, 36, 0.25);
+}
+
+.jf-state--stopped {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+body.light .jf-state--playing {
+  background: rgba(34, 197, 94, 0.08);
+  color: #16a34a;
+  border-color: rgba(34, 197, 94, 0.22);
+}
+
+body.light .jf-state--paused {
+  background: rgba(234, 179, 8, 0.08);
+  color: #b45309;
+  border-color: rgba(234, 179, 8, 0.20);
+}
+
+body.light .jf-state--stopped {
+  background: rgba(8, 12, 18, 0.05);
+  color: rgba(8, 12, 18, 0.40);
+  border-color: rgba(8, 12, 18, 0.10);
+}
+
+.jf-session-meta {
+  font-size: 0.67rem;
+  color: rgba(255, 255, 255, 0.42);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.light .jf-session-meta,
+[data-theme="light"] .jf-session-meta {
+  color: rgba(8, 12, 18, 0.42);
+}
+
+.jf-session-user {
+  color: rgba(74, 222, 128, 0.90);
+  font-weight: 700;
+}
+
+body.light .jf-session-user,
+[data-theme="light"] .jf-session-user {
+  color: rgba(22, 163, 74, 0.90);
+}
+
+
+/* Progress */
+.jf-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.jf-progress-bar {
+  flex: 1;
+  height: 3px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.10);
+  overflow: hidden;
+}
+
+body.light .jf-progress-bar,
+[data-theme="light"] .jf-progress-bar {
+  background: rgba(8, 12, 18, 0.10);
+}
+
+.jf-progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(
+    90deg,
+    rgba(145, 63, 192, 0.95) 0%,
+    rgba(121, 69, 177, 0.92) 38%,
+    rgba(34, 211, 238, 0.95) 100%
+  );
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.18);
+  transition: width 1s linear;
+}
+
+.jf-progress-time {
+  font-size: 0.60rem;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.30);
+  flex-shrink: 0;
+}
+
+body.light .jf-progress-time,
+[data-theme="light"] .jf-progress-time {
+  color: rgba(8, 12, 18, 0.35);
+}
+
+
+/* Controls */
+.jf-session-actions {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.jf-session-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.jf-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s;
+}
+
+.jf-action-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.jf-action-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.jf-action-btn--pause,
+.jf-action-btn--resume {
+  border-color: rgba(0, 164, 220, 0.22);
+  background: rgba(0, 164, 220, 0.08);
+  color: rgba(120, 220, 255, 0.95);
+}
+
+.jf-action-btn--pause:hover:not(:disabled),
+.jf-action-btn--resume:hover:not(:disabled) {
+  background: rgba(0, 164, 220, 0.16);
+  border-color: rgba(0, 164, 220, 0.34);
+}
+
+.jf-action-btn--stop {
+  border-color: rgba(248, 113, 113, 0.22);
+  background: rgba(248, 113, 113, 0.08);
+  color: rgba(252, 165, 165, 0.95);
+}
+
+.jf-action-btn--stop:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.16);
+  border-color: rgba(248, 113, 113, 0.34);
+}
+
+.jf-action-btn--message,
+.jf-action-btn--send {
+  border-color: rgba(74, 222, 128, 0.22);
+  background: rgba(74, 222, 128, 0.08);
+  color: rgba(134, 239, 172, 0.95);
+}
+
+.jf-action-btn--message:hover:not(:disabled),
+.jf-action-btn--send:hover:not(:disabled) {
+  background: rgba(74, 222, 128, 0.16);
+  border-color: rgba(74, 222, 128, 0.34);
+}
+
+.jf-action-btn--ghost {
+  border-color: rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.60);
+}
+
+.jf-action-status {
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding-left: 4px;
+  white-space: nowrap;
+}
+
+.jf-action-status--busy {
+  color: rgba(0, 164, 220, 0.85);
+}
+
+.jf-action-status--ok {
+  color: rgba(74, 222, 128, 0.90);
+}
+
+.jf-action-status--err {
+  color: rgba(248, 113, 113, 0.88);
+}
+
+
+/* Message composer */
+.jf-message-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.jf-message-input {
+  width: 100%;
+  resize: vertical;
+  min-height: 52px;
+  max-height: 110px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(12, 16, 22, 0.65);
+  color: rgba(255, 255, 255, 0.90);
+  font-size: 0.68rem;
+  line-height: 1.4;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.jf-message-input:focus {
+  border-color: rgba(74, 222, 128, 0.38);
+  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.10);
+}
+
+.jf-message-input::placeholder {
+  color: rgba(255, 255, 255, 0.28);
+}
+
+.jf-message-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.jf-message-actions-left,
+.jf-message-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.jf-message-count {
+  font-size: 0.60rem;
+  color: rgba(255, 255, 255, 0.28);
+  font-variant-numeric: tabular-nums;
+}
+
+
+/* Empty / error */
+.jf-idle {
+  padding: 14px;
+  text-align: center;
+  font-size: 0.74rem;
+  color: rgba(255, 255, 255, 0.30);
+  border-radius: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+body.light .jf-idle,
+[data-theme="light"] .jf-idle {
+  color: rgba(8, 12, 18, 0.35);
+  border-color: rgba(8, 12, 18, 0.10);
+}
+
+.jf-error {
+  padding: 14px;
+  text-align: center;
+  font-size: 0.74rem;
+  color: rgba(248, 113, 113, 0.75);
+  border-radius: 10px;
+  border: 1px dashed rgba(248, 113, 113, 0.18);
+}
+
+
+/* Footer */
+.jf-footer {
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.18);
+  text-align: right;
+}
+
+body.light .jf-footer,
+[data-theme="light"] .jf-footer {
+  color: rgba(8, 12, 18, 0.22);
+}
+
+
+/* Skeleton */
+.jf-skeleton-row {
+  height: 58px;
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 25%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: jf-shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes jf-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+body.light .jf-skeleton-row,
+[data-theme="light"] .jf-skeleton-row {
+  background: linear-gradient(
+    90deg,
+    rgba(8, 12, 18, 0.04) 25%,
+    rgba(8, 12, 18, 0.08) 50%,
+    rgba(8, 12, 18, 0.04) 75%
+  );
+  background-size: 200% 100%;
+}
+
+
+/* Sync toggle */
+.jf-sync-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 7px;
+  border: 1px solid rgba(0, 164, 220, 0.22);
+  background: rgba(0, 164, 220, 0.07);
+  color: rgba(0, 164, 220, 0.70);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.jf-sync-toggle:hover,
+.jf-sync-toggle--open {
+  background: rgba(0, 164, 220, 0.14);
+  color: rgba(0, 164, 220, 0.95);
+  border-color: rgba(0, 164, 220, 0.40);
+}
+
+body.light .jf-sync-toggle,
+[data-theme="light"] .jf-sync-toggle {
+  border-color: rgba(0, 100, 160, 0.20);
+  background: rgba(0, 100, 160, 0.06);
+  color: rgba(0, 100, 160, 0.65);
+}
+
+body.light .jf-sync-toggle:hover,
+body.light .jf-sync-toggle--open,
+[data-theme="light"] .jf-sync-toggle:hover,
+[data-theme="light"] .jf-sync-toggle--open {
+  background: rgba(0, 100, 160, 0.12);
+  color: rgba(0, 100, 160, 0.90);
+}
+
+
+/* Sync panel */
+.jf-sync-wrap {
+  display: none;
+  overflow: hidden;
+}
+
+.jf-sync-wrap--open {
+  display: block;
+  animation: jf-slide-down 0.18s ease;
+}
+
+@keyframes jf-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.jf-sync-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(0, 164, 220, 0.04);
+  border: 1px solid rgba(0, 164, 220, 0.10);
+}
+
+body.light .jf-sync-panel,
+[data-theme="light"] .jf-sync-panel {
+  background: rgba(0, 100, 160, 0.03);
+  border-color: rgba(0, 100, 160, 0.10);
+}
+
+.jf-sync-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.jf-sync-libs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.jf-sync-loading {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.30);
+}
+
+body.light .jf-sync-loading,
+[data-theme="light"] .jf-sync-loading {
+  color: rgba(8, 12, 18, 0.35);
+}
+
+.jf-sync-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.60);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.jf-sync-btn:hover:not(:disabled) {
+  background: rgba(0, 164, 220, 0.12);
+  color: rgba(0, 164, 220, 0.95);
+  border-color: rgba(0, 164, 220, 0.30);
+}
+
+.jf-sync-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.jf-sync-btn--busy {
+  background: rgba(0, 164, 220, 0.10);
+  color: rgba(0, 164, 220, 0.80);
+  border-color: rgba(0, 164, 220, 0.25);
+}
+
+.jf-sync-btn--ok {
+  background: rgba(74, 222, 128, 0.10);
+  color: #86efac;
+  border-color: rgba(74, 222, 128, 0.25);
+}
+
+.jf-sync-btn--err {
+  background: rgba(248, 113, 113, 0.10);
+  color: #fca5a5;
+  border-color: rgba(248, 113, 113, 0.25);
+}
+
+body.light .jf-sync-btn,
+[data-theme="light"] .jf-sync-btn {
+  border-color: rgba(8, 12, 18, 0.12);
+  background: rgba(8, 12, 18, 0.04);
+  color: rgba(8, 12, 18, 0.55);
+}
+
+body.light .jf-sync-btn:hover:not(:disabled),
+[data-theme="light"] .jf-sync-btn:hover:not(:disabled) {
+  background: rgba(0, 100, 160, 0.08);
+  color: rgba(0, 100, 160, 0.90);
+  border-color: rgba(0, 100, 160, 0.22);
+}
+
+body.light .jf-sync-btn--busy,
+[data-theme="light"] .jf-sync-btn--busy {
+  background: rgba(0, 100, 160, 0.07);
+  color: rgba(0, 100, 160, 0.75);
+  border-color: rgba(0, 100, 160, 0.20);
+}
+
+body.light .jf-sync-btn--ok,
+[data-theme="light"] .jf-sync-btn--ok {
+  background: rgba(34, 197, 94, 0.08);
+  color: #16a34a;
+  border-color: rgba(34, 197, 94, 0.22);
+}
+
+body.light .jf-sync-btn--err,
+[data-theme="light"] .jf-sync-btn--err {
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+  border-color: rgba(239, 68, 68, 0.22);
+}
+
+.jf-sync-all-btn {
+  padding: 5px 12px;
+  font-size: 0.70rem;
+}
+
+.jf-sync-lib-icon {
+  font-size: 0.80rem;
+}
+
+.jf-sync-lib-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.jf-sync-status-icon {
+  font-size: 0.72rem;
+  opacity: 0.75;
+}
+
+.jf-sync-spin {
+  display: inline-block;
+  animation: jf-spin 0.8s linear infinite;
+}
+
+@keyframes jf-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+
+/* Light theme message inputs/buttons */
+body.light .jf-action-btn,
+[data-theme="light"] .jf-action-btn {
+  border-color: rgba(8, 12, 18, 0.12);
+  background: rgba(8, 12, 18, 0.04);
+  color: rgba(8, 12, 18, 0.72);
+}
+
+body.light .jf-action-btn:hover:not(:disabled),
+[data-theme="light"] .jf-action-btn:hover:not(:disabled) {
+  background: rgba(8, 12, 18, 0.07);
+  border-color: rgba(8, 12, 18, 0.16);
+  color: rgba(8, 12, 18, 0.92);
+}
+
+body.light .jf-action-btn--pause,
+body.light .jf-action-btn--resume,
+[data-theme="light"] .jf-action-btn--pause,
+[data-theme="light"] .jf-action-btn--resume {
+  border-color: rgba(0, 100, 160, 0.22);
+  background: rgba(0, 100, 160, 0.07);
+  color: rgba(0, 100, 160, 0.92);
+}
+
+body.light .jf-action-btn--stop,
+[data-theme="light"] .jf-action-btn--stop {
+  border-color: rgba(220, 38, 38, 0.20);
+  background: rgba(220, 38, 38, 0.06);
+  color: rgba(220, 38, 38, 0.88);
+}
+
+body.light .jf-action-btn--message,
+body.light .jf-action-btn--send,
+[data-theme="light"] .jf-action-btn--message,
+[data-theme="light"] .jf-action-btn--send {
+  border-color: rgba(22, 163, 74, 0.20);
+  background: rgba(22, 163, 74, 0.06);
+  color: rgba(22, 163, 74, 0.88);
+}
+
+body.light .jf-action-btn--ghost,
+[data-theme="light"] .jf-action-btn--ghost {
+  border-color: rgba(8, 12, 18, 0.12);
+  background: rgba(8, 12, 18, 0.03);
+  color: rgba(8, 12, 18, 0.56);
+}
+
+body.light .jf-message-box,
+[data-theme="light"] .jf-message-box {
+  background: rgba(8, 12, 18, 0.03);
+  border-color: rgba(8, 12, 18, 0.08);
+}
+
+body.light .jf-message-input,
+[data-theme="light"] .jf-message-input {
+  background: rgba(255, 255, 255, 0.88);
+  color: rgba(8, 12, 18, 0.92);
+  border-color: rgba(8, 12, 18, 0.12);
+}
+
+body.light .jf-message-input::placeholder,
+[data-theme="light"] .jf-message-input::placeholder {
+  color: rgba(8, 12, 18, 0.28);
+}
+
+body.light .jf-message-count,
+[data-theme="light"] .jf-message-count {
+  color: rgba(8, 12, 18, 0.32);
+}
+
+
+@media (max-width: 768px) {
+  .jf-session-title {
+    font-size: 0.72rem;
+  }
+
+  .jf-stats {
+    gap: 6px;
+  }
+
+  .jf-stat-pill {
+    font-size: 0.64rem;
+    padding: 4px 8px;
+  }
+
+  .jf-sync-libs {
+    gap: 5px;
+  }
+
+  .jf-sync-btn {
+    font-size: 0.64rem;
+    padding: 4px 8px;
+  }
+
+  .jf-sync-lib-name {
+    max-width: 90px;
+  }
+
+  .jf-session-actions-row {
+    gap: 5px;
+  }
+
+  .jf-action-btn {
+    min-height: 26px;
+    padding: 4px 8px;
+    font-size: 0.63rem;
+  }
+
+  .jf-message-input {
+    font-size: 0.66rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jf-skeleton-row,
+  .jf-sync-spin,
+  .jf-sync-wrap--open {
+    animation: none !important;
+  }
+
+  .jf-progress-fill {
+    transition: none !important;
+  }
+}

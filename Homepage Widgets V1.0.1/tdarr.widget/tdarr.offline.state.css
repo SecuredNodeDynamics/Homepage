@@ -1,0 +1,21 @@
+/* =====================================================
+9) TDARR — OFFLINE STATE
+===================================================== */
+
+/* Hide the red error summary and its expanded detail panel */
+.service-card summary.bg-rose-900\/80,
+.service-card summary.bg-rose-900\/80+div {
+  display: none !important;
+}
+
+/* Show "Server Offline" in its place */
+.service-card:has(summary.bg-rose-900\/80)::after {
+  content: "Server Offline";
+  display: block;
+  text-align: center;
+  padding: 8px 0 4px;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}

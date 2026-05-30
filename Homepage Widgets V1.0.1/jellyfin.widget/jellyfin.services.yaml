@@ -1,0 +1,5 @@
+- JELLYFIN - MEDIA:
+
+    - Jellyfin Anchor:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/jellyfin.webp
+        description: Live sessions & library stats (injected widget)

@@ -1,0 +1,5 @@
+- ARR -- PROWLARR:
+
+    - Prowlarr:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/prowlarr.webp
+        description: Indexer Management (injected widget)

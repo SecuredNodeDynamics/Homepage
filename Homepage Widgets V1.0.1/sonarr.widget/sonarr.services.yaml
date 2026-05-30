@@ -1,0 +1,4 @@
+- ARR — SONARR:
+    - Sonarr Anchor:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/tdarr.webp
+        description: Sonarr dual-server widget (injected widget)

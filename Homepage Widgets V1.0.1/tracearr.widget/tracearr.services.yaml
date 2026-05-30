@@ -1,0 +1,5 @@
+- TRACEARR - WIDGET:
+
+    - Tracearr - Monitor:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/tracearr.webp
+        description: Media stream monitoring (injected widget)
