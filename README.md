@@ -12,6 +12,7 @@
 </p>
 
 ---
+My Discord Homepage Helpdesk: https://discord.gg/n6RerTCRJS
 
 ## Overview
 
