@@ -1,0 +1,5 @@
+- WAZUH-MONITOR:
+
+    - Wazuh Anchor:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/wazuh.webp
+        description: Security alerts & agent status (injected widget)

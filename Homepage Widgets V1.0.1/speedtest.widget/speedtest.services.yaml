@@ -1,0 +1,4 @@
+- SPEEDTEST-MONITOR:
+    - Speedtest Monitor Anchor:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/speedtest-tracker.webp
+        description: Speedtest monitor (injected widget)
