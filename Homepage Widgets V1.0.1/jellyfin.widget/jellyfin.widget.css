@@ -45,6 +45,18 @@ body.light .jf-monitor-host,
   }
 }
 
+/* ── JF Monitor Flex Row ────────────────────────── */
+.jf-monitor-flex-row {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  width: 100%;
+}
+
+.jf-monitor-flex-row .jf-monitor-host {
+  flex: 1;
+  min-width: 0;
+}
 
 /* Shell */
 .jf-shell {

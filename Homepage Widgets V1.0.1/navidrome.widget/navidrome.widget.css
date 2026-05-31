@@ -36,6 +36,19 @@ body.light .nd-widget-host,
     width: 100%;
 }
 
+/* ── ND Flex Row ────────────────────────────────── */
+.nd-flex-row {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  width: 100%;
+}
+
+.nd-flex-row .nd-widget-host {
+  flex: 1;
+  min-width: 0;
+}
+
 /* ── Header ──────────────────────────────────────── */
 .nd-header {
     display: flex;

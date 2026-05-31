@@ -49,6 +49,19 @@ body.light .sr-host,
   padding: 2px 0;
 }
 
+/* ── SR Flex Row ────────────────────────────────── */
+.sr-flex-row {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  width: 100%;
+}
+
+.sr-flex-row .sr-host {
+  flex: 1;
+  min-width: 0;
+}
+
 /* Header */
 .sr-header {
   display: flex;

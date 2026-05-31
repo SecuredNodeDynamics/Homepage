@@ -1,5 +1,5 @@
 /* =====================================================
-8) JELLYFIN SHELF
+8) JELLYFIN SLIDER
 ===================================================== */
 .jellyfin-host {
   width: 100%;
@@ -31,6 +31,21 @@ body.light .jellyfin-host,
   text-shadow: 0 1px 1px rgba(255, 255, 255, 0.35) !important;
 }
 
+/* ── JELLYFIN Flex Row ──────────────────────────── */
+
+.jellyfin-flex-row {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  width: 100%;
+}
+
+.jellyfin-flex-row .jellyfin-host {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Header ──────────────────────────── */
 .jf-shelf {
   display: flex;
   flex-direction: column;

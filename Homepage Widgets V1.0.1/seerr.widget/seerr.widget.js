@@ -208,13 +208,19 @@
   }
 
   function ensureHost(group) {
-    let host = group.querySelector(".sr-host");
+    let row = group.querySelector(".sr-flex-row");
+    if (!row) {
+      const list = group.querySelector("ul.services-list, ul");
+      if (list) list.style.display = "none";
+      row = document.createElement("div");
+      row.className = "sr-flex-row";
+      group.appendChild(row);
+    }
+    let host = row.querySelector(".sr-host");
     if (host) return host;
-    const list = group.querySelector("ul.services-list, ul");
-    if (list) list.style.display = "none";
     host = document.createElement("div");
     host.className = "sr-host";
-    group.appendChild(host);
+    row.appendChild(host);
     return host;
   }
 

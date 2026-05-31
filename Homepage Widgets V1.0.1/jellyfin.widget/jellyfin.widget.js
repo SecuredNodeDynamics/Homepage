@@ -10,7 +10,7 @@
     activeBaseUrl: null,
     apiKey: "YOUR_API_KEY_HERE",
     primaryHref: "http://YOUR_LOCAL_IP:PORT",
-    fallbackHref: "https://YOUR_TUNNEL_URL",
+    fallbackHref: "https://YOUR_TUNNEL_URL", // or null if not using a tunnel
     pollMs: 30_000,
   };
 
@@ -103,13 +103,19 @@
   }
 
   function ensureHost(group) {
-    let host = group.querySelector(".jf-monitor-host");
+    let row = group.querySelector(".jf-monitor-flex-row");
+    if (!row) {
+      const list = group.querySelector("ul.services-list, ul");
+      if (list) list.style.display = "none";
+      row = document.createElement("div");
+      row.className = "jf-monitor-flex-row";
+      group.appendChild(row);
+    }
+    let host = row.querySelector(".jf-monitor-host");
     if (host) return host;
-    const list = group.querySelector("ul.services-list, ul");
-    if (list) list.style.display = "none";
     host = document.createElement("div");
     host.className = "jf-monitor-host";
-    group.appendChild(host);
+    row.appendChild(host);
     return host;
   }
 

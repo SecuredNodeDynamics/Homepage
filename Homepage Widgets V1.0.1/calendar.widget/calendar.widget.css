@@ -17,6 +17,19 @@
   color: rgba(255, 255, 255, 0.92);
 }
 
+/* ── MCAL Flex Row ──────────────────────────────── */
+.mcal-flex-row {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  width: 100%;
+}
+
+.mcal-flex-row .mcal-host {
+  flex: 1;
+  min-width: 0;
+}
+
 /* ── Header ──────────────────────────────────────── */
 .mcal-hdr {
   display: flex;

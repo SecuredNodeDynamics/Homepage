@@ -22,6 +22,19 @@
   gap: 12px;
 }
 
+/* ── LDR Flex Row ───────────────────────────────── */
+.ldr-flex-row {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  width: 100%;
+}
+
+.ldr-flex-row .ldr-host {
+  flex: 1;
+  min-width: 0;
+}
+
 /* ── Header ──────────────────────────────────────────────────────── */
 .ldr-hdr {
   display: flex;

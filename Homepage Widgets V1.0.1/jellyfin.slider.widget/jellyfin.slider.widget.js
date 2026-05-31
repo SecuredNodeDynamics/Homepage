@@ -411,13 +411,19 @@ JELLYFIN SLIDER
   }
 
   function ensureHost(group) {
-    let host = group.querySelector(".jellyfin-host");
+    let row = group.querySelector(".jellyfin-flex-row");
+    if (!row) {
+      const existingList = group.querySelector("ul.services-list, ul");
+      if (existingList) existingList.style.display = "none";
+      row = document.createElement("div");
+      row.className = "jellyfin-flex-row";
+      group.appendChild(row);
+    }
+    let host = row.querySelector(".jellyfin-host");
     if (host) return host;
-    const existingList = group.querySelector("ul.services-list, ul");
-    if (existingList) existingList.style.display = "none";
     host = document.createElement("div");
     host.className = "jellyfin-host";
-    group.appendChild(host);
+    row.appendChild(host);
     return host;
   }
 

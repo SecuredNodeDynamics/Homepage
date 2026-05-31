@@ -36,6 +36,19 @@ body.light .immich-albums-host,
   width: 100%;
 }
 
+/* ── IMMICH Flex Row ────────────────────────────── */
+.immich-flex-row {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  width: 100%;
+}
+
+.immich-flex-row .immich-albums-host {
+  flex: 1;
+  min-width: 0;
+}
+
 /* ── Header ──────────────────────────────────────── */
 .immich-header {
   display: flex;

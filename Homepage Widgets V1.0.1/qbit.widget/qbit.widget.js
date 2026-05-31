@@ -87,13 +87,19 @@
   }
 
   function ensureHost(group) {
-    let host = group.querySelector(".qbit-host");
+    let row = group.querySelector(".qbit-flex-row");
+    if (!row) {
+      const list = group.querySelector("ul.services-list, ul");
+      if (list) list.style.display = "none";
+      row = document.createElement("div");
+      row.className = "qbit-flex-row";
+      group.appendChild(row);
+    }
+    let host = row.querySelector(".qbit-host");
     if (host) return host;
-    const list = group.querySelector("ul.services-list, ul");
-    if (list) list.style.display = "none";
     host = document.createElement("div");
     host.className = "qbit-host";
-    group.appendChild(host);
+    row.appendChild(host);
     return host;
   }
 

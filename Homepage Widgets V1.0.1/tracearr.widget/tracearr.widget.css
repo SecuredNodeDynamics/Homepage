@@ -26,9 +26,20 @@
   gap: 14px;
 }
 
-/* =====================================================
-   HEADER
-===================================================== */
+/* ── TRR Flex Row ───────────────────────────────── */
+.trr-flex-row {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  width: 100%;
+}
+
+.trr-flex-row .trr-host {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Header ───────────────────────────────── */
 
 .trr-header {
   display: flex;

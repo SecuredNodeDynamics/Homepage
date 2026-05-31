@@ -1,0 +1,5 @@
+- ADGUARD - CONTROL:
+
+    - AdGuard Control Panel:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/adguard-home.webp
+        description: AdGuard control panel (injected widget)

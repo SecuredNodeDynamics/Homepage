@@ -42,6 +42,19 @@ body.light .qbit-host,
   box-sizing: border-box;
 }
 
+/* ── QBIT Flex Row ──────────────────────────────── */
+.qbit-flex-row {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  width: 100%;
+}
+
+.qbit-flex-row .qbit-host {
+  flex: 1;
+  min-width: 0;
+}
+
 /* ── Header ──────────────────────────────────────── */
 .qbit-header {
   display: flex;

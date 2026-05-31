@@ -34,13 +34,19 @@
   }
 
   function ensureHost(group, cls) {
-    let host = group.querySelector("." + cls);
+    let row = group.querySelector(".ldr-flex-row");
+    if (!row) {
+      const list = group.querySelector("ul.services-list, ul");
+      if (list) list.style.display = "none";
+      row = document.createElement("div");
+      row.className = "ldr-flex-row";
+      group.appendChild(row);
+    }
+    let host = row.querySelector("." + cls);
     if (host) return host;
-    const list = group.querySelector("ul.services-list, ul");
-    if (list) list.style.display = "none";
     host = document.createElement("div");
     host.className = "ldr-host " + cls;
-    group.appendChild(host);
+    row.appendChild(host);
     return host;
   }
 

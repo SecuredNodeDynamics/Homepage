@@ -58,15 +58,19 @@
   }
 
   function ensureHost(group) {
-    let host = group.querySelector(".trr-host");
+    let row = group.querySelector(".trr-flex-row");
+    if (!row) {
+      const list = group.querySelector("ul.services-list, ul");
+      if (list) list.style.display = "none";
+      row = document.createElement("div");
+      row.className = "trr-flex-row";
+      group.appendChild(row);
+    }
+    let host = row.querySelector(".trr-host");
     if (host) return host;
-
-    const list = group.querySelector("ul.services-list, ul");
-    if (list) list.style.display = "none";
-
     host = document.createElement("div");
     host.className = "trr-host";
-    group.appendChild(host);
+    row.appendChild(host);
     return host;
   }
 

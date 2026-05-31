@@ -54,11 +54,19 @@ IMMICH PHOTO ALBUMS WIDGET
   }
 
   function ensureHost(group) {
-    let host = group.querySelector(".immich-albums-host");
+    let row = group.querySelector(".immich-flex-row");
+    if (!row) {
+      const list = group.querySelector("ul.services-list, ul");
+      if (list) list.style.display = "none";
+      row = document.createElement("div");
+      row.className = "immich-flex-row";
+      group.appendChild(row);
+    }
+    let host = row.querySelector(".immich-albums-host");
     if (host) return host;
     host = document.createElement("div");
     host.className = "immich-albums-host";
-    group.appendChild(host);
+    row.appendChild(host);
     return host;
   }
 
