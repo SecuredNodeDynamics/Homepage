@@ -399,6 +399,34 @@
   border-color: rgba(220, 38, 38, 0.60);
 }
 
+/* ── Delete button ─────────────────────────────── */
+
+.wzr-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid rgba(248, 113, 113, 0.25);
+  background: rgba(248, 113, 113, 0.08);
+  color: rgba(248, 113, 113, 0.60);
+  cursor: pointer;
+  transition: background 0.14s, color 0.14s, border-color 0.14s;
+  flex-shrink: 0;
+}
+
+.wzr-delete-btn:hover {
+  background: rgba(248, 113, 113, 0.20);
+  color: rgba(248, 113, 113, 0.95);
+  border-color: rgba(248, 113, 113, 0.50);
+}
+
+.wzr-delete-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 /* ── Modal ─────────────────────────────────────── */
 
 .wzr-modal-overlay {
