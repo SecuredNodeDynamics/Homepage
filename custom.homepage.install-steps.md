@@ -64,9 +64,17 @@ Your `services.yaml` should follow this structure:
 ---
 
 ## Step 4 — Add Card Placement in `settings.yaml`
+0. Add this block above the layout:
 
-1. Open your Homepage config's `settings.yaml` file.
-2. Under the `layout:` section, create a **connecting card placement block** for the new widget anchor you just added to `services.yaml`.
+```
+color: slate
+theme: dark
+customCSS: true
+showStats: true
+```
+
+2. Open your Homepage config's `settings.yaml` file.
+3. Under the `layout:` section, create a **connecting card placement block** for the new widget anchor you just added to `services.yaml`.
 
 Your `settings.yaml` layout block should look like this:
 
