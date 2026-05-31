@@ -5,11 +5,11 @@
 (function () {
 
   const BZR_CONFIG = {
-    groupName: "ARR — BAZARR",
-    url: "http://YOUR_LOCAL_IP:PORT",
-    fallbackUrl: "https://YOUR_TUNNEL_URL", // or null if not using a tunnel
+    groupName: "ARR -- PROWLARR.BAZARR",
+    url: "https://bazarr.janzenmediagroup.com",
+    fallbackUrl: "http://10.128.1.62:6767",
     activeUrl: null,
-    key: "YOUR_API_KEY_HERE",
+    key: "cf3fe7e55472e3c82d4dc4de651c3704",
     pollMs: 60 * 1000,
   };
 
@@ -350,8 +350,7 @@
   function paint(loading = false) {
     if (!_host) return;
     _host.innerHTML = buildShell(loading ? "" : renderContent(), loading);
-    // Apply scrollable class on history tab
-    if (!loading && (_tab === "history" || _tab === "wanted")) {
+    if (!loading && (_tab === "history" || _tab === "wanted" || _tab === "movies" || _tab === "series")) {
       const scroll = _host.querySelector(".bzr-scroll");
       if (scroll) scroll.classList.add("bzr-scroll--scrollable");
     }
