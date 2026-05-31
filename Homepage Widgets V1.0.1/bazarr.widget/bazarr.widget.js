@@ -43,13 +43,19 @@
   }
 
   function ensureHost(group) {
-    let host = group.querySelector(".bzr-host");
+    let row = group.querySelector(".arr-flex-row");
+    if (!row) {
+      const list = group.querySelector("ul.services-list, ul");
+      if (list) list.style.display = "none";
+      row = document.createElement("div");
+      row.className = "arr-flex-row";
+      group.appendChild(row);
+    }
+    let host = row.querySelector(".bzr-host");
     if (host) return host;
-    const list = group.querySelector("ul.services-list, ul");
-    if (list) list.style.display = "none";
     host = document.createElement("div");
     host.className = "bzr-host";
-    group.appendChild(host);
+    row.appendChild(host);
     return host;
   }
 

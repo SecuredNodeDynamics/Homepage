@@ -26,6 +26,19 @@
   gap: 12px;
 }
 
+/* ── BZR Flex Row ───────────────────────────────── */
+.arr-flex-row {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  width: 100%;
+}
+
+.arr-flex-row .bzr-host {
+  flex: 1;
+  min-width: 0;
+}
+
 /* ── Header ────────────────────────────────────── */
 
 .bzr-hdr {
