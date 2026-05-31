@@ -1,0 +1,5 @@
+- NET - GLANCES:
+ 
+    - Network Glances Anchor:
+        icon: /icons/netdata.png
+        description: Throughput history (injected widget)
