@@ -541,6 +541,9 @@ JELLYFIN SLIDER
       btn.classList.toggle("jf-server-btn--active", parseInt(btn.dataset.server) === idx);
     });
 
+    const openBtn = shell.querySelector(".jf-open-btn");
+    if (openBtn) openBtn.href = getServer().baseUrl;
+
     const sections = getSections();
 
     // Rebuild tabs to match new server's section list
@@ -710,8 +713,18 @@ JELLYFIN SLIDER
     </span>
     <button class="jf-search-clear" type="button" aria-label="Clear search">✕</button>`;
 
+    const openBtn = document.createElement("a");
+    openBtn.className = "jf-open-btn";
+    openBtn.href = getServer().baseUrl;
+    openBtn.target = "_blank";
+    openBtn.rel = "noopener noreferrer";
+    openBtn.title = "Open Jellyfin";
+    openBtn.setAttribute("aria-label", "Open Jellyfin in new tab");
+    openBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Open`;
+
     tabsRow.appendChild(tabs);
     tabsRow.appendChild(serverSwitch);
+    tabsRow.appendChild(openBtn);
     tabsRow.appendChild(searchWrap);
 
     const panels = document.createElement("div");

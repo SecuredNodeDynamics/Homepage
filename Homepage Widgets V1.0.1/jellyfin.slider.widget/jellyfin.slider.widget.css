@@ -94,6 +94,45 @@ body.light .jellyfin-host,
   display: none;
 }
 
+/* ── Open button ──────────────────────────────────────── */
+.jf-open-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.jf-open-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.88);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+body.light .jf-open-btn,
+[data-theme="light"] .jf-open-btn {
+  border-color: rgba(0, 0, 0, 0.14);
+  background: rgba(0, 0, 0, 0.05);
+  color: rgba(8, 12, 18, 0.50);
+}
+
+body.light .jf-open-btn:hover,
+[data-theme="light"] .jf-open-btn:hover {
+  background: rgba(0, 0, 0, 0.09);
+  color: rgba(8, 12, 18, 0.82);
+  border-color: rgba(0, 0, 0, 0.20);
+}
+
 /* ── Search bar row (tabs + search on same line) ──────────────────────── */
 .jf-tabs-row {
   display: flex;
