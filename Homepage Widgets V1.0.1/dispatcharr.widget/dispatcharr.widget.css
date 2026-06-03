@@ -7,7 +7,7 @@
   border-radius: 22px;
   color: rgba(255, 255, 255, 0.92);
   background:
-    radial-gradient(circle at top left,  rgba(251, 146, 60, 0.07), transparent 26%),
+    radial-gradient(circle at top left, rgba(251, 146, 60, 0.07), transparent 26%),
     radial-gradient(circle at top right, rgba(251, 191, 36, 0.05), transparent 24%),
     linear-gradient(180deg, rgba(8, 13, 20, 0.96), rgba(9, 15, 24, 0.92));
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -195,7 +195,7 @@
   max-height: 420px;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.10) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.10) transparent;
 }
 
 .dsp-list-row {
@@ -307,11 +307,240 @@
 
 /* Responsive */
 @media (max-width: 980px) {
-  .dsp-tabs { gap: 3px; }
+  .dsp-tabs {
+    gap: 3px;
+  }
+}
+
+@media (max-width: 980px) {
+  .dsp-tabs {
+    gap: 3px;
+  }
 }
 
 @media (max-width: 640px) {
-  .dsp-host { padding: 16px; border-radius: 18px; }
-  .dsp-card { padding: 12px; border-radius: 16px; }
-  .dsp-tab  { padding: 6px 9px; font-size: 0.67rem; }
+  .dsp-host {
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .dsp-card {
+    padding: 12px;
+    border-radius: 16px;
+  }
+
+  .dsp-tab {
+    padding: 6px 9px;
+    font-size: 0.67rem;
+  }
+
+  .tg-row {
+    grid-template-columns: 90px 1fr;
+  }
+
+  .tg-ch-name {
+    font-size: 0.65rem;
+  }
+}
+
+/* Badges */
+.dsp-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+.dsp-badge--live {
+  background: rgba(251, 113, 133, 0.18);
+  border: 1px solid rgba(251, 113, 133, 0.35);
+  color: rgba(251, 113, 133, 0.90);
+}
+
+.dsp-badge--new {
+  background: rgba(96, 165, 250, 0.18);
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  color: rgba(96, 165, 250, 0.90);
+}
+
+/* TV Guide layout */
+.tg-now {
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.25);
+  text-align: right;
+  margin-bottom: 8px;
+}
+
+.tg-guide {
+  display: flex;
+  flex-direction: column;
+  max-height: 480px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.10) transparent;
+}
+
+.tg-row {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tg-row:last-child {
+  border-bottom: none;
+}
+
+.tg-ch {
+  padding: 14px 10px 14px 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+}
+
+.tg-ch-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(251, 146, 60, 0.90);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tg-ch-num {
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.30);
+}
+
+.tg-progs {
+  padding: 10px 0 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.tg-prog {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tg-prog--next {
+  padding-top: 8px;
+  margin-top: 8px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.06);
+}
+
+.tg-prog-label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.tg-prog-label--now {
+  color: rgba(251, 146, 60, 0.70);
+}
+
+.tg-prog-label--next {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.tg-prog-title {
+  font-size: 0.80rem;
+  font-weight: 750;
+  color: rgba(255, 255, 255, 0.90);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.tg-prog-title--next {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.52);
+}
+
+.tg-prog-sub {
+  font-size: 0.66rem;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.tg-prog-sub--next {
+  color: rgba(255, 255, 255, 0.28);
+}
+
+.tg-prog-time {
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.28);
+  font-variant-numeric: tabular-nums;
+}
+
+.tg-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 3px;
+}
+
+.tg-bar {
+  flex: 1;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+
+.tg-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(251, 146, 60, 0.75), rgba(251, 191, 36, 0.80));
+}
+
+.tg-pct {
+  font-size: 0.60rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.35);
+  white-space: nowrap;
+}
+
+.tg-ep {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.40);
+}
+
+/* TV Guide logo */
+.tg-ch-logo-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.tg-ch-logo {
+  width: 72px;
+  height: 40px;
+  object-fit: contain;
+  filter: brightness(0.9);
+  transition: filter 0.15s;
+}
+
+.tg-ch-logo:hover {
+  filter: brightness(1.1);
+}
+
+.tg-ch-logo-fallback {
+  flex-direction: column;
+  gap: 3px;
 }
