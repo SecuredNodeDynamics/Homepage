@@ -3,19 +3,19 @@
 ===================================================== */
 (function () {
   const DSP_CONFIG = {
-        groupName: "ARR - DISPATCHARR",
-        url: "https://dispatcharr.example.com",
-        fallbackUrl: null,
-        username: "PLACEHOLDER_USERNAME",
-        password: "PLACEHOLDER_PASSWORD",
-        pollMs: 60_000,
-        debug: false,
-    };
+    groupName: "ARR - DISPATCHARR",
+    url: "https://dispatcharr.example.com",
+    fallbackUrl: null,
+    username: "PLACEHOLDER_USERNAME",
+    password: "PLACEHOLDER_PASSWORD",
+    pollMs: 60_000,
+    debug: false,
+  };
 
   let _pollTimer = null;
   let _rendered = false;
   let _data = {};
-  let _activeTab = "recordings";
+  let _activeTab = "guide";
   let _token = null;
   let _tokenExpiry = 0;
 
@@ -227,7 +227,17 @@
   }
 
   function recTitle(item) {
-    return item.title || item.name || item.channel_name || String(item.id || "Unknown");
+    return item.title || item.name || resolveChannelName(item) || String(item.id || "Unknown");
+  }
+
+  function resolveChannelName(item) {
+    if (item.channel_name) return item.channel_name;
+    if (typeof item.channel === "string") return item.channel;
+    if (typeof item.channel === "number") {
+      const ch = (_data.channels || []).find(c => c.id === item.channel);
+      return ch ? ch.name : `Channel ${item.channel}`;
+    }
+    return "—";
   }
 
   /* ── Widget shell ──────────────────────────────── */
@@ -296,23 +306,23 @@
     if (!recs.length) return `<div class="dsp-card"><div class="dsp-empty">No recordings found</div></div>`;
 
     return `
-      <div class="dsp-card">
-        <div class="dsp-card-title">Recordings — ${recs.length}</div>
-        <div class="dsp-list">
-          ${recs.map(item => {
+  <div class="dsp-card">
+    <div class="dsp-card-title">Recordings — ${recs.length}</div>
+    <div class="dsp-list">
+      ${recs.map(item => {
       const status = item.status || "—";
       const end = item.end_time || item.end || item.stop || null;
-      const ch = item.channel_name || item.channel || "—";
+      const ch = resolveChannelName(item);
       return `
-              <div class="dsp-list-row">
-                <div class="dsp-list-main">
-                  <div class="dsp-list-title">${statusDot(status)}${escH(recTitle(item))}</div>
-                  <div class="dsp-list-sub">${escH(ch)} · ${escH(status)}${end ? ` · ${fmtDt(end)}` : ""}</div>
-                </div>
-              </div>`;
+          <div class="dsp-list-row">
+            <div class="dsp-list-main">
+              <div class="dsp-list-title">${statusDot(status)}${escH(recTitle(item))}</div>
+              <div class="dsp-list-sub">${escH(ch)} · ${escH(status)}${end ? ` · ${fmtDt(end)}` : ""}</div>
+            </div>
+          </div>`;
     }).join("")}
-        </div>
-      </div>`;
+    </div>
+  </div>`;
   }
 
   /* ── Tab: Scheduled ──────────────────────────── */
@@ -414,34 +424,28 @@
   function buildGuideTab() {
     const programs = _data.epg || [];
     const channels = _data.channels || [];
-    const epgdata = _data.epgdata || [];
     const logos = _data.logos || [];
 
     // Build logo_id → cache_url map
     const logoMap = {};
     logos.forEach(l => { logoMap[l.id] = l.cache_url; });
 
-    // Build epgdata_id → tvg_id lookup
-    const epgTvgMap = {};
-    epgdata.forEach(e => { epgTvgMap[e.id] = e.tvg_id; });
-
-    // Build tvg_id → programs lookup
-    const byTvgId = {};
+    // Build uuid → programs lookup (grid uses channel uuid as tvg_id)
+    const byUuid = {};
     programs.forEach(p => {
       if (!p.tvg_id) return;
-      if (!byTvgId[p.tvg_id]) byTvgId[p.tvg_id] = [];
-      byTvgId[p.tvg_id].push(p);
+      if (!byUuid[p.tvg_id]) byUuid[p.tvg_id] = [];
+      byUuid[p.tvg_id].push(p);
     });
 
-    Object.values(byTvgId).forEach(progs =>
+    Object.values(byUuid).forEach(progs =>
       progs.sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
     );
 
     const now = Date.now();
 
     const rows = channels.map(ch => {
-      const tvgId = epgTvgMap[ch.epg_data_id];
-      const progs = (tvgId && byTvgId[tvgId]) || [];
+      const progs = byUuid[ch.uuid] || [];
       const current = progs.find(p => {
         const s = new Date(p.start_time).getTime();
         const e = new Date(p.end_time).getTime();
@@ -454,37 +458,37 @@
     }).filter(r => r.current || r.next);
 
     if (!rows.length) return `
-      <div class="dsp-card">
-        <div class="dsp-empty">No program data available</div>
-      </div>`;
+    <div class="dsp-card">
+      <div class="dsp-empty">No program data available</div>
+    </div>`;
 
     const nowStr = new Date().toLocaleTimeString("en-US", {
       hour: "numeric", minute: "2-digit", hour12: true,
     });
 
     return `
-      <div class="dsp-card">
-        <div class="dsp-card-title">Now on Air — ${rows.length} channels</div>
-        <div class="tg-now">Now: ${nowStr}</div>
-        <div class="tg-guide">
-          ${rows.map(({ ch, current, next }) => {
+    <div class="dsp-card">
+      <div class="dsp-card-title">Now on Air — ${rows.length} channels</div>
+      <div class="tg-now">Now: ${nowStr}</div>
+      <div class="tg-guide">
+        ${rows.map(({ ch, current, next }) => {
       const chName = ch.name || ch.tvg_id || "—";
       const chNum = ch.channel_number ? `CH ${Math.floor(ch.channel_number)}` : "";
       const logoUrl = ch.logo_id ? logoMap[ch.logo_id] : null;
 
       const chLeft = logoUrl ? `
-              <div class="tg-ch-logo-wrap">
-                <img class="tg-ch-logo"
-                     src="${escH(logoUrl)}"
-                     alt="${escH(chName)}"
-                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-                <div class="tg-ch-logo-fallback" style="display:none">
-                  <div class="tg-ch-name">${escH(chName)}</div>
-                  ${chNum ? `<div class="tg-ch-num">${escH(chNum)}</div>` : ""}
-                </div>
-              </div>` : `
+          <div class="tg-ch-logo-wrap">
+            <img class="tg-ch-logo"
+                 src="${escH(logoUrl)}"
+                 alt="${escH(chName)}"
+                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+            <div class="tg-ch-logo-fallback" style="display:none">
               <div class="tg-ch-name">${escH(chName)}</div>
-              ${chNum ? `<div class="tg-ch-num">${escH(chNum)}</div>` : ""}`;
+              ${chNum ? `<div class="tg-ch-num">${escH(chNum)}</div>` : ""}
+            </div>
+          </div>` : `
+          <div class="tg-ch-name">${escH(chName)}</div>
+          ${chNum ? `<div class="tg-ch-num">${escH(chNum)}</div>` : ""}`;
 
       let currentHtml = "";
       if (current) {
@@ -500,16 +504,16 @@
           current.is_premiere ? `<span class="dsp-badge dsp-badge--new">PREMIERE</span>` : "",
         ].join("");
         currentHtml = `
-                <div class="tg-prog tg-prog--current">
-                  <div class="tg-prog-label tg-prog-label--now">Now</div>
-                  <div class="tg-prog-title">${escH(current.title)}${epInfo}${badges}</div>
-                  ${current.sub_title ? `<div class="tg-prog-sub">${escH(current.sub_title)}</div>` : ""}
-                  <div class="tg-bar-wrap">
-                    <div class="tg-bar"><div class="tg-fill" style="width:${pct}%"></div></div>
-                    <span class="tg-pct">${pct}%</span>
-                  </div>
-                  <div class="tg-prog-time">${escH(timeStr)}</div>
-                </div>`;
+            <div class="tg-prog tg-prog--current">
+              <div class="tg-prog-label tg-prog-label--now">Now</div>
+              <div class="tg-prog-title">${escH(current.title)}${epInfo}${badges}</div>
+              ${current.sub_title ? `<div class="tg-prog-sub">${escH(current.sub_title)}</div>` : ""}
+              <div class="tg-bar-wrap">
+                <div class="tg-bar"><div class="tg-fill" style="width:${pct}%"></div></div>
+                <span class="tg-pct">${pct}%</span>
+              </div>
+              <div class="tg-prog-time">${escH(timeStr)}</div>
+            </div>`;
       }
 
       let nextHtml = "";
@@ -518,27 +522,27 @@
         const epInfo = next.season && next.episode
           ? `<span class="tg-ep">S${next.season} E${next.episode}</span>` : "";
         nextHtml = `
-                <div class="tg-prog tg-prog--next">
-                  <div class="tg-prog-label tg-prog-label--next">Up Next</div>
-                  <div class="tg-prog-title tg-prog-title--next">${escH(next.title)}${epInfo}</div>
-                  ${next.sub_title ? `<div class="tg-prog-sub tg-prog-sub--next">${escH(next.sub_title)}</div>` : ""}
-                  <div class="tg-prog-time">${escH(timeStr)}</div>
-                </div>`;
+            <div class="tg-prog tg-prog--next">
+              <div class="tg-prog-label tg-prog-label--next">Up Next</div>
+              <div class="tg-prog-title tg-prog-title--next">${escH(next.title)}${epInfo}</div>
+              ${next.sub_title ? `<div class="tg-prog-sub tg-prog-sub--next">${escH(next.sub_title)}</div>` : ""}
+              <div class="tg-prog-time">${escH(timeStr)}</div>
+            </div>`;
       }
 
       return `
-            <div class="tg-row">
-              <div class="tg-ch">
-                ${chLeft}
-              </div>
-              <div class="tg-progs">
-                ${currentHtml}
-                ${nextHtml}
-              </div>
-            </div>`;
+          <div class="tg-row">
+            <div class="tg-ch">
+              ${chLeft}
+            </div>
+            <div class="tg-progs">
+              ${currentHtml}
+              ${nextHtml}
+            </div>
+          </div>`;
     }).join("")}
-        </div>
-      </div>`;
+      </div>
+    </div>`;
   }
 
   function buildTabContent() {
