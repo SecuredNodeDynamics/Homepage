@@ -5,10 +5,10 @@
 
   const PWR_CONFIG = {
     groupName: "ARR -- PROWLARR.BAZARR",
-    url: "https://prowlarr.janzenmediagroup.com",
-    fallbackUrl: "http://10.128.1.33:9696",
+    url: "https://prowlarr.YOUR_DOMAIN.com",
+    fallbackUrl: "http://YOUR_IP:PORT",
     activeUrl: null,
-    key: "1eed4ac1961f4b82a64916b9ffa52fed",
+    key: "YOUR_API_KEY",
     pollMs: 120 * 1000,
   };
 
