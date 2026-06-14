@@ -282,11 +282,19 @@ CHECKMK MONITOR  (host + service status)
   function ensureHost(group) {
     let host = group.querySelector(".cmk-monitor-host");
     if (host) return host;
-    const existing = group.querySelector("ul.services-list, ul");
-    if (existing) existing.style.display = "none";
+    let row = group.querySelector(".hp-widget-row, .cmk-flex-row");
+    if (!row) {
+      const existing = group.querySelector("ul.services-list, ul");
+      if (existing) existing.style.display = "none";
+      row = document.createElement("div");
+      row.className = "hp-widget-row cmk-flex-row";
+      group.appendChild(row);
+    } else {
+      row.classList.add("hp-widget-row", "cmk-flex-row");
+    }
     host = document.createElement("div");
     host.className = "cmk-monitor-host";
-    group.appendChild(host);
+    row.appendChild(host);
     return host;
   }
 

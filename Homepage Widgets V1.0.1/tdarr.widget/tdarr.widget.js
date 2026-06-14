@@ -48,13 +48,15 @@
   }
 
   function ensureHost(group) {
-    let row = group.querySelector(".tdr-flex-row");
+    let row = group.querySelector(".hp-widget-row, .tdr-flex-row");
     if (!row) {
       const list = group.querySelector("ul.services-list, ul");
       if (list) list.style.display = "none";
       row = document.createElement("div");
-      row.className = "tdr-flex-row";
+      row.className = "hp-widget-row tdr-flex-row";
       group.appendChild(row);
+    } else {
+      row.classList.add("hp-widget-row", "tdr-flex-row");
     }
     let host = row.querySelector(".tdr-host");
     if (host) return host;

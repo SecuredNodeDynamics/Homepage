@@ -79,18 +79,21 @@
   function ensureHost(group) {
     // ── SHARED ROW IDENTIFIER ─────────────────────
     // Change to match another widget's row class if sharing a group.
-    const SHARED_ROW_CLASS = "ts-flex-row";
+    const SHARED_ROW_CLASS = "hp-widget-row";
+    const LEGACY_ROW_CLASS = "ts-flex-row";
     // ── HOST IDENTIFIER ───────────────────────────
     const HOST_CLASS = "ts-host";
     // ─────────────────────────────────────────────
 
-    let row = group.querySelector("." + SHARED_ROW_CLASS);
+    let row = group.querySelector("." + SHARED_ROW_CLASS + ", ." + LEGACY_ROW_CLASS);
     if (!row) {
       const list = group.querySelector("ul.services-list, ul");
       if (list) list.style.display = "none";
       row = document.createElement("div");
-      row.className = SHARED_ROW_CLASS;
+      row.className = SHARED_ROW_CLASS + " " + LEGACY_ROW_CLASS;
       group.appendChild(row);
+    } else {
+      row.classList.add(SHARED_ROW_CLASS, LEGACY_ROW_CLASS);
     }
     let host = row.querySelector("." + HOST_CLASS);
     if (host) return host;

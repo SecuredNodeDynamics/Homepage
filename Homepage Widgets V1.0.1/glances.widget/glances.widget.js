@@ -142,11 +142,19 @@ GLANCES THROUGHPUT HISTORY WIDGET
   function ensureHost(group) {
     let host = group.querySelector(".netflow-host");
     if (host) return host;
-    const list = group.querySelector("ul.services-list, ul");
-    if (list) list.style.display = "none";
+    let row = group.querySelector(".hp-widget-row, .nf-flex-row");
+    if (!row) {
+      const list = group.querySelector("ul.services-list, ul");
+      if (list) list.style.display = "none";
+      row = document.createElement("div");
+      row.className = "hp-widget-row nf-flex-row";
+      group.appendChild(row);
+    } else {
+      row.classList.add("hp-widget-row", "nf-flex-row");
+    }
     host = document.createElement("div");
     host.className = "netflow-host";
-    group.appendChild(host);
+    row.appendChild(host);
     return host;
   }
 

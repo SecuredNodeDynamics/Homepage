@@ -48,13 +48,15 @@
   }
 
   function ensureHost(group) {
-    let row = group.querySelector(".wzr-flex-row");
+    let row = group.querySelector(".hp-widget-row, .wzr-flex-row");
     if (!row) {
       const list = group.querySelector("ul.services-list, ul");
       if (list) list.style.display = "none";
       row = document.createElement("div");
-      row.className = "wzr-flex-row";
+      row.className = "hp-widget-row wzr-flex-row";
       group.appendChild(row);
+    } else {
+      row.classList.add("hp-widget-row", "wzr-flex-row");
     }
     let host = row.querySelector(".wzr-host");
     if (host) return host;

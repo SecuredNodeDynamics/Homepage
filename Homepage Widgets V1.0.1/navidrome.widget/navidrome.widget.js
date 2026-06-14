@@ -102,13 +102,15 @@ NAVIDROME MUSIC WIDGET
   }
 
   function ensureHost(group) {
-    let row = group.querySelector(".nd-flex-row");
+    let row = group.querySelector(".hp-widget-row, .nd-flex-row");
     if (!row) {
       const list = group.querySelector("ul.services-list, ul");
       if (list) list.style.display = "none";
       row = document.createElement("div");
-      row.className = "nd-flex-row";
+      row.className = "hp-widget-row nd-flex-row";
       group.appendChild(row);
+    } else {
+      row.classList.add("hp-widget-row", "nd-flex-row");
     }
     let host = row.querySelector(".nd-widget-host");
     if (host) return host;

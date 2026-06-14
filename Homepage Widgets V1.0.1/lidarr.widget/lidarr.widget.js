@@ -34,13 +34,15 @@
   }
 
   function ensureHost(group, cls) {
-    let row = group.querySelector(".ldr-flex-row");
+    let row = group.querySelector(".hp-widget-row, .ldr-flex-row");
     if (!row) {
       const list = group.querySelector("ul.services-list, ul");
       if (list) list.style.display = "none";
       row = document.createElement("div");
-      row.className = "ldr-flex-row";
+      row.className = "hp-widget-row ldr-flex-row";
       group.appendChild(row);
+    } else {
+      row.classList.add("hp-widget-row", "ldr-flex-row");
     }
     let host = row.querySelector("." + cls);
     if (host) return host;

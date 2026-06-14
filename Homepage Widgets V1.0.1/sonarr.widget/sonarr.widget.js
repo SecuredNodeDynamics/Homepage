@@ -33,11 +33,19 @@
   function ensureHost(group, cls) {
     let host = group.querySelector("." + cls);
     if (host) return host;
-    const list = group.querySelector("ul.services-list, ul");
-    if (list) list.style.display = "none";
+    let row = group.querySelector(".hp-widget-row, .arr-flex-row");
+    if (!row) {
+      const list = group.querySelector("ul.services-list, ul");
+      if (list) list.style.display = "none";
+      row = document.createElement("div");
+      row.className = "hp-widget-row arr-flex-row";
+      group.appendChild(row);
+    } else {
+      row.classList.add("hp-widget-row", "arr-flex-row");
+    }
     host = document.createElement("div");
     host.className = "arr-host " + cls;
-    group.appendChild(host);
+    row.appendChild(host);
     return host;
   }
 

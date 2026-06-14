@@ -36,11 +36,19 @@ DNS MONITOR  (AdGuard Home)
   function ensureHost(group) {
     let host = group.querySelector(".dns-monitor-host");
     if (host) return host;
-    const existing = group.querySelector("ul.services-list, ul");
-    if (existing) existing.style.display = "none";
+    let row = group.querySelector(".hp-widget-row, .dns-flex-row");
+    if (!row) {
+      const existing = group.querySelector("ul.services-list, ul");
+      if (existing) existing.style.display = "none";
+      row = document.createElement("div");
+      row.className = "hp-widget-row dns-flex-row";
+      group.appendChild(row);
+    } else {
+      row.classList.add("hp-widget-row", "dns-flex-row");
+    }
     host = document.createElement("div");
     host.className = "dns-monitor-host";
-    group.appendChild(host);
+    row.appendChild(host);
     return host;
   }
 

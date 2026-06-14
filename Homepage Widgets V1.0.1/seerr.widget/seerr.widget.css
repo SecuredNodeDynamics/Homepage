@@ -50,14 +50,16 @@ body.light .sr-host,
 }
 
 /* ── SR Flex Row ────────────────────────────────── */
-.sr-flex-row {
+.sr-flex-row,
+.arr-js-flex-row {
   display: flex;
   flex-direction: row;
   gap: 16px;
   width: 100%;
 }
 
-.sr-flex-row .sr-host {
+.sr-flex-row .sr-host,
+.arr-js-flex-row .sr-host {
   flex: 1;
   min-width: 0;
 }
@@ -1049,6 +1051,7 @@ body.light .sr-skeleton-section,
   min-width: 0;
 }
 
+.hp-widget-row,
 [class$="-flex-row"],
 [class*="-flex-row "],
 .arr-js-flex-row,
@@ -1060,6 +1063,7 @@ body.light .sr-skeleton-section,
   align-items: stretch;
 }
 
+.hp-widget-row > *,
 [class$="-flex-row"] > *,
 [class*="-flex-row "] > *,
 .arr-js-flex-row > *,
@@ -1197,6 +1201,7 @@ ul.services-list {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--hp-widget-source-column-min)), 1fr)) !important;
 }
 
+.hp-widget-row,
 [class$="-flex-row"],
 [class*="-flex-row "],
 .arr-js-flex-row,
@@ -1208,6 +1213,7 @@ ul.services-list {
   width: 100% !important;
 }
 
+.hp-widget-row > *,
 [class$="-flex-row"] > *,
 [class*="-flex-row "] > *,
 .arr-js-flex-row > *,

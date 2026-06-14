@@ -74,11 +74,19 @@ CLOUDFLARE TUNNEL WIDGET  v4
   function ensureHost(group) {
     let host = group.querySelector(".cf-host");
     if (host) return host;
-    const list = group.querySelector("ul.services-list, ul");
-    if (list) list.style.display = "none";
+    let row = group.querySelector(".hp-widget-row, .cf-flex-row");
+    if (!row) {
+      const list = group.querySelector("ul.services-list, ul");
+      if (list) list.style.display = "none";
+      row = document.createElement("div");
+      row.className = "hp-widget-row cf-flex-row";
+      group.appendChild(row);
+    } else {
+      row.classList.add("hp-widget-row", "cf-flex-row");
+    }
     host = document.createElement("div");
     host.className = "cf-host";
-    group.appendChild(host);
+    row.appendChild(host);
     return host;
   }
 

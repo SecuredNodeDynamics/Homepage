@@ -75,13 +75,15 @@ Group: PVE-NODE -You can add as many proxmox nodes here as you want.
   }
 
   function ensureHost(group) {
-    let row = group.querySelector(".pve-flex-row");
+    let row = group.querySelector(".hp-widget-row, .pve-flex-row");
     if (!row) {
       const list = group.querySelector("ul.services-list, ul");
       if (list) list.style.display = "none";
       row = document.createElement("div");
-      row.className = "pve-flex-row";
+      row.className = "hp-widget-row pve-flex-row";
       group.appendChild(row);
+    } else {
+      row.classList.add("hp-widget-row", "pve-flex-row");
     }
     let host = row.querySelector(".pve-node-host");
     if (host) return host;

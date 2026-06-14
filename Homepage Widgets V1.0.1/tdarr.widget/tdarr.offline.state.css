@@ -48,6 +48,7 @@
   min-width: 0;
 }
 
+.hp-widget-row,
 [class$="-flex-row"],
 [class*="-flex-row "],
 .arr-js-flex-row,
@@ -59,6 +60,7 @@
   align-items: stretch;
 }
 
+.hp-widget-row > *,
 [class$="-flex-row"] > *,
 [class*="-flex-row "] > *,
 .arr-js-flex-row > *,
@@ -196,6 +198,7 @@ ul.services-list {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--hp-widget-source-column-min)), 1fr)) !important;
 }
 
+.hp-widget-row,
 [class$="-flex-row"],
 [class*="-flex-row "],
 .arr-js-flex-row,
@@ -207,6 +210,7 @@ ul.services-list {
   width: 100% !important;
 }
 
+.hp-widget-row > *,
 [class$="-flex-row"] > *,
 [class*="-flex-row "] > *,
 .arr-js-flex-row > *,
