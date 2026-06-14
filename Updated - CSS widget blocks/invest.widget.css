@@ -1,0 +1,428 @@
+/* ── Invest News Widget ──────────────────────────── */
+.inv-host {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 20px !important;
+  padding: 18px 20px !important;
+  overflow: hidden !important;
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  position: relative;
+  /* Default dark — covers Homepage which doesn't always set body.dark */
+  background-color: rgba(12, 16, 22, 0.85);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+
+.inv-hdr {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-wrap: wrap;
+}
+
+.inv-hdr-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.inv-hdr-right {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.inv-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.02em;
+}
+
+.inv-tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.inv-tab {
+  padding: 4px 14px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.45);
+  transition: background 0.14s, color 0.14s, border-color 0.14s;
+  letter-spacing: 0.03em;
+}
+
+.inv-tab:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.inv-tab--active {
+  background: rgba(251, 146, 60, 0.15) !important;
+  border-color: rgba(251, 146, 60, 0.40) !important;
+  color: rgba(251, 146, 60, 0.95) !important;
+}
+
+.inv-body {
+  min-height: 100px;
+}
+
+.inv-scroll {
+  max-height: 600px;
+  overflow-y: auto;
+  padding: 12px 16px;
+}
+
+.inv-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.inv-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.inv-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+}
+
+.inv-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.30);
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.inv-empty {
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 0.75rem;
+  text-align: center;
+  padding: 40px 16px;
+}
+
+/* Grid */
+.inv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 10px;
+}
+
+/* Cards */
+.inv-card {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.12s, border-color 0.12s;
+  align-items: flex-start;
+}
+
+.inv-card:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.inv-card:hover .inv-card-arrow {
+  opacity: 1;
+}
+
+.inv-card-thumb {
+  flex-shrink: 0;
+  width: 72px;
+  height: 54px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.inv-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.inv-card-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inv-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.inv-card-source {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.inv-card-dot {
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.20);
+}
+
+.inv-card-age {
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.30);
+}
+
+.inv-card-cat {
+  font-size: 0.58rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-left: auto;
+}
+
+.inv-card-cat--stocks {
+  background: rgba(251, 146, 60, 0.15);
+  color: rgba(251, 146, 60, 0.85);
+  border: 1px solid rgba(251, 146, 60, 0.25);
+}
+
+.inv-card-cat--crypto {
+  background: rgba(192, 132, 252, 0.15);
+  color: rgba(192, 132, 252, 0.85);
+  border: 1px solid rgba(192, 132, 252, 0.25);
+}
+
+.inv-card-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-clamp: 2;
+}
+
+.inv-card-excerpt {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.40);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-clamp: 2;
+}
+
+.inv-card-arrow {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.25);
+  opacity: 0.3;
+  transition: opacity 0.12s;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Footer */
+.inv-footer {
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.20);
+  text-align: right;
+  padding: 6px 16px 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Spinner */
+@keyframes inv-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.inv-spin {
+  animation: inv-spin 0.9s linear infinite;
+  flex-shrink: 0;
+}
+
+
+/* =====================================================
+   Widget Source Autosize Patch
+   Lets this widget CSS stand alone on phone, tablet, and desktop.
+===================================================== */
+
+:root {
+  --hp-widget-source-gap: clamp(8px, 2vw, 16px);
+  --hp-widget-source-pad: clamp(10px, 2vw, 18px);
+  --hp-widget-source-radius: clamp(14px, 2vw, 20px);
+  --hp-widget-source-min-card: min(100%, 140px);
+}
+
+.service-card,
+.widget-card,
+[class$="-host"],
+[class*="-host "] {
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+.service-card *,
+.widget-card *,
+[class$="-host"] *,
+[class*="-host "] * {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+[class$="-flex-row"],
+[class*="-flex-row "],
+.arr-js-flex-row,
+.arr-lt-flex-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hp-widget-source-gap) !important;
+  width: 100%;
+  align-items: stretch;
+}
+
+[class$="-flex-row"] > *,
+[class*="-flex-row "] > *,
+.arr-js-flex-row > *,
+.arr-lt-flex-row > * {
+  flex: 1 1 min(100%, 360px) !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+[class$="-grid"],
+[class*="-grid "],
+[class$="-stats-row"],
+[class*="-stats-row "] {
+  max-width: 100%;
+}
+
+[class$="-stat-grid"],
+[class*="-stat-grid "],
+[class$="-cards-grid"],
+[class*="-cards-grid "],
+[class$="-card-grid"],
+[class*="-card-grid "] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--hp-widget-source-min-card), 1fr)) !important;
+  gap: var(--hp-widget-source-gap) !important;
+  width: 100%;
+}
+
+[class$="-header"],
+[class*="-header "],
+[class$="-toolbar"],
+[class*="-toolbar "],
+[class$="-actions"],
+[class*="-actions "],
+[class$="-controls"],
+[class*="-controls "] {
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+}
+
+[class$="-list"],
+[class*="-list "],
+[class$="-body"],
+[class*="-body "],
+[class$="-guide"],
+[class*="-guide "] {
+  max-width: 100%;
+  scrollbar-width: thin;
+}
+
+.apexcharts-canvas,
+.apexcharts-svg,
+.recharts-wrapper,
+.recharts-surface,
+canvas,
+svg,
+img {
+  max-width: 100% !important;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --hp-widget-source-gap: 10px;
+    --hp-widget-source-pad: 12px;
+    --hp-widget-source-radius: 14px;
+    --hp-widget-source-min-card: min(100%, 112px);
+  }
+
+  .service-card,
+  .widget-card,
+  [class$="-host"],
+  [class*="-host "] {
+    width: 100% !important;
+    padding: var(--hp-widget-source-pad) !important;
+    border-radius: var(--hp-widget-source-radius) !important;
+    overflow: hidden !important;
+  }
+
+  [class$="-flex-row"],
+  [class*="-flex-row "],
+  .arr-js-flex-row,
+  .arr-lt-flex-row {
+    flex-direction: column !important;
+  }
+
+  [class$="-flex-row"] > *,
+  [class*="-flex-row "] > *,
+  .arr-js-flex-row > *,
+  .arr-lt-flex-row > * {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+  }
+
+  [class$="-toolbar"],
+  [class*="-toolbar "],
+  [class$="-controls"],
+  [class*="-controls "],
+  [class$="-tabs-row"],
+  [class*="-tabs-row "] {
+    overflow-x: auto;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --hp-widget-source-gap: 8px;
+    --hp-widget-source-pad: 10px;
+    --hp-widget-source-min-card: min(100%, 96px);
+  }
+
+  [class$="-stat-grid"],
+  [class*="-stat-grid "],
+  [class$="-cards-grid"],
+  [class*="-cards-grid "],
+  [class$="-card-grid"],
+  [class*="-card-grid "] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}

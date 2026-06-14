@@ -1,0 +1,1773 @@
+/* =====================================================
+8) JELLYFIN SHELF
+===================================================== */
+.jellyfin-host {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 20px !important;
+  padding: 18px 20px !important;
+  overflow: hidden !important;
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  position: relative;
+  /* Default dark — covers Homepage which doesn't always set body.dark */
+  background-color: rgba(12, 16, 22, 0.85);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+body.dark .jellyfin-host,
+[data-theme="dark"] .jellyfin-host {
+  background-color: rgba(12, 16, 22, 0.85) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+body.light .jellyfin-host,
+[data-theme="light"] .jellyfin-host {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+  border: 1px solid rgba(0, 0, 0, 0.274) !important;
+  color: rgba(8, 12, 18, 0.96) !important;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.35) !important;
+}
+
+.jf-shelf {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.jf-logo-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.jf-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.jf-panels,
+.jf-panel {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.jf-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 0 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.jf-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Search bar row (tabs + search on same line) ──────────────────────── */
+.jf-tabs-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 0 12px;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 12px;
+}
+
+/* Remove bottom padding from tabs since the row now owns it */
+.jf-tabs {
+  padding: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.jf-search-wrap {
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.jf-search-input {
+  width: 28px;
+  height: 30px;
+  padding: 0 28px 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.76rem;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    background 0.18s ease,
+    border-color 0.18s ease,
+    padding 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.jf-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.jf-search-input:focus,
+.jf-search-input.is-open {
+  width: 160px;
+  padding: 0 28px 0 10px;
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(79, 152, 163, 0.50);
+  cursor: text;
+}
+
+.jf-search-icon {
+  position: absolute;
+  right: 8px;
+  pointer-events: none;
+  color: rgba(255, 255, 255, 0.45);
+  display: flex;
+  align-items: center;
+  transition: color 0.18s ease;
+}
+
+.jf-search-clear {
+  position: absolute;
+  right: 6px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  color: rgba(255, 255, 255, 0.60);
+  cursor: pointer;
+  font-size: 0.65rem;
+  line-height: 1;
+  transition: background 0.15s, color 0.15s;
+}
+
+.jf-search-clear:hover {
+  background: rgba(255, 255, 255, 0.20);
+  color: rgba(255, 255, 255, 0.90);
+}
+
+.jf-search-input.has-value~.jf-search-icon {
+  display: none;
+}
+
+.jf-search-input.has-value~.jf-search-clear {
+  display: flex;
+}
+
+/* Light mode */
+body.light .jf-search-input,
+[data-theme="light"] .jf-search-input {
+  border-color: rgba(0, 0, 0, 0.14);
+  background: rgba(0, 0, 0, 0.05);
+  color: rgba(8, 12, 18, 0.88);
+}
+
+body.light .jf-search-input::placeholder,
+[data-theme="light"] .jf-search-input::placeholder {
+  color: rgba(8, 12, 18, 0.35);
+}
+
+body.light .jf-search-input:focus,
+body.light .jf-search-input.is-open,
+[data-theme="light"] .jf-search-input:focus,
+[data-theme="light"] .jf-search-input.is-open {
+  background: rgba(0, 0, 0, 0.08);
+  border-color: rgba(1, 105, 111, 0.45);
+}
+
+body.light .jf-search-icon,
+[data-theme="light"] .jf-search-icon {
+  color: rgba(8, 12, 18, 0.40);
+}
+
+body.light .jf-search-clear,
+[data-theme="light"] .jf-search-clear {
+  background: rgba(0, 0, 0, 0.09);
+  color: rgba(8, 12, 18, 0.55);
+}
+
+body.light .jf-search-clear:hover,
+[data-theme="light"] .jf-search-clear:hover {
+  background: rgba(0, 0, 0, 0.15);
+  color: rgba(8, 12, 18, 0.85);
+}
+
+/* Search results panel */
+.jf-search-panel {
+  display: none;
+}
+
+.jf-search-panel--active {
+  display: block;
+}
+
+.jf-search-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 2px 10px;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.38);
+  font-style: italic;
+}
+
+body.light .jf-search-status,
+[data-theme="light"] .jf-search-status {
+  color: rgba(8, 12, 18, 0.38);
+}
+
+@media (max-width: 768px) {
+
+  .jf-search-input:focus,
+  .jf-search-input.is-open {
+    width: 130px;
+  }
+}
+
+.jf-tab {
+  flex-shrink: 0;
+  padding: 5px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+  white-space: nowrap;
+  line-height: 1.4;
+  min-height: 30px;
+}
+
+.jf-tab:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.jf-tab--active {
+  background: rgba(79, 152, 163, 0.28) !important;
+  border-color: rgba(79, 152, 163, 0.55) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+body.light .jf-tab,
+[data-theme="light"] .jf-tab {
+  border-color: rgba(0, 0, 0, 0.14);
+  background: rgba(0, 0, 0, 0.05);
+  color: rgba(8, 12, 18, 0.5);
+}
+
+body.light .jf-tab:hover,
+[data-theme="light"] .jf-tab:hover {
+  background: rgba(0, 0, 0, 0.09);
+  color: rgba(8, 12, 18, 0.8);
+}
+
+body.light .jf-tab--active,
+[data-theme="light"] .jf-tab--active {
+  background: rgba(1, 105, 111, 0.12) !important;
+  border-color: rgba(1, 105, 111, 0.4) !important;
+  color: rgba(1, 69, 74, 0.96) !important;
+}
+
+.jf-panel {
+  display: none;
+}
+
+.jf-panel--active {
+  display: block;
+}
+
+.jf-track {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 6px 0 16px;
+  scroll-snap-type: x proximity;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.jf-track::-webkit-scrollbar {
+  display: none;
+}
+
+.jf-card {
+  flex-shrink: 0;
+  width: 136px;
+  max-width: 136px;
+  scroll-snap-align: start;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  border-radius: 12px;
+  overflow: hidden;
+  outline: none;
+  transition: transform 0.2s ease;
+  contain: layout paint;
+}
+
+.jf-card:hover,
+.jf-card:focus-visible {
+  transform: translateY(-2px);
+}
+
+.jf-card--music {
+  width: 126px;
+  max-width: 126px;
+}
+
+.jf-card--music .jf-card__art {
+  aspect-ratio: 1 / 1 !important;
+}
+
+.jf-card__art {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  flex-shrink: 0;
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+body.light .jf-card__art,
+[data-theme="light"] .jf-card__art {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.10);
+}
+
+.jf-card__art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.jf-card__art-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 2rem;
+  font-weight: 700;
+  user-select: none;
+}
+
+body.light .jf-card__art-placeholder,
+[data-theme="light"] .jf-card__art-placeholder {
+  background: rgba(0, 0, 0, 0.05);
+  color: rgba(0, 0, 0, 0.2);
+}
+
+.jf-card__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.45) 45%, rgba(0, 0, 0, 0) 70%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 10px 8px;
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+
+.jf-card:hover .jf-card__overlay,
+.jf-card:focus-visible .jf-card__overlay {
+  opacity: 1;
+}
+
+.jf-card__overlay-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.96);
+  line-height: 1.25;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-clamp: 2;
+}
+
+.jf-card__overlay-sub {
+  font-size: 0.69rem;
+  color: rgba(255, 255, 255, 0.65);
+  margin-top: 3px;
+  line-height: 1.2;
+}
+
+.jf-card__meta {
+  padding: 0 2px 2px;
+}
+
+.jf-card__title {
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.3;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.jf-card__subtitle {
+  font-size: 0.70rem;
+  color: rgba(255, 255, 255, 0.45);
+  line-height: 1.2;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+.jf-card__meta,
+.jf-card__title,
+.jf-card__subtitle {
+  display: none !important;
+}
+
+body.light .jf-card__title,
+[data-theme="light"] .jf-card__title {
+  color: rgba(8, 12, 18, 0.88);
+}
+
+body.light .jf-card__subtitle,
+[data-theme="light"] .jf-card__subtitle {
+  color: rgba(8, 12, 18, 0.50);
+}
+
+/* Skeleton */
+@keyframes jf-shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+.jf-skeleton {
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0.05) 25%,
+      rgba(255, 255, 255, 0.12) 50%,
+      rgba(255, 255, 255, 0.05) 75%);
+  background-size: 800px 100%;
+  animation: jf-shimmer 1.6s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+body.light .jf-skeleton,
+[data-theme="light"] .jf-skeleton {
+  background: linear-gradient(90deg,
+      rgba(0, 0, 0, 0.06) 25%,
+      rgba(0, 0, 0, 0.12) 50%,
+      rgba(0, 0, 0, 0.06) 75%);
+  background-size: 800px 100%;
+}
+
+.jf-skeleton--title {
+  height: 10px;
+  width: 85%;
+  margin-bottom: 4px;
+}
+
+.jf-skeleton--sub {
+  height: 8px;
+  width: 55%;
+}
+
+.jf-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  color: rgba(255, 255, 255, 0.30);
+  font-size: 0.78rem;
+  font-style: italic;
+  min-width: 200px;
+}
+
+body.light .jf-empty,
+[data-theme="light"] .jf-empty {
+  color: rgba(8, 12, 18, 0.30);
+}
+
+.jf-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 20px;
+  border-radius: 12px;
+  background: rgba(161, 44, 123, 0.10);
+  border: 1px solid rgba(161, 44, 123, 0.22);
+  color: rgba(255, 255, 255, 0.70);
+  text-align: center;
+  max-width: 380px;
+}
+
+.jf-error__title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.jf-error__msg {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.50);
+  line-height: 1.45;
+}
+
+body.light .jf-error,
+[data-theme="light"] .jf-error {
+  background: rgba(161, 44, 123, 0.06);
+  border-color: rgba(161, 44, 123, 0.18);
+  color: rgba(8, 12, 18, 0.70);
+}
+
+body.light .jf-error__title,
+[data-theme="light"] .jf-error__title {
+  color: rgba(8, 12, 18, 0.88);
+}
+
+body.light .jf-error__msg,
+[data-theme="light"] .jf-error__msg {
+  color: rgba(8, 12, 18, 0.50);
+}
+
+/* Slider */
+.jf-slider-wrap {
+  display: grid;
+  grid-template-columns: 36px 1fr 36px;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0 12px;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.jf-slider__btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: background 0.18s ease, color 0.18s ease, opacity 0.18s ease, transform 0.18s ease;
+}
+
+.jf-slider__btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.94);
+  transform: translateY(-1px);
+}
+
+.jf-slider__btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+body.light .jf-slider__btn,
+[data-theme="light"] .jf-slider__btn {
+  color: rgba(8, 12, 18, 0.62);
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.10);
+}
+
+body.light .jf-slider__btn:hover:not(:disabled),
+[data-theme="light"] .jf-slider__btn:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.09);
+  color: rgba(8, 12, 18, 0.9);
+}
+
+.jf-slider {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.jf-slider.is-disabled {
+  opacity: 0.45;
+}
+
+.jf-slider__rail {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: visible;
+  cursor: pointer;
+}
+
+body.light .jf-slider__rail,
+[data-theme="light"] .jf-slider__rail {
+  background: rgba(0, 0, 0, 0.07);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.jf-slider__fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(114, 44, 161, 0.65), rgba(59, 177, 207, 0.877));
+  pointer-events: none;
+}
+
+body.light .jf-slider__fill,
+[data-theme="light"] .jf-slider__fill {
+  background: linear-gradient(90deg, rgba(161, 44, 123, 0.55), rgba(59, 177, 207, 0.877));
+}
+
+.jf-slider__thumb {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 18px;
+  height: 18px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(79, 152, 163, 0.45);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+  cursor: grab;
+  z-index: 2;
+}
+
+.jf-slider--dragging .jf-slider__thumb,
+.jf-slider__thumb:active {
+  cursor: grabbing;
+}
+
+body.light .jf-slider__thumb,
+[data-theme="light"] .jf-slider__thumb {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(1, 105, 111, 0.35);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .jf-skeleton {
+    animation: none !important;
+    background: rgba(255, 255, 255, 0.07) !important;
+  }
+
+  body.light .jf-skeleton,
+  [data-theme="light"] .jf-skeleton {
+    background: rgba(0, 0, 0, 0.08) !important;
+  }
+
+  .jf-card,
+  .jf-card__overlay,
+  .jf-card__art img,
+  .jf-card__art::after {
+    transition: none !important;
+  }
+
+  .jf-card__art img {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .jellyfin-host {
+    padding: 12px !important;
+    border-radius: 16px !important;
+  }
+
+  .jf-card {
+    width: 108px;
+    max-width: 108px;
+  }
+
+  .jf-card--music {
+    width: 98px;
+    max-width: 98px;
+  }
+
+  .jf-tab {
+    padding: 4px 11px;
+    font-size: 0.73rem;
+    min-height: 28px;
+  }
+
+  .jf-track {
+    gap: 10px;
+    padding: 4px 0 14px;
+  }
+
+  .jf-card__title {
+    font-size: 0.72rem;
+  }
+
+  .jf-card__subtitle {
+    font-size: 0.66rem;
+  }
+
+  .jf-slider-wrap {
+    grid-template-columns: 30px 1fr 30px;
+    gap: 6px;
+    padding: 2px 0 10px;
+  }
+
+  .jf-slider__btn {
+    width: 30px;
+    height: 30px;
+  }
+
+  .jf-slider__thumb {
+    width: 16px;
+    height: 16px;
+    left: 0;
+    transform: translateY(-50%);
+  }
+}
+
+/* Overview text inside popup */
+.jf-popup__overview {
+  padding: 10px 14px;
+  font-size: 0.69rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.55);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-clamp: 4;
+}
+
+body.light .jf-popup__overview,
+[data-theme="light"] .jf-popup__overview {
+  color: rgba(8, 12, 18, 0.52);
+}
+
+/* Cards are now role=button divs — make cursor consistent */
+.jf-card {
+  cursor: pointer;
+}
+
+/* ── Add these to your existing Jellyfin CSS (new rules only) ── */
+
+/* Overview text inside popup */
+.jf-popup__overview {
+  padding: 10px 14px;
+  font-size: 0.69rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.55);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-clamp: 4;
+}
+
+body.light .jf-popup__overview,
+[data-theme="light"] .jf-popup__overview {
+  color: rgba(8, 12, 18, 0.52);
+}
+
+/* Cards are now role=button divs — cursor */
+.jf-card {
+  cursor: pointer;
+}
+
+/* ── Download button (sibling to play-btn / details-btn) ── */
+.jf-popup__download-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  padding: 7px 14px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.jf-popup__download-btn:hover {
+  background: rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+body.light .jf-popup__download-btn,
+[data-theme="light"] .jf-popup__download-btn {
+  border-color: rgba(0, 0, 0, 0.10);
+  background: rgba(0, 0, 0, 0.04);
+  color: rgba(8, 12, 18, 0.50);
+}
+
+body.light .jf-popup__download-btn:hover,
+[data-theme="light"] .jf-popup__download-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: rgba(8, 12, 18, 0.80);
+}
+
+/* ── Download panel chrome ── */
+
+.jf-dl-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+body.light .jf-dl-header,
+[data-theme="light"] .jf-dl-header {
+  border-bottom-color: rgba(0, 0, 0, 0.07);
+}
+
+.jf-dl-back {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.68rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 5px;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.jf-dl-back:hover {
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+body.light .jf-dl-back,
+[data-theme="light"] .jf-dl-back {
+  color: rgba(8, 12, 18, 0.40);
+}
+
+body.light .jf-dl-back:hover,
+[data-theme="light"] .jf-dl-back:hover {
+  color: rgba(8, 12, 18, 0.75);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.jf-dl-title {
+  font-size: 0.72rem;
+  font-weight: 650;
+  color: rgba(255, 255, 255, 0.75);
+  flex: 1;
+}
+
+body.light .jf-dl-title,
+[data-theme="light"] .jf-dl-title {
+  color: rgba(8, 12, 18, 0.70);
+}
+
+.jf-dl-body {
+  padding: 10px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Mode tabs (Episode / Season / All Seasons) ── */
+.jf-dl-mode-row {
+  display: flex;
+  gap: 5px;
+}
+
+.jf-dl-mode-btn {
+  flex: 1;
+  padding: 5px 6px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.63rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+  min-height: 28px;
+}
+
+.jf-dl-mode-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.jf-dl-mode-btn--active {
+  background: rgba(79, 152, 163, 0.20) !important;
+  border-color: rgba(79, 152, 163, 0.45) !important;
+  color: rgba(120, 220, 230, 0.95) !important;
+}
+
+body.light .jf-dl-mode-btn,
+[data-theme="light"] .jf-dl-mode-btn {
+  border-color: rgba(0, 0, 0, 0.10);
+  background: rgba(0, 0, 0, 0.04);
+  color: rgba(8, 12, 18, 0.40);
+}
+
+body.light .jf-dl-mode-btn--active,
+[data-theme="light"] .jf-dl-mode-btn--active {
+  background: rgba(1, 105, 111, 0.10) !important;
+  border-color: rgba(1, 105, 111, 0.35) !important;
+  color: rgba(1, 69, 74, 0.90) !important;
+}
+
+/* ── Picker area (scrollable list) ── */
+.jf-dl-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 180px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+.jf-dl-picker::-webkit-scrollbar {
+  width: 4px;
+}
+
+.jf-dl-picker::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.jf-dl-picker::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 99px;
+}
+
+body.light .jf-dl-picker,
+[data-theme="light"] .jf-dl-picker {
+  scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
+}
+
+/* ── Scrollable list of season/episode rows ── */
+.jf-dl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.jf-dl-list--episodes {
+  gap: 3px;
+}
+
+.jf-dl-list-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.70);
+  font-size: 0.70rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.14s, color 0.14s, border-color 0.14s;
+  width: 100%;
+}
+
+.jf-dl-list-item:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.09);
+  color: rgba(255, 255, 255, 0.92);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.jf-dl-list-item:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+body.light .jf-dl-list-item,
+[data-theme="light"] .jf-dl-list-item {
+  border-color: rgba(0, 0, 0, 0.07);
+  background: rgba(0, 0, 0, 0.03);
+  color: rgba(8, 12, 18, 0.65);
+}
+
+body.light .jf-dl-list-item:hover:not(:disabled),
+[data-theme="light"] .jf-dl-list-item:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.07);
+  color: rgba(8, 12, 18, 0.90);
+}
+
+/* Episode-specific row elements */
+.jf-dl-ep-num {
+  flex-shrink: 0;
+  font-size: 0.63rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: rgba(79, 152, 163, 0.90);
+  min-width: 28px;
+}
+
+body.light .jf-dl-ep-num,
+[data-theme="light"] .jf-dl-ep-num {
+  color: rgba(1, 105, 111, 0.80);
+}
+
+.jf-dl-ep-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+/* ── Confirm pane (Season / All seasons) ── */
+.jf-dl-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.jf-dl-confirm-msg {
+  font-size: 0.70rem;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.5;
+  text-align: center;
+  padding: 4px 2px 0;
+}
+
+body.light .jf-dl-confirm-msg,
+[data-theme="light"] .jf-dl-confirm-msg {
+  color: rgba(8, 12, 18, 0.58);
+}
+
+.jf-dl-confirm-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  padding: 9px 14px;
+  border-radius: 9px;
+  background: rgba(79, 152, 163, 0.20);
+  border: 1px solid rgba(79, 152, 163, 0.42);
+  color: rgba(120, 220, 230, 0.95);
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.12s;
+}
+
+.jf-dl-confirm-btn:hover:not(:disabled) {
+  background: rgba(79, 152, 163, 0.33);
+  color: rgba(160, 240, 248, 1.0);
+  border-color: rgba(79, 152, 163, 0.65);
+  transform: translateY(-1px);
+}
+
+.jf-dl-confirm-btn:disabled {
+  opacity: 0.65;
+  cursor: default;
+  transform: none;
+}
+
+body.light .jf-dl-confirm-btn,
+[data-theme="light"] .jf-dl-confirm-btn {
+  background: rgba(1, 105, 111, 0.10);
+  border-color: rgba(1, 105, 111, 0.32);
+  color: rgba(1, 69, 74, 0.90);
+}
+
+/* Inline back link (within picker) */
+.jf-dl-back-inline {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.63rem;
+  cursor: pointer;
+  padding: 0 2px 6px;
+  text-align: left;
+  transition: color 0.14s;
+}
+
+.jf-dl-back-inline:hover {
+  color: rgba(255, 255, 255, 0.70);
+}
+
+body.light .jf-dl-back-inline,
+[data-theme="light"] .jf-dl-back-inline {
+  color: rgba(8, 12, 18, 0.35);
+}
+
+/* ── Hint label above season list ── */
+.jf-dl-hint {
+  font-size: 0.63rem;
+  color: rgba(255, 255, 255, 0.30);
+  padding: 0 2px 2px;
+  font-style: italic;
+}
+
+body.light .jf-dl-hint,
+[data-theme="light"] .jf-dl-hint {
+  color: rgba(8, 12, 18, 0.30);
+}
+
+/* ── Loading + empty states ── */
+.jf-dl-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.35);
+  padding: 8px 2px;
+}
+
+body.light .jf-dl-loading,
+[data-theme="light"] .jf-dl-loading {
+  color: rgba(8, 12, 18, 0.35);
+}
+
+.jf-dl-empty {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.30);
+  padding: 8px 2px;
+  font-style: italic;
+}
+
+body.light .jf-dl-empty,
+[data-theme="light"] .jf-dl-empty {
+  color: rgba(8, 12, 18, 0.30);
+}
+
+/* ── Spinner animation ── */
+@keyframes jf-dl-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.jf-dl-spin {
+  animation: jf-dl-spin 0.9s linear infinite;
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jf-dl-spin {
+    animation: none;
+  }
+}
+
+/* ── Search clear mechanics cleanup ───────────────────────────────────── */
+
+/* Kill native browser clear button on type="search" */
+.jf-search-input::-webkit-search-cancel-button,
+.jf-search-input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Both icon and clear use opacity fade instead of display swap */
+.jf-search-icon,
+.jf-search-clear {
+  position: absolute;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.15s ease, background 0.15s, color 0.15s;
+}
+
+.jf-search-clear {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  color: rgba(255, 255, 255, 0.60);
+  cursor: pointer;
+  font-size: 0.62rem;
+  line-height: 1;
+  pointer-events: none;
+  /* disabled until has-value */
+  opacity: 0;
+}
+
+/* Icon fades out, clear fades in when value is present */
+.jf-search-input.has-value~.jf-search-icon {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.jf-search-input.has-value~.jf-search-clear {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Keep clear button always display:flex — opacity controls visibility */
+.jf-search-clear {
+  display: flex !important;
+}
+
+/* Light mode clear */
+body.light .jf-search-clear,
+[data-theme="light"] .jf-search-clear {
+  background: rgba(0, 0, 0, 0.09);
+  color: rgba(8, 12, 18, 0.50);
+}
+
+body.light .jf-search-clear:hover,
+[data-theme="light"] .jf-search-clear:hover {
+  background: rgba(0, 0, 0, 0.15);
+  color: rgba(8, 12, 18, 0.85);
+}
+
+/* Collapsed state — hide clear when input is not open */
+.jf-search-input:not(.is-open):not(.has-value)~.jf-search-clear {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* =====================================================
+8b) JELLYFIN OVERFLOW FIX
+===================================================== */
+
+/* Allow the injected homepage group/card to actually shrink */
+.jellyfin-host,
+.jellyfin-host .jf-shelf,
+.jellyfin-host .jf-panels,
+.jellyfin-host .jf-panel,
+.jellyfin-host .jf-track,
+.jellyfin-host .jf-slider-wrap,
+.jellyfin-host .jf-slider {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* If Homepage wraps the injected group in list/grid items, force those to shrink too */
+.jellyfin-host,
+.jellyfin-host * {
+  box-sizing: border-box;
+}
+
+/* Common parent wrappers in Homepage layouts */
+.services-group,
+.services-group>div,
+.services-group ul,
+.services-group li,
+ul.services-list,
+ul.services-list>li {
+  min-width: 0 !important;
+}
+
+/* Prevent the Jellyfin panel from creating page-level horizontal overflow */
+.jellyfin-host {
+  overflow-x: hidden !important;
+}
+
+.jellyfin-host .jf-track {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+
+/* Slider row should never exceed card width */
+.jellyfin-host .jf-slider-wrap {
+  grid-template-columns: 30px minmax(0, 1fr) 30px !important;
+}
+
+/* Mobile hard clamp */
+@media (max-width: 768px) {
+  .jellyfin-host {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-inline: 0 !important;
+  }
+
+  .jellyfin-host .jf-shelf,
+  .jellyfin-host .jf-panels,
+  .jellyfin-host .jf-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .jellyfin-host .jf-tabs,
+  .jellyfin-host .jf-track,
+  .jellyfin-host .jf-slider-wrap {
+    max-width: 100% !important;
+  }
+}
+
+/* ── Jellyfin Detail Popup ──────────────────────────── */
+.jf-popup-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+}
+
+.jf-popup {
+  position: fixed;
+  z-index: 9999;
+  width: 240px;
+  border-radius: 14px;
+  background: rgba(12, 16, 22, 0.30);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65);
+  overflow: hidden;
+  animation: jf-popup-in 0.16s ease;
+}
+
+@keyframes jf-popup-in {
+  from {
+    opacity: 0;
+    transform: scale(0.93) translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.jf-popup__backdrop-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.12;
+  filter: blur(8px);
+  pointer-events: none;
+  transform: scale(1.08);
+}
+
+.jf-popup__body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.jf-popup__poster-row {
+  display: flex;
+  gap: 12px;
+  padding: 14px 14px 10px;
+  align-items: flex-start;
+}
+
+.jf-popup__poster {
+  width: 64px;
+  height: 96px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.jf-popup__poster--square {
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.jf-popup__poster-placeholder {
+  width: 64px;
+  height: 96px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  color: rgba(255, 255, 255, 0.20);
+}
+
+.jf-popup__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 2px;
+}
+
+.jf-popup__title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.96);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-clamp: 3;
+}
+
+.jf-popup__subtitle {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.42);
+  line-height: 1.3;
+}
+
+.jf-popup__type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.60rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: rgba(79, 152, 163, 0.14);
+  border: 1px solid rgba(79, 152, 163, 0.30);
+  color: rgba(79, 200, 210, 0.90);
+  width: fit-content;
+  margin-top: 2px;
+}
+
+.jf-popup__divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.07);
+  margin: 0 14px;
+}
+
+.jf-popup__actions {
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.jf-popup__play-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  padding: 9px 14px;
+  border-radius: 9px;
+  background: rgba(79, 152, 163, 0.22);
+  border: 1px solid rgba(79, 152, 163, 0.45);
+  color: rgba(120, 220, 230, 0.95);
+  font-size: 0.73rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.12s;
+  letter-spacing: 0.02em;
+}
+
+.jf-popup__play-btn:hover {
+  background: rgba(79, 152, 163, 0.36);
+  color: rgba(160, 240, 248, 1.0);
+  border-color: rgba(79, 152, 163, 0.70);
+  transform: translateY(-1px);
+}
+
+.jf-popup__play-btn svg {
+  flex-shrink: 0;
+}
+
+.jf-popup__details-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 7px 14px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.jf-popup__details-btn:hover {
+  background: rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ── Jellyfin server switcher ── */
+.jf-server-switch {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.jf-server-btn {
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.jf-server-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.jf-server-btn--active {
+  background: rgba(79, 152, 163, 0.28) !important;
+  border-color: rgba(79, 152, 163, 0.55) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+body.light .jf-server-btn,
+[data-theme="light"] .jf-server-btn {
+  border-color: rgba(0, 0, 0, 0.14);
+  background: rgba(0, 0, 0, 0.05);
+  color: rgba(8, 12, 18, 0.50);
+}
+
+body.light .jf-server-btn--active,
+[data-theme="light"] .jf-server-btn--active {
+  background: rgba(1, 105, 111, 0.12) !important;
+  border-color: rgba(1, 105, 111, 0.40) !important;
+  color: rgba(1, 69, 74, 0.96) !important;
+}
+
+
+/* =====================================================
+   Widget Source Autosize Patch
+   Lets this widget CSS stand alone on phone, tablet, and desktop.
+===================================================== */
+
+:root {
+  --hp-widget-source-gap: clamp(8px, 2vw, 16px);
+  --hp-widget-source-pad: clamp(10px, 2vw, 18px);
+  --hp-widget-source-radius: clamp(14px, 2vw, 20px);
+  --hp-widget-source-min-card: min(100%, 140px);
+}
+
+.service-card,
+.widget-card,
+[class$="-host"],
+[class*="-host "] {
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+.service-card *,
+.widget-card *,
+[class$="-host"] *,
+[class*="-host "] * {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+[class$="-flex-row"],
+[class*="-flex-row "],
+.arr-js-flex-row,
+.arr-lt-flex-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hp-widget-source-gap) !important;
+  width: 100%;
+  align-items: stretch;
+}
+
+[class$="-flex-row"] > *,
+[class*="-flex-row "] > *,
+.arr-js-flex-row > *,
+.arr-lt-flex-row > * {
+  flex: 1 1 min(100%, 360px) !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+[class$="-grid"],
+[class*="-grid "],
+[class$="-stats-row"],
+[class*="-stats-row "] {
+  max-width: 100%;
+}
+
+[class$="-stat-grid"],
+[class*="-stat-grid "],
+[class$="-cards-grid"],
+[class*="-cards-grid "],
+[class$="-card-grid"],
+[class*="-card-grid "] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--hp-widget-source-min-card), 1fr)) !important;
+  gap: var(--hp-widget-source-gap) !important;
+  width: 100%;
+}
+
+[class$="-header"],
+[class*="-header "],
+[class$="-toolbar"],
+[class*="-toolbar "],
+[class$="-actions"],
+[class*="-actions "],
+[class$="-controls"],
+[class*="-controls "] {
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+}
+
+[class$="-list"],
+[class*="-list "],
+[class$="-body"],
+[class*="-body "],
+[class$="-guide"],
+[class*="-guide "] {
+  max-width: 100%;
+  scrollbar-width: thin;
+}
+
+.apexcharts-canvas,
+.apexcharts-svg,
+.recharts-wrapper,
+.recharts-surface,
+canvas,
+svg,
+img {
+  max-width: 100% !important;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --hp-widget-source-gap: 10px;
+    --hp-widget-source-pad: 12px;
+    --hp-widget-source-radius: 14px;
+    --hp-widget-source-min-card: min(100%, 112px);
+  }
+
+  .service-card,
+  .widget-card,
+  [class$="-host"],
+  [class*="-host "] {
+    width: 100% !important;
+    padding: var(--hp-widget-source-pad) !important;
+    border-radius: var(--hp-widget-source-radius) !important;
+    overflow: hidden !important;
+  }
+
+  [class$="-flex-row"],
+  [class*="-flex-row "],
+  .arr-js-flex-row,
+  .arr-lt-flex-row {
+    flex-direction: column !important;
+  }
+
+  [class$="-flex-row"] > *,
+  [class*="-flex-row "] > *,
+  .arr-js-flex-row > *,
+  .arr-lt-flex-row > * {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+  }
+
+  [class$="-toolbar"],
+  [class*="-toolbar "],
+  [class$="-controls"],
+  [class*="-controls "],
+  [class$="-tabs-row"],
+  [class*="-tabs-row "] {
+    overflow-x: auto;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --hp-widget-source-gap: 8px;
+    --hp-widget-source-pad: 10px;
+    --hp-widget-source-min-card: min(100%, 96px);
+  }
+
+  [class$="-stat-grid"],
+  [class*="-stat-grid "],
+  [class$="-cards-grid"],
+  [class*="-cards-grid "],
+  [class$="-card-grid"],
+  [class*="-card-grid "] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}

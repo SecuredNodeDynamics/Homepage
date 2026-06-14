@@ -1,0 +1,491 @@
+/* =====================================================
+10) AMP MONITOR WIDGET — Card Grid
+===================================================== */
+.amp-monitor-host {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.amp-shell {
+  border-radius: 18px !important;
+  padding: 18px 20px !important;
+  overflow: hidden !important;
+  backdrop-filter: blur(18px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(120%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  background-color: rgba(12, 16, 22, 0.55) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+body.light .amp-shell,
+[data-theme="light"] .amp-shell {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+  border-color: rgba(0, 0, 0, 0.14) !important;
+  color: rgba(8, 12, 18, 0.96) !important;
+}
+
+/* Header */
+.amp-header {
+  display: flex !important;
+  align-items: baseline !important;
+  gap: 8px !important;
+  margin-bottom: 14px !important;
+}
+.amp-header-count {
+  font-size: 1.8rem !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  color: #34d399 !important;
+}
+.amp-header-label {
+  font-size: 0.74rem !important;
+  color: rgba(255, 255, 255, 0.38) !important;
+}
+body.light .amp-header-label,
+[data-theme="light"] .amp-header-label {
+  color: rgba(8, 12, 18, 0.38) !important;
+}
+.amp-demo-badge {
+  margin-left: auto !important;
+  font-size: 0.60rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  padding: 2px 8px !important;
+  border-radius: 999px !important;
+  background: rgba(139, 92, 246, 0.15) !important;
+  border: 1px solid rgba(139, 92, 246, 0.30) !important;
+  color: rgba(167, 139, 250, 0.90) !important;
+}
+
+/* Card grid */
+.amp-card-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)) !important;
+  gap: 12px !important;
+}
+
+/* Individual card */
+.amp-card {
+  border-radius: 14px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  transition: border-color 0.18s ease !important;
+}
+.amp-card:hover {
+  border-color: rgba(255, 255, 255, 0.20) !important;
+}
+.amp-card.offline {
+  opacity: 0.55 !important;
+}
+body.light .amp-card,
+[data-theme="light"] .amp-card {
+  border-color: rgba(0, 0, 0, 0.10) !important;
+  background: rgba(0, 0, 0, 0.03) !important;
+}
+
+/* Art panel */
+.amp-card-art {
+  height: 110px !important;
+  position: relative !important;
+  flex-shrink: 0 !important;
+  overflow: hidden !important;
+}
+.amp-card-art-inner {
+  position: absolute !important;
+  inset: 0 !important;
+}
+.amp-card-art-fade {
+  position: absolute !important;
+  inset: 0 !important;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.05) 40%, rgba(10,14,20,0.92) 100%) !important;
+}
+.amp-status-dot {
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  width: 9px !important;
+  height: 9px !important;
+  border-radius: 50% !important;
+  z-index: 3 !important;
+  border: 1.5px solid rgba(0, 0, 0, 0.40) !important;
+}
+.amp-status-dot.online  { background: #34d399 !important; box-shadow: 0 0 7px rgba(52,211,153,0.55) !important; }
+.amp-status-dot.offline { background: #f87171 !important; }
+
+/* Card body */
+.amp-card-body {
+  padding: 10px 12px 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+  flex: 1 !important;
+}
+.amp-name {
+  font-size: 0.82rem !important;
+  font-weight: 650 !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  line-height: 1.2 !important;
+}
+body.light .amp-name,
+[data-theme="light"] .amp-name { color: rgba(8, 12, 18, 0.92) !important; }
+
+.amp-module {
+  font-size: 0.67rem !important;
+  color: rgba(255, 255, 255, 0.35) !important;
+  margin-top: -2px !important;
+}
+body.light .amp-module,
+[data-theme="light"] .amp-module { color: rgba(8, 12, 18, 0.40) !important; }
+
+/* Stats row */
+.amp-stats {
+  display: flex !important;
+  gap: 10px !important;
+  margin-top: 4px !important;
+}
+.amp-stat { flex: 1 !important; }
+.amp-label {
+  font-size: 0.60rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.07em !important;
+  color: rgba(255, 255, 255, 0.35) !important;
+}
+body.light .amp-label,
+[data-theme="light"] .amp-label { color: rgba(8, 12, 18, 0.38) !important; }
+
+.amp-value {
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+body.light .amp-value,
+[data-theme="light"] .amp-value { color: rgba(8, 12, 18, 0.80) !important; }
+
+.amp-bar-track {
+  height: 3px !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  margin-top: 3px !important;
+  overflow: hidden !important;
+}
+body.light .amp-bar-track,
+[data-theme="light"] .amp-bar-track { background: rgba(0, 0, 0, 0.08) !important; }
+
+.amp-bar-fill {
+  height: 100% !important;
+  border-radius: 999px !important;
+  transition: width 0.4s ease !important;
+}
+
+/* Card footer */
+.amp-card-footer {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-top: auto !important;
+  padding-top: 7px !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+body.light .amp-card-footer,
+[data-theme="light"] .amp-card-footer { border-top-color: rgba(0,0,0,0.07) !important; }
+
+.amp-status-text { font-size: 0.67rem !important; font-weight: 600 !important; text-transform: uppercase !important; letter-spacing: 0.07em !important; }
+.amp-status-text.online  { color: #34d399 !important; }
+.amp-status-text.offline { color: #f87171 !important; }
+
+.amp-players {
+  font-size: 0.70rem !important;
+  color: rgba(255, 255, 255, 0.35) !important;
+}
+body.light .amp-players,
+[data-theme="light"] .amp-players { color: rgba(8,12,18,0.38) !important; }
+
+/* Widget footer */
+.amp-widget-footer {
+  margin-top: 10px !important;
+  font-size: 0.62rem !important;
+  color: rgba(255, 255, 255, 0.22) !important;
+  text-align: right !important;
+  font-style: italic !important;
+}
+body.light .amp-widget-footer,
+[data-theme="light"] .amp-widget-footer { color: rgba(8,12,18,0.25) !important; }
+
+/* Error / empty states */
+.amp-error {
+  padding: 16px !important;
+  border-radius: 12px !important;
+  background: rgba(161, 44, 44, 0.10) !important;
+  border: 1px solid rgba(161, 44, 44, 0.22) !important;
+  color: rgba(255,255,255,0.60) !important;
+  font-size: 0.78rem !important;
+  text-align: center !important;
+}
+.amp-empty {
+  text-align: center !important;
+  padding: 24px !important;
+  color: rgba(255, 255, 255, 0.30) !important;
+  font-size: 0.78rem !important;
+  font-style: italic !important;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .amp-shell { padding: 12px !important; border-radius: 16px !important; }
+  .amp-card-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important; gap: 8px !important; }
+  .amp-card-art { height: 90px !important; }
+}
+
+/* ── AMP Server Controls ───────────────────────── */
+.amp-controls {
+  display: flex !important;
+  gap: 6px !important;
+  margin-top: 8px !important;
+  padding-top: 8px !important;
+  border-top: 1px solid rgba(255,255,255,0.07) !important;
+}
+body.light .amp-controls,
+[data-theme="light"] .amp-controls {
+  border-top-color: rgba(0,0,0,0.07) !important;
+}
+.amp-ctrl-btn {
+  flex: 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  padding: 5px 8px !important;
+  border-radius: 8px !important;
+  font-size: 0.68rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.03em !important;
+  cursor: pointer !important;
+  border: 1px solid transparent !important;
+  transition: background 0.15s, opacity 0.15s, transform 0.1s !important;
+  white-space: nowrap !important;
+}
+.amp-ctrl-btn:active { transform: scale(0.95) !important; }
+.amp-ctrl-btn:disabled {
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+}
+/* Start — green */
+.amp-ctrl-btn--start {
+  background: rgba(52,211,153,0.12) !important;
+  border-color: rgba(52,211,153,0.30) !important;
+  color: #34d399 !important;
+}
+.amp-ctrl-btn--start:hover:not(:disabled) {
+  background: rgba(52,211,153,0.22) !important;
+}
+/* Stop — red */
+.amp-ctrl-btn--stop {
+  background: rgba(248,113,113,0.12) !important;
+  border-color: rgba(248,113,113,0.30) !important;
+  color: #f87171 !important;
+}
+.amp-ctrl-btn--stop:hover:not(:disabled) {
+  background: rgba(248,113,113,0.22) !important;
+}
+/* Restart — amber */
+.amp-ctrl-btn--restart {
+  background: rgba(251,191,36,0.10) !important;
+  border-color: rgba(251,191,36,0.28) !important;
+  color: #fbbf24 !important;
+}
+.amp-ctrl-btn--restart:hover:not(:disabled) {
+  background: rgba(251,191,36,0.20) !important;
+}
+/* Light theme overrides */
+body.light .amp-ctrl-btn--start,
+[data-theme="light"] .amp-ctrl-btn--start { background: rgba(52,211,153,0.10) !important; border-color: rgba(52,211,153,0.35) !important; }
+body.light .amp-ctrl-btn--stop,
+[data-theme="light"] .amp-ctrl-btn--stop  { background: rgba(248,113,113,0.10) !important; border-color: rgba(248,113,113,0.35) !important; }
+body.light .amp-ctrl-btn--restart,
+[data-theme="light"] .amp-ctrl-btn--restart { background: rgba(251,191,36,0.10) !important; border-color: rgba(251,191,36,0.35) !important; }
+
+/* Spinning loader icon */
+@keyframes amp-spin { to { transform: rotate(360deg); } }
+.amp-ctrl-spin { animation: amp-spin 0.8s linear infinite !important; }
+
+/* Card transitioning state */
+.amp-card--transitioning .amp-card-art-inner {
+  filter: brightness(0.65) !important;
+  transition: filter 0.3s !important;
+}
+
+/* Mobile: stack controls */
+@media (max-width: 480px) {
+  .amp-controls { flex-direction: column !important; }
+}
+
+/* =====================================================
+   Widget Source Autosize Patch
+   Lets this widget CSS stand alone on phone, tablet, and desktop.
+===================================================== */
+
+:root {
+  --hp-widget-source-gap: clamp(8px, 2vw, 16px);
+  --hp-widget-source-pad: clamp(10px, 2vw, 18px);
+  --hp-widget-source-radius: clamp(14px, 2vw, 20px);
+  --hp-widget-source-min-card: min(100%, 140px);
+}
+
+.service-card,
+.widget-card,
+[class$="-host"],
+[class*="-host "] {
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+.service-card *,
+.widget-card *,
+[class$="-host"] *,
+[class*="-host "] * {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+[class$="-flex-row"],
+[class*="-flex-row "],
+.arr-js-flex-row,
+.arr-lt-flex-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hp-widget-source-gap) !important;
+  width: 100%;
+  align-items: stretch;
+}
+
+[class$="-flex-row"] > *,
+[class*="-flex-row "] > *,
+.arr-js-flex-row > *,
+.arr-lt-flex-row > * {
+  flex: 1 1 min(100%, 360px) !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+[class$="-grid"],
+[class*="-grid "],
+[class$="-stats-row"],
+[class*="-stats-row "] {
+  max-width: 100%;
+}
+
+[class$="-stat-grid"],
+[class*="-stat-grid "],
+[class$="-cards-grid"],
+[class*="-cards-grid "],
+[class$="-card-grid"],
+[class*="-card-grid "] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--hp-widget-source-min-card), 1fr)) !important;
+  gap: var(--hp-widget-source-gap) !important;
+  width: 100%;
+}
+
+[class$="-header"],
+[class*="-header "],
+[class$="-toolbar"],
+[class*="-toolbar "],
+[class$="-actions"],
+[class*="-actions "],
+[class$="-controls"],
+[class*="-controls "] {
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+}
+
+[class$="-list"],
+[class*="-list "],
+[class$="-body"],
+[class*="-body "],
+[class$="-guide"],
+[class*="-guide "] {
+  max-width: 100%;
+  scrollbar-width: thin;
+}
+
+.apexcharts-canvas,
+.apexcharts-svg,
+.recharts-wrapper,
+.recharts-surface,
+canvas,
+svg,
+img {
+  max-width: 100% !important;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --hp-widget-source-gap: 10px;
+    --hp-widget-source-pad: 12px;
+    --hp-widget-source-radius: 14px;
+    --hp-widget-source-min-card: min(100%, 112px);
+  }
+
+  .service-card,
+  .widget-card,
+  [class$="-host"],
+  [class*="-host "] {
+    width: 100% !important;
+    padding: var(--hp-widget-source-pad) !important;
+    border-radius: var(--hp-widget-source-radius) !important;
+    overflow: hidden !important;
+  }
+
+  [class$="-flex-row"],
+  [class*="-flex-row "],
+  .arr-js-flex-row,
+  .arr-lt-flex-row {
+    flex-direction: column !important;
+  }
+
+  [class$="-flex-row"] > *,
+  [class*="-flex-row "] > *,
+  .arr-js-flex-row > *,
+  .arr-lt-flex-row > * {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+  }
+
+  [class$="-toolbar"],
+  [class*="-toolbar "],
+  [class$="-controls"],
+  [class*="-controls "],
+  [class$="-tabs-row"],
+  [class*="-tabs-row "] {
+    overflow-x: auto;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --hp-widget-source-gap: 8px;
+    --hp-widget-source-pad: 10px;
+    --hp-widget-source-min-card: min(100%, 96px);
+  }
+
+  [class$="-stat-grid"],
+  [class*="-stat-grid "],
+  [class$="-cards-grid"],
+  [class*="-cards-grid "],
+  [class$="-card-grid"],
+  [class*="-card-grid "] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}

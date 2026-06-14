@@ -1,0 +1,838 @@
+/* =====================================================
+Homepage v2 — CLEAN OPS GLASS UI (FINAL)
+(No duplicates • No conflicts • Mobile-safe)
+===================================================== */
+
+/* =====================================================
+0) GLOBAL RESET
+===================================================== */
+html,
+body,
+.page-wrapper,
+main {
+  background: transparent !important;
+}
+
+/* =====================================================
+1) BACKGROUND
+===================================================== */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--hp-bg-url, url("/background/night.12.jpg"));
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: blur(22px) brightness(0.82) saturate(1.05);
+  transform: scale(1.08);
+}
+
+body.dark::before,
+html.dark body::before,
+[data-theme="dark"] body::before {
+  filter: blur(22px) brightness(0.45) saturate(1.02);
+}
+
+.page-wrapper,
+main,
+header {
+  position: relative;
+  z-index: 1;
+}
+
+/* =====================================================
+2) SERVICE GROUP CLEANUP
+===================================================== */
+h2.service-group-name {
+  display: none !important;
+}
+
+button[id^="headlessui-disclosure-button-"] {
+  padding: 0 !important;
+  margin: 0 !important;
+  height: 10px !important;
+  min-height: 10px !important;
+  background: transparent !important;
+  border: none !important;
+  color: transparent !important;
+}
+
+button[id^="headlessui-disclosure-button-"] * {
+  display: none !important;
+}
+
+ul.services-list {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  gap: 16px !important;
+}
+
+/* =====================================================
+3) GLASS CARDS
+===================================================== */
+.service-card,
+.widget-card,
+.card {
+  border-radius: 18px !important;
+  padding: 14px 16px !important;
+  overflow: hidden !important;
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  box-shadow: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.service-card:hover,
+.widget-card:hover,
+.card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18) !important;
+}
+
+/* =====================================================
+4) DARK THEME CARDS
+===================================================== */
+body.dark .service-card,
+body.dark .widget-card,
+body.dark .card,
+[data-theme="dark"] .service-card,
+[data-theme="dark"] .widget-card,
+[data-theme="dark"] .card {
+  background-color: rgba(12, 16, 22, 0.85);
+  color: rgba(255, 255, 255, 0.92);
+  border-color: rgba(255, 255, 255, 0.92);
+}
+
+body.dark .service-description,
+body.dark .widget-description {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+/* =====================================================
+   4B)TAB BAR — dark semi-transparent theme
+   ===================================================== */
+
+/* Tab list container */
+ul[role="tablist"] {
+  background: rgba(12, 16, 22, 0.75) !important;
+  backdrop-filter: blur(18px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(120%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 14px !important;
+  padding: 4px !important;
+  gap: 2px !important;
+}
+
+/* Every tab button — inactive */
+ul[role="tablist"] button[role="tab"] {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.45) !important;
+  font-size: 0.88rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.03em !important;
+  border-radius: 10px !important;
+  transition: background 0.15s ease, color 0.15s ease !important;
+}
+
+/* Hover */
+ul[role="tablist"] button[role="tab"]:hover {
+  background: rgba(255, 255, 255, 0.07) !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+
+/* Active tab */
+ul[role="tablist"] button[role="tab"][aria-selected="true"] {
+  background: rgba(255, 255, 255, 0.10) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+
+/* =====================================================
+   4c) BOOKMARKS — dark semi-transparent theme
+   ===================================================== */
+
+/* Group title */
+.bookmark-group-name {
+  color: rgba(255, 255, 255, 0.75) !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+}
+
+/* Each bookmark card */
+.bookmark a {
+  background: rgba(12, 16, 22, 0.75) !important;
+  backdrop-filter: blur(18px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(120%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 10px !important;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease !important;
+}
+
+.bookmark a:hover {
+  background: rgba(255, 255, 255, 0.09) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Icon panel (left side) */
+.bookmark-icon {
+  background: rgba(0, 0, 0, 0.30) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Bookmark name text */
+.bookmark-name {
+  color: rgba(255, 255, 255, 0.82) !important;
+  font-size: 0.76rem !important;
+  font-weight: 600 !important;
+}
+
+/* Hide bookmark description/URL */
+.bookmark-description {
+  display: none !important;
+}
+
+
+/* =====================================================
+5) LIGHT THEME
+===================================================== */
+body.light .service-card,
+body.light .widget-card,
+body.light .card,
+[data-theme="light"] .service-card,
+[data-theme="light"] .widget-card,
+[data-theme="light"] .card {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+  border: 1px solid rgba(0, 0, 0, 0.274) !important;
+  color: rgba(8, 12, 18, 0.96) !important;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.35) !important;
+}
+
+body.light .service-card .service-name,
+body.light .widget-card .service-name,
+body.light .widget-title,
+body.light .widget-name,
+[data-theme="light"] .service-card .service-name,
+[data-theme="light"] .widget-card .service-name,
+[data-theme="light"] .widget-title,
+[data-theme="light"] .widget-name {
+  color: rgba(2, 3, 5, 0.98) !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.45) !important;
+}
+
+body.light .service-card .service-description,
+body.light .service-card .service-subtitle,
+body.light .service-card .service-group-description,
+body.light .service-card .subtitle,
+body.light .service-card .description,
+body.light .service-card p,
+body.light .widget-card .widget-description,
+body.light .widget-card .widget-subtitle,
+body.light .widget-card .subtitle,
+body.light .widget-card .description,
+body.light .widget-card p,
+body.light .card small,
+body.light .card .muted,
+[data-theme="light"] .service-card .service-description,
+[data-theme="light"] .service-card .service-subtitle,
+[data-theme="light"] .service-card .service-group-description,
+[data-theme="light"] .service-card .subtitle,
+[data-theme="light"] .service-card .description,
+[data-theme="light"] .service-card p,
+[data-theme="light"] .widget-card .widget-description,
+[data-theme="light"] .widget-card .widget-subtitle,
+[data-theme="light"] .widget-card .subtitle,
+[data-theme="light"] .widget-card .description,
+[data-theme="light"] .widget-card p,
+[data-theme="light"] .card small,
+[data-theme="light"] .card .muted {
+  color: rgba(5, 8, 12, 0.86) !important;
+  opacity: 1 !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.1px !important;
+  filter: none !important;
+}
+
+body.light .service-card .stat,
+body.light .service-card .value,
+body.light .widget-card .stat,
+body.light .widget-card .value,
+body.light .widget-value,
+body.light .service-value,
+[data-theme="light"] .service-card .stat,
+[data-theme="light"] .service-card .value,
+[data-theme="light"] .widget-card .stat,
+[data-theme="light"] .widget-card .value,
+[data-theme="light"] .widget-value,
+[data-theme="light"] .service-value {
+  color: rgba(8, 12, 18, 0.95) !important;
+  font-weight: 650 !important;
+}
+
+@media (min-width: 769px) {
+
+  body.light .service-card:hover,
+  body.light .widget-card:hover,
+  body.light .card:hover,
+  [data-theme="light"] .service-card:hover,
+  [data-theme="light"] .widget-card:hover,
+  [data-theme="light"] .card:hover {
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14) !important;
+  }
+}
+
+body.light .service-card svg,
+body.light .widget-card svg,
+body.light .service-card img,
+body.light .widget-card img,
+[data-theme="light"] .service-card svg,
+[data-theme="light"] .widget-card svg,
+[data-theme="light"] .service-card img,
+[data-theme="light"] .widget-card img {
+  filter: contrast(1.05) saturate(1.05);
+}
+
+/* =====================================================
+6) STAT / VALUE PILL FIX
+===================================================== */
+.service-card *[class*="stat"],
+.widget-card *[class*="stat"],
+.service-card *[class*="value"],
+.widget-card *[class*="value"] {
+  border-radius: 12px;
+  padding: 4px 8px;
+}
+
+body.dark .service-card *[class*="stat"],
+body.dark .widget-card *[class*="stat"],
+[data-theme="dark"] .service-card *[class*="stat"],
+[data-theme="dark"] .widget-card *[class*="stat"] {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+body.light .service-card *[class*="stat"],
+body.light .widget-card *[class*="stat"],
+body.light .service-card *[class*="value"],
+body.light .widget-card *[class*="value"],
+[data-theme="light"] .service-card *[class*="stat"],
+[data-theme="light"] .widget-card *[class*="stat"],
+[data-theme="light"] .service-card *[class*="value"],
+[data-theme="light"] .widget-card *[class*="value"] {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  color: rgba(8, 12, 18, 0.96);
+}
+
+/* =====================================================
+7) MOBILE OPTIMIZATION
+===================================================== */
+@media (max-width: 768px) {
+  .services-list {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .service-card,
+  .widget-card,
+  .card {
+    min-height: 110px;
+    padding: 14px;
+    border-radius: 16px !important;
+  }
+
+  canvas {
+    display: initial !important;
+  }
+
+  .recharts-wrapper,
+  .recharts-surface,
+  .apexcharts-canvas,
+  .apexcharts-svg,
+  svg.chart,
+  .chart,
+  .graph {
+    display: block !important;
+  }
+
+  .service-card,
+  .widget-card,
+  .card,
+  .service-card:hover,
+  .widget-card:hover,
+  .card:hover {
+    box-shadow: none !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  body.light .service-name,
+  body.light .widget-title,
+  [data-theme="light"] .service-name,
+  [data-theme="light"] .widget-title {
+    font-weight: 800 !important;
+  }
+}
+
+/* =====================================================
+LIGHT MODE TEXT FIX
+===================================================== */
+html[data-theme="light"] .service-card .text-theme-500,
+html[data-theme="light"] .widget-card .text-theme-500,
+html[data-theme="light"] .card .text-theme-500,
+body.light .service-card .text-theme-500,
+body.light .widget-card .text-theme-500,
+body.light .card .text-theme-500 {
+  color: rgb(5 8 12 / 0.86) !important;
+  opacity: 1 !important;
+}
+
+html[data-theme="light"] .service-card .text-theme-400,
+html[data-theme="light"] .widget-card .text-theme-400,
+html[data-theme="light"] .card .text-theme-400,
+body.light .service-card .text-theme-400,
+body.light .widget-card .text-theme-400,
+body.light .card .text-theme-400 {
+  color: rgb(5 8 12 / 0.82) !important;
+  opacity: 1 !important;
+}
+
+html[data-theme="light"] .service-card .opacity-60,
+html[data-theme="light"] .widget-card .opacity-60,
+html[data-theme="light"] .card .opacity-60,
+body.light .service-card .opacity-60,
+body.light .widget-card .opacity-60,
+body.light .card .opacity-60 {
+  opacity: 1 !important;
+}
+
+/* =====================================================
+   Responsive Widget Autosize Layer
+   Source-pack copy; runtime bundle also carries this in custom.css.
+===================================================== */
+
+:root {
+  --hp-widget-gap: clamp(10px, 2vw, 16px);
+  --hp-widget-pad: clamp(12px, 2vw, 20px);
+  --hp-widget-radius: clamp(14px, 2vw, 20px);
+  --hp-widget-min-card: min(100%, 150px);
+}
+
+.service-card,
+.widget-card,
+[class$="-host"],
+[class*="-host "] {
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+.service-card *,
+.widget-card *,
+[class$="-host"] *,
+[class*="-host "] * {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.arr-flex-row,
+.arr-js-flex-row,
+.arr-lt-flex-row,
+.jf-monitor-flex-row,
+.jellyfin-flex-row,
+.sr-flex-row,
+.pve-flex-row,
+.agh-flex-row,
+.qbit-flex-row,
+.wazuh-flex-row,
+.spt-flex-row,
+.uk-flex-row,
+.immich-flex-row,
+.nd-flex-row,
+.mcal-flex-row,
+.trr-flex-row,
+.dsp-flex-row,
+.bzr-flex-row,
+.ldr-flex-row,
+.tdr-flex-row,
+.pwr-flex-row,
+.wzr-flex-row,
+.ts-flex-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hp-widget-gap) !important;
+  width: 100%;
+  align-items: stretch;
+}
+
+.arr-flex-row > *,
+.arr-js-flex-row > *,
+.arr-lt-flex-row > *,
+.jf-monitor-flex-row > *,
+.jellyfin-flex-row > *,
+.sr-flex-row > *,
+.pve-flex-row > *,
+.agh-flex-row > *,
+.qbit-flex-row > *,
+.wazuh-flex-row > *,
+.spt-flex-row > *,
+.uk-flex-row > *,
+.immich-flex-row > *,
+.nd-flex-row > *,
+.mcal-flex-row > *,
+.trr-flex-row > *,
+.dsp-flex-row > *,
+.bzr-flex-row > *,
+.ldr-flex-row > *,
+.tdr-flex-row > *,
+.pwr-flex-row > *,
+.wzr-flex-row > *,
+.ts-flex-row > * {
+  flex: 1 1 min(100%, 360px) !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.arr-stat-grid,
+.bzr-stat-grid,
+.ldr-stat-grid,
+.tdr-stat-grid,
+.pwr-stat-grid,
+.wzr-stat-grid,
+.ts-stat-grid,
+.pve-stat-grid,
+.pve-glances-grid,
+.agh-cards-grid,
+.dns-stats-row,
+.immich-grid,
+.nd-card-grid,
+.nd-stats-grid,
+.mcal-grid,
+.trr-grid,
+.spt-grid,
+.topo-host-grid,
+.wz-agent-grid,
+.inv-grid,
+.bmark-grid,
+.jf-collection-grid,
+.sr-grid,
+.cf-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--hp-widget-min-card), 1fr)) !important;
+  gap: var(--hp-widget-gap) !important;
+  width: 100%;
+}
+
+.jf-header,
+.sr-header,
+.qbit-header,
+.trr-header,
+.dsp-header,
+.cf-header,
+.pve-header,
+.dns-header,
+.cmk-header,
+.agh-shell-header,
+.uk-header,
+.immich-header,
+.nd-header,
+.topo-header,
+.qbit-toolbar,
+.immich-filter-bar {
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.apexcharts-canvas,
+.apexcharts-svg,
+.recharts-wrapper,
+.recharts-surface,
+canvas,
+svg {
+  max-width: 100% !important;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --hp-widget-gap: 10px;
+    --hp-widget-pad: 12px;
+    --hp-widget-radius: 14px;
+    --hp-widget-min-card: min(100%, 112px);
+  }
+
+  ul.services-list {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .service-card,
+  .widget-card,
+  [class$="-host"],
+  [class*="-host "] {
+    width: 100% !important;
+    padding: var(--hp-widget-pad) !important;
+    border-radius: var(--hp-widget-radius) !important;
+    overflow: hidden !important;
+  }
+
+  .arr-flex-row,
+  .arr-js-flex-row,
+  .arr-lt-flex-row,
+  .jf-monitor-flex-row,
+  .jellyfin-flex-row,
+  .sr-flex-row,
+  .pve-flex-row,
+  .agh-flex-row,
+  .qbit-flex-row,
+  .wazuh-flex-row,
+  .spt-flex-row,
+  .uk-flex-row,
+  .immich-flex-row,
+  .nd-flex-row,
+  .mcal-flex-row,
+  .trr-flex-row,
+  .dsp-flex-row,
+  .bzr-flex-row,
+  .ldr-flex-row,
+  .tdr-flex-row,
+  .pwr-flex-row,
+  .wzr-flex-row,
+  .ts-flex-row {
+    flex-direction: column !important;
+  }
+
+  .arr-flex-row > *,
+  .arr-js-flex-row > *,
+  .arr-lt-flex-row > *,
+  .jf-monitor-flex-row > *,
+  .jellyfin-flex-row > *,
+  .sr-flex-row > *,
+  .pve-flex-row > *,
+  .agh-flex-row > *,
+  .qbit-flex-row > *,
+  .wazuh-flex-row > *,
+  .spt-flex-row > *,
+  .uk-flex-row > *,
+  .immich-flex-row > *,
+  .nd-flex-row > *,
+  .mcal-flex-row > *,
+  .trr-flex-row > *,
+  .dsp-flex-row > *,
+  .bzr-flex-row > *,
+  .ldr-flex-row > *,
+  .tdr-flex-row > *,
+  .pwr-flex-row > *,
+  .wzr-flex-row > *,
+  .ts-flex-row > * {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+  }
+
+  .mcal-grid {
+    grid-template-columns: repeat(7, minmax(32px, 1fr)) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --hp-widget-gap: 8px;
+    --hp-widget-pad: 10px;
+    --hp-widget-min-card: min(100%, 96px);
+  }
+
+  .arr-stat-grid,
+  .bzr-stat-grid,
+  .ldr-stat-grid,
+  .tdr-stat-grid,
+  .pwr-stat-grid,
+  .wzr-stat-grid,
+  .ts-stat-grid,
+  .pve-stat-grid,
+  .pve-glances-grid,
+  .agh-cards-grid,
+  .dns-stats-row,
+  .immich-grid,
+  .nd-card-grid,
+  .nd-stats-grid,
+  .trr-grid,
+  .spt-grid,
+  .topo-host-grid,
+  .wz-agent-grid,
+  .inv-grid,
+  .bmark-grid,
+  .jf-collection-grid,
+  .sr-grid,
+  .cf-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+
+/* =====================================================
+   Widget Source Autosize Patch
+   Lets this widget CSS stand alone on phone, tablet, and desktop.
+===================================================== */
+
+:root {
+  --hp-widget-source-gap: clamp(8px, 2vw, 16px);
+  --hp-widget-source-pad: clamp(10px, 2vw, 18px);
+  --hp-widget-source-radius: clamp(14px, 2vw, 20px);
+  --hp-widget-source-min-card: min(100%, 140px);
+}
+
+.service-card,
+.widget-card,
+[class$="-host"],
+[class*="-host "] {
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+.service-card *,
+.widget-card *,
+[class$="-host"] *,
+[class*="-host "] * {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+[class$="-flex-row"],
+[class*="-flex-row "],
+.arr-js-flex-row,
+.arr-lt-flex-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hp-widget-source-gap) !important;
+  width: 100%;
+  align-items: stretch;
+}
+
+[class$="-flex-row"] > *,
+[class*="-flex-row "] > *,
+.arr-js-flex-row > *,
+.arr-lt-flex-row > * {
+  flex: 1 1 min(100%, 360px) !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+[class$="-grid"],
+[class*="-grid "],
+[class$="-stats-row"],
+[class*="-stats-row "] {
+  max-width: 100%;
+}
+
+[class$="-stat-grid"],
+[class*="-stat-grid "],
+[class$="-cards-grid"],
+[class*="-cards-grid "],
+[class$="-card-grid"],
+[class*="-card-grid "] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--hp-widget-source-min-card), 1fr)) !important;
+  gap: var(--hp-widget-source-gap) !important;
+  width: 100%;
+}
+
+[class$="-header"],
+[class*="-header "],
+[class$="-toolbar"],
+[class*="-toolbar "],
+[class$="-actions"],
+[class*="-actions "],
+[class$="-controls"],
+[class*="-controls "] {
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+}
+
+[class$="-list"],
+[class*="-list "],
+[class$="-body"],
+[class*="-body "],
+[class$="-guide"],
+[class*="-guide "] {
+  max-width: 100%;
+  scrollbar-width: thin;
+}
+
+.apexcharts-canvas,
+.apexcharts-svg,
+.recharts-wrapper,
+.recharts-surface,
+canvas,
+svg,
+img {
+  max-width: 100% !important;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --hp-widget-source-gap: 10px;
+    --hp-widget-source-pad: 12px;
+    --hp-widget-source-radius: 14px;
+    --hp-widget-source-min-card: min(100%, 112px);
+  }
+
+  .service-card,
+  .widget-card,
+  [class$="-host"],
+  [class*="-host "] {
+    width: 100% !important;
+    padding: var(--hp-widget-source-pad) !important;
+    border-radius: var(--hp-widget-source-radius) !important;
+    overflow: hidden !important;
+  }
+
+  [class$="-flex-row"],
+  [class*="-flex-row "],
+  .arr-js-flex-row,
+  .arr-lt-flex-row {
+    flex-direction: column !important;
+  }
+
+  [class$="-flex-row"] > *,
+  [class*="-flex-row "] > *,
+  .arr-js-flex-row > *,
+  .arr-lt-flex-row > * {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+  }
+
+  [class$="-toolbar"],
+  [class*="-toolbar "],
+  [class$="-controls"],
+  [class*="-controls "],
+  [class$="-tabs-row"],
+  [class*="-tabs-row "] {
+    overflow-x: auto;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --hp-widget-source-gap: 8px;
+    --hp-widget-source-pad: 10px;
+    --hp-widget-source-min-card: min(100%, 96px);
+  }
+
+  [class$="-stat-grid"],
+  [class*="-stat-grid "],
+  [class$="-cards-grid"],
+  [class*="-cards-grid "],
+  [class$="-card-grid"],
+  [class*="-card-grid "] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}

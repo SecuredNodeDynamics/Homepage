@@ -1,0 +1,759 @@
+/* =====================================================
+IMMICH ALBUMS WIDGET
+===================================================== */
+.immich-albums-host {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 20px !important;
+  padding: 18px 20px !important;
+  overflow: hidden !important;
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  position: relative;
+  /* Default dark — covers Homepage which doesn't always set body.dark */
+  background-color: rgba(12, 16, 22, 0.85);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+body.dark .immich-albums-host,
+[data-theme="dark"] .immich-albums-host {
+  background-color: rgba(12, 16, 22, 0.85) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+body.light .immich-albums-host,
+[data-theme="light"] .immich-albums-host {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+  border: 1px solid rgba(0, 0, 0, 0.274) !important;
+  color: rgba(8, 12, 18, 0.96) !important;
+}
+
+.immich-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+
+/* ── Header ──────────────────────────────────────── */
+.immich-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+body.light .immich-header,
+[data-theme="light"] .immich-header {
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
+.immich-header-left {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.immich-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: 6px;
+}
+
+.immich-title {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.96);
+  letter-spacing: 0.01em;
+}
+
+body.light .immich-title,
+[data-theme="light"] .immich-title {
+  color: rgba(8, 12, 18, 0.90);
+}
+
+.immich-header-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.immich-stat-pill {
+  font-size: 0.70rem;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.50);
+  font-variant-numeric: tabular-nums;
+}
+
+body.light .immich-stat-pill,
+[data-theme="light"] .immich-stat-pill {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.10);
+  color: rgba(8, 12, 18, 0.50);
+}
+
+.immich-open-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(110, 231, 183, 0.12);
+  border: 1px solid rgba(110, 231, 183, 0.28);
+  color: rgba(110, 231, 183, 0.90);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.immich-open-btn:hover {
+  background: rgba(110, 231, 183, 0.20);
+  border-color: rgba(110, 231, 183, 0.45);
+}
+
+body.light .immich-open-btn,
+[data-theme="light"] .immich-open-btn {
+  background: rgba(16, 130, 80, 0.10);
+  border-color: rgba(16, 130, 80, 0.30);
+  color: rgba(10, 100, 60, 0.95);
+}
+
+/* ── Filter / Sort bar ───────────────────────────── */
+.immich-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.immich-search {
+  flex: 1;
+  min-width: 160px;
+  padding: 7px 13px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.78rem;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.immich-search::placeholder {
+  color: rgba(255, 255, 255, 0.30);
+}
+
+.immich-search:focus {
+  border-color: rgba(110, 231, 183, 0.45);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+body.light .immich-search,
+[data-theme="light"] .immich-search {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.14);
+  color: rgba(8, 12, 18, 0.88);
+}
+
+body.light .immich-search::placeholder,
+[data-theme="light"] .immich-search::placeholder {
+  color: rgba(8, 12, 18, 0.30);
+}
+
+body.light .immich-search:focus,
+[data-theme="light"] .immich-search:focus {
+  border-color: rgba(16, 130, 80, 0.40);
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.immich-sort-tabs {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.immich-sort-tab {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.72rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.immich-sort-tab:hover {
+  background: rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.immich-sort-tab--active {
+  background: rgba(110, 231, 183, 0.16) !important;
+  border-color: rgba(110, 231, 183, 0.38) !important;
+  color: rgba(110, 231, 183, 0.95) !important;
+}
+
+body.light .immich-sort-tab,
+[data-theme="light"] .immich-sort-tab {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.10);
+  color: rgba(8, 12, 18, 0.45);
+}
+
+body.light .immich-sort-tab:hover,
+[data-theme="light"] .immich-sort-tab:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: rgba(8, 12, 18, 0.75);
+}
+
+body.light .immich-sort-tab--active,
+[data-theme="light"] .immich-sort-tab--active {
+  background: rgba(16, 130, 80, 0.10) !important;
+  border-color: rgba(16, 130, 80, 0.32) !important;
+  color: rgba(10, 100, 60, 0.95) !important;
+}
+
+/* ── Album Grid ──────────────────────────────────── */
+.immich-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.immich-grid--skeleton {
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+}
+
+.immich-album-card {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  cursor: pointer;
+  text-decoration: none;
+  border-radius: 12px;
+  overflow: hidden;
+  outline: none;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.28s ease var(--card-delay, 0ms),
+    transform 0.28s ease var(--card-delay, 0ms);
+}
+
+.immich-album-card:hover .immich-album-art img {
+  transform: scale(1.04);
+}
+
+.immich-album-card:hover .immich-album-overlay {
+  opacity: 1;
+}
+
+.immich-album-card--skeleton {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* Cover art */
+.immich-album-art {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+body.light .immich-album-art,
+[data-theme="light"] .immich-album-art {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.immich-album-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.30s ease;
+}
+
+.immich-album-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.20);
+}
+
+body.light .immich-album-placeholder,
+[data-theme="light"] .immich-album-placeholder {
+  color: rgba(8, 12, 18, 0.18);
+}
+
+/* Overlay on hover */
+.immich-album-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top,
+      rgba(0, 0, 0, 0.78) 0%,
+      rgba(0, 0, 0, 0.35) 45%,
+      rgba(0, 0, 0, 0) 70%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 8px 9px;
+  opacity: 0;
+  transition: opacity 0.20s ease;
+}
+
+.immich-album-count {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+  font-variant-numeric: tabular-nums;
+}
+
+.immich-album-badge {
+  display: inline-block;
+  margin-top: 3px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(110, 231, 183, 0.25);
+  border: 1px solid rgba(110, 231, 183, 0.45);
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: rgba(110, 231, 183, 0.95);
+  letter-spacing: 0.04em;
+  align-self: flex-start;
+}
+
+/* Meta */
+.immich-album-meta {
+  padding: 0 2px;
+}
+
+.immich-album-name {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.84);
+  line-height: 1.3;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+body.light .immich-album-name,
+[data-theme="light"] .immich-album-name {
+  color: rgba(8, 12, 18, 0.84);
+}
+
+.immich-album-date {
+  font-size: 0.67rem;
+  color: rgba(255, 255, 255, 0.36);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.light .immich-album-date,
+[data-theme="light"] .immich-album-date {
+  color: rgba(8, 12, 18, 0.38);
+}
+
+.immich-album-owner {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.28);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.light .immich-album-owner,
+[data-theme="light"] .immich-album-owner {
+  color: rgba(8, 12, 18, 0.30);
+}
+
+/* ── Empty state ─────────────────────────────────── */
+.immich-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  color: rgba(255, 255, 255, 0.28);
+  font-size: 0.78rem;
+  font-style: italic;
+}
+
+body.light .immich-empty,
+[data-theme="light"] .immich-empty {
+  color: rgba(8, 12, 18, 0.28);
+}
+
+/* ── Error state ─────────────────────────────────── */
+.immich-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 28px;
+  border-radius: 12px;
+  background: rgba(161, 44, 44, 0.10);
+  border: 1px solid rgba(161, 44, 44, 0.22);
+  text-align: center;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.immich-error svg {
+  color: rgba(248, 113, 113, 0.75);
+}
+
+.immich-error-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 2px;
+}
+
+.immich-error-msg {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.40);
+  line-height: 1.45;
+}
+
+body.light .immich-error,
+[data-theme="light"] .immich-error {
+  color: rgba(8, 12, 18, 0.55);
+}
+
+body.light .immich-error-title,
+[data-theme="light"] .immich-error-title {
+  color: rgba(8, 12, 18, 0.85);
+}
+
+body.light .immich-error-msg,
+[data-theme="light"] .immich-error-msg {
+  color: rgba(8, 12, 18, 0.40);
+}
+
+/* ── Skeleton shimmer ────────────────────────────── */
+@keyframes immich-shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+.immich-skeleton {
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0.04) 25%,
+      rgba(255, 255, 255, 0.10) 50%,
+      rgba(255, 255, 255, 0.04) 75%);
+  background-size: 800px 100%;
+  animation: immich-shimmer 1.6s ease-in-out infinite;
+  border-radius: 10px;
+}
+
+.immich-album-art.immich-skeleton {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+}
+
+body.light .immich-skeleton,
+[data-theme="light"] .immich-skeleton {
+  background: linear-gradient(90deg,
+      rgba(0, 0, 0, 0.04) 25%, rgba(0, 0, 0, 0.09) 50%, rgba(0, 0, 0, 0.04) 75%);
+  background-size: 800px 100%;
+}
+
+.immich-skeleton--title {
+  height: 10px;
+  width: 80%;
+  margin-top: 4px;
+  border-radius: 5px;
+}
+
+.immich-skeleton--sub {
+  height: 8px;
+  width: 55%;
+  margin-top: 5px;
+  border-radius: 4px;
+}
+
+/* ── Footer ──────────────────────────────────────── */
+.immich-footer {
+  font-size: 0.67rem;
+  color: rgba(255, 255, 255, 0.22);
+  text-align: right;
+  padding-top: 2px;
+}
+
+body.light .immich-footer,
+[data-theme="light"] .immich-footer {
+  color: rgba(8, 12, 18, 0.22);
+}
+
+/* ── Mobile ──────────────────────────────────────── */
+@media (max-width: 768px) {
+  .immich-albums-host {
+    padding: 12px !important;
+    border-radius: 16px !important;
+  }
+
+  .immich-grid {
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 8px;
+  }
+
+  .immich-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .immich-sort-tabs {
+    justify-content: flex-start;
+  }
+
+  .immich-sort-tab {
+    padding: 4px 10px;
+    font-size: 0.68rem;
+  }
+
+  .immich-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+
+/* ── Reduced motion ──────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .immich-skeleton {
+    animation: none !important;
+    background: rgba(255, 255, 255, 0.07) !important;
+  }
+
+  body.light .immich-skeleton,
+  [data-theme="light"] .immich-skeleton {
+    background: rgba(0, 0, 0, 0.07) !important;
+  }
+
+  .immich-album-art img,
+  .immich-album-overlay {
+    transition: none !important;
+  }
+}
+
+/* ── No tap highlight on mobile ──────────────────── */
+@media (hover: none) and (pointer: coarse) {
+  .immich-album-card {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .immich-album-card:active .immich-album-art {
+    opacity: 0.85;
+  }
+
+  /* ── MOBILE/TABLET FIX: cards start visible — don't rely on JS rAF timing ── */
+  .immich-album-card {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+    transition: none !important;
+  }
+
+  /* Show overlay info always on touch (no hover available) */
+  .immich-album-overlay {
+    opacity: 1 !important;
+    background: linear-gradient(to top,
+        rgba(0, 0, 0, 0.72) 0%,
+        rgba(0, 0, 0, 0.22) 50%,
+        rgba(0, 0, 0, 0) 80%);
+  }
+
+  /* Disable the scale hover effect on touch */
+  .immich-album-card:hover .immich-album-art img {
+    transform: none !important;
+  }
+}
+
+/* =====================================================
+   Widget Source Autosize Patch
+   Lets this widget CSS stand alone on phone, tablet, and desktop.
+===================================================== */
+
+:root {
+  --hp-widget-source-gap: clamp(8px, 2vw, 16px);
+  --hp-widget-source-pad: clamp(10px, 2vw, 18px);
+  --hp-widget-source-radius: clamp(14px, 2vw, 20px);
+  --hp-widget-source-min-card: min(100%, 140px);
+}
+
+.service-card,
+.widget-card,
+[class$="-host"],
+[class*="-host "] {
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+.service-card *,
+.widget-card *,
+[class$="-host"] *,
+[class*="-host "] * {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+[class$="-flex-row"],
+[class*="-flex-row "],
+.arr-js-flex-row,
+.arr-lt-flex-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hp-widget-source-gap) !important;
+  width: 100%;
+  align-items: stretch;
+}
+
+[class$="-flex-row"] > *,
+[class*="-flex-row "] > *,
+.arr-js-flex-row > *,
+.arr-lt-flex-row > * {
+  flex: 1 1 min(100%, 360px) !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+[class$="-grid"],
+[class*="-grid "],
+[class$="-stats-row"],
+[class*="-stats-row "] {
+  max-width: 100%;
+}
+
+[class$="-stat-grid"],
+[class*="-stat-grid "],
+[class$="-cards-grid"],
+[class*="-cards-grid "],
+[class$="-card-grid"],
+[class*="-card-grid "] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--hp-widget-source-min-card), 1fr)) !important;
+  gap: var(--hp-widget-source-gap) !important;
+  width: 100%;
+}
+
+[class$="-header"],
+[class*="-header "],
+[class$="-toolbar"],
+[class*="-toolbar "],
+[class$="-actions"],
+[class*="-actions "],
+[class$="-controls"],
+[class*="-controls "] {
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+}
+
+[class$="-list"],
+[class*="-list "],
+[class$="-body"],
+[class*="-body "],
+[class$="-guide"],
+[class*="-guide "] {
+  max-width: 100%;
+  scrollbar-width: thin;
+}
+
+.apexcharts-canvas,
+.apexcharts-svg,
+.recharts-wrapper,
+.recharts-surface,
+canvas,
+svg,
+img {
+  max-width: 100% !important;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --hp-widget-source-gap: 10px;
+    --hp-widget-source-pad: 12px;
+    --hp-widget-source-radius: 14px;
+    --hp-widget-source-min-card: min(100%, 112px);
+  }
+
+  .service-card,
+  .widget-card,
+  [class$="-host"],
+  [class*="-host "] {
+    width: 100% !important;
+    padding: var(--hp-widget-source-pad) !important;
+    border-radius: var(--hp-widget-source-radius) !important;
+    overflow: hidden !important;
+  }
+
+  [class$="-flex-row"],
+  [class*="-flex-row "],
+  .arr-js-flex-row,
+  .arr-lt-flex-row {
+    flex-direction: column !important;
+  }
+
+  [class$="-flex-row"] > *,
+  [class*="-flex-row "] > *,
+  .arr-js-flex-row > *,
+  .arr-lt-flex-row > * {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+  }
+
+  [class$="-toolbar"],
+  [class*="-toolbar "],
+  [class$="-controls"],
+  [class*="-controls "],
+  [class$="-tabs-row"],
+  [class*="-tabs-row "] {
+    overflow-x: auto;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --hp-widget-source-gap: 8px;
+    --hp-widget-source-pad: 10px;
+    --hp-widget-source-min-card: min(100%, 96px);
+  }
+
+  [class$="-stat-grid"],
+  [class*="-stat-grid "],
+  [class$="-cards-grid"],
+  [class*="-cards-grid "],
+  [class$="-card-grid"],
+  [class*="-card-grid "] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}

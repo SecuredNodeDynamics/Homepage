@@ -1,0 +1,712 @@
+/* =====================================================
+ADGUARD CONTROL WIDGET
+===================================================== */
+.agh-control-host {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 20px !important;
+  padding: 18px 20px !important;
+  overflow: hidden !important;
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  position: relative;
+  background-color: rgba(12, 16, 22, 0.85);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+body.dark .agh-control-host,
+[data-theme="dark"] .agh-control-host {
+  background-color: rgba(12, 16, 22, 0.85) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+body.light .agh-control-host,
+[data-theme="light"] .agh-control-host {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+  border: 1px solid rgba(0, 0, 0, 0.274) !important;
+  color: rgba(8, 12, 18, 0.96) !important;
+}
+
+.agh-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+
+/* ── Header ──────────────────────────────────────── */
+
+.agh-shell-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+body.light .agh-shell-header,
+[data-theme="light"] .agh-shell-header {
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
+.agh-shell-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.agh-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.agh-shell-title {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.96);
+  letter-spacing: 0.01em;
+  line-height: 1.15;
+}
+
+body.light .agh-shell-title,
+[data-theme="light"] .agh-shell-title {
+  color: rgba(8, 12, 18, 0.96);
+}
+
+.agh-shell-subtitle {
+  margin-top: 2px;
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.40);
+}
+
+body.light .agh-shell-subtitle,
+[data-theme="light"] .agh-shell-subtitle {
+  color: rgba(8, 12, 18, 0.40);
+}
+
+.agh-shell-footer-ts {
+  font-size: 0.67rem;
+  color: rgba(255, 255, 255, 0.22);
+}
+
+body.light .agh-shell-footer-ts,
+[data-theme="light"] .agh-shell-footer-ts {
+  color: rgba(8, 12, 18, 0.22);
+}
+
+/* ── Cards grid ──────────────────────────────────── */
+
+.agh-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+/* ── Instance card ───────────────────────────────── */
+
+.agh-instance-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.agh-instance-card--offline {
+  border-color: rgba(248, 113, 113, 0.20);
+  background: rgba(248, 113, 113, 0.04);
+}
+
+body.light .agh-instance-card,
+[data-theme="light"] .agh-instance-card {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.09);
+}
+
+/* ── Instance header ─────────────────────────────── */
+
+.agh-inst-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.agh-inst-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.agh-inst-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.agh-inst-dot--on {
+  background: #6ee7b7;
+  box-shadow: 0 0 6px rgba(110, 231, 183, 0.7);
+}
+
+.agh-inst-dot--off {
+  background: #f87171;
+  box-shadow: 0 0 5px rgba(248, 113, 113, 0.5);
+}
+
+.agh-inst-name {
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.90);
+}
+
+body.light .agh-inst-name,
+[data-theme="light"] .agh-inst-name {
+  color: rgba(8, 12, 18, 0.90);
+}
+
+.agh-inst-link {
+  font-size: 0.70rem;
+  font-weight: 600;
+  color: rgba(110, 231, 183, 0.75);
+  text-decoration: none;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(110, 231, 183, 0.08);
+  border: 1px solid rgba(110, 231, 183, 0.20);
+  transition: background 0.15s;
+}
+
+.agh-inst-link:hover {
+  background: rgba(110, 231, 183, 0.16);
+  color: rgba(110, 231, 183, 0.95);
+}
+
+.agh-inst-error {
+  font-size: 0.72rem;
+  color: rgba(248, 113, 113, 0.75);
+  font-style: italic;
+}
+
+/* ── Stats row ───────────────────────────────────── */
+
+.agh-stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.agh-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  text-align: center;
+}
+
+body.light .agh-stat,
+[data-theme="light"] .agh-stat {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+.agh-stat-val {
+  font-size: 0.88rem;
+  font-weight: 750;
+  color: rgba(255, 255, 255, 0.88);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+body.light .agh-stat-val,
+[data-theme="light"] .agh-stat-val {
+  color: rgba(8, 12, 18, 0.88);
+}
+
+.agh-stat-lbl {
+  font-size: 0.60rem;
+  color: rgba(255, 255, 255, 0.36);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+body.light .agh-stat-lbl,
+[data-theme="light"] .agh-stat-lbl {
+  color: rgba(8, 12, 18, 0.38);
+}
+
+/* ── Divider ─────────────────────────────────────── */
+
+.agh-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+body.light .agh-divider,
+[data-theme="light"] .agh-divider {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* ── Toggles ─────────────────────────────────────── */
+
+.agh-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.agh-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.agh-toggle-label {
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.70);
+  font-weight: 500;
+}
+
+body.light .agh-toggle-label,
+[data-theme="light"] .agh-toggle-label {
+  color: rgba(8, 12, 18, 0.70);
+}
+
+/* ── Toggle button ───────────────────────────────── */
+
+.agh-toggle-btn {
+  position: relative;
+  width: 38px;
+  height: 21px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: background 0.22s ease, border-color 0.22s ease;
+  flex-shrink: 0;
+  outline: none;
+}
+
+.agh-toggle-btn--on {
+  background: rgba(110, 231, 183, 0.30) !important;
+  border-color: rgba(110, 231, 183, 0.55) !important;
+}
+
+.agh-toggle-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.agh-toggle-btn:focus-visible {
+  box-shadow: 0 0 0 2px rgba(110, 231, 183, 0.45);
+}
+
+.agh-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  transition: transform 0.22s ease, background 0.22s ease;
+}
+
+.agh-toggle-btn--on .agh-toggle-knob {
+  transform: translateX(17px);
+  background: #6ee7b7;
+}
+
+body.light .agh-toggle-btn,
+[data-theme="light"] .agh-toggle-btn {
+  background: rgba(0, 0, 0, 0.07);
+  border-color: rgba(0, 0, 0, 0.14);
+}
+
+body.light .agh-toggle-btn--on,
+[data-theme="light"] .agh-toggle-btn--on {
+  background: rgba(16, 130, 80, 0.18) !important;
+  border-color: rgba(16, 130, 80, 0.45) !important;
+}
+
+body.light .agh-toggle-knob,
+[data-theme="light"] .agh-toggle-knob {
+  background: rgba(0, 0, 0, 0.30);
+}
+
+body.light .agh-toggle-btn--on .agh-toggle-knob,
+[data-theme="light"] .agh-toggle-btn--on .agh-toggle-knob {
+  background: #10a060;
+}
+
+/* ── Pause control ───────────────────────────────── */
+
+.agh-instance-card--paused {
+  border-color: rgba(251, 146, 60, 0.35) !important;
+}
+
+.agh-inst-dot--paused {
+  background: #fb923c;
+  box-shadow: 0 0 6px rgba(251, 146, 60, 0.65);
+}
+
+.agh-pause-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.agh-pause-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.agh-pause-label {
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.70);
+  font-weight: 500;
+}
+
+body.light .agh-pause-label,
+[data-theme="light"] .agh-pause-label {
+  color: rgba(8, 12, 18, 0.70);
+}
+
+.agh-pause-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.agh-pause-select {
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.80);
+  cursor: pointer;
+  outline: none;
+}
+
+body.light .agh-pause-select,
+[data-theme="light"] .agh-pause-select {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.14);
+  color: rgba(8, 12, 18, 0.80);
+}
+
+.agh-pause-btn {
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(251, 146, 60, 0.35);
+  background: rgba(251, 146, 60, 0.10);
+  color: rgba(251, 146, 60, 0.90);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.agh-pause-btn:hover:not(:disabled) {
+  background: rgba(251, 146, 60, 0.20);
+  border-color: rgba(251, 146, 60, 0.55);
+}
+
+.agh-pause-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.agh-pause-active {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.agh-pause-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #fb923c;
+  box-shadow: 0 0 6px rgba(251, 146, 60, 0.65);
+  flex-shrink: 0;
+  animation: agh-pause-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes agh-pause-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.40; }
+}
+
+.agh-pause-countdown {
+  font-size: 0.72rem;
+  color: rgba(251, 146, 60, 0.85);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.agh-pause-resume-btn {
+  padding: 5px 14px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(110, 231, 183, 0.30);
+  background: rgba(110, 231, 183, 0.10);
+  color: rgba(110, 231, 183, 0.90);
+  transition: background 0.15s, border-color 0.15s;
+  align-self: flex-start;
+}
+
+.agh-pause-resume-btn:hover:not(:disabled) {
+  background: rgba(110, 231, 183, 0.20);
+  border-color: rgba(110, 231, 183, 0.50);
+}
+
+.agh-pause-resume-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ── Skeleton ────────────────────────────────────── */
+
+@keyframes agh-shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.agh-skeleton-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.agh-skeleton-card {
+  height: 210px;
+  border-radius: 14px;
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0.04) 25%,
+      rgba(255, 255, 255, 0.09) 50%,
+      rgba(255, 255, 255, 0.04) 75%);
+  background-size: 800px 100%;
+  animation: agh-shimmer 1.6s ease-in-out infinite;
+}
+
+body.light .agh-skeleton-card,
+[data-theme="light"] .agh-skeleton-card {
+  background: linear-gradient(90deg,
+      rgba(0, 0, 0, 0.04) 25%, rgba(0, 0, 0, 0.09) 50%, rgba(0, 0, 0, 0.04) 75%);
+  background-size: 800px 100%;
+}
+
+/* ── Responsive ──────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .agh-control-host {
+    padding: 12px !important;
+    border-radius: 16px !important;
+  }
+
+  .agh-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .agh-skeleton-wrap {
+    grid-template-columns: 1fr;
+  }
+
+  .agh-stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .agh-stat-val {
+    font-size: 0.80rem;
+  }
+}
+
+/* ── Reduced motion ──────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .agh-skeleton-card {
+    animation: none !important;
+  }
+
+  .agh-toggle-btn,
+  .agh-toggle-knob {
+    transition: none !important;
+  }
+}
+
+/* =====================================================
+   Widget Source Autosize Patch
+   Lets this widget CSS stand alone on phone, tablet, and desktop.
+===================================================== */
+
+:root {
+  --hp-widget-source-gap: clamp(8px, 2vw, 16px);
+  --hp-widget-source-pad: clamp(10px, 2vw, 18px);
+  --hp-widget-source-radius: clamp(14px, 2vw, 20px);
+  --hp-widget-source-min-card: min(100%, 140px);
+}
+
+.service-card,
+.widget-card,
+[class$="-host"],
+[class*="-host "] {
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+.service-card *,
+.widget-card *,
+[class$="-host"] *,
+[class*="-host "] * {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+[class$="-flex-row"],
+[class*="-flex-row "],
+.arr-js-flex-row,
+.arr-lt-flex-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hp-widget-source-gap) !important;
+  width: 100%;
+  align-items: stretch;
+}
+
+[class$="-flex-row"] > *,
+[class*="-flex-row "] > *,
+.arr-js-flex-row > *,
+.arr-lt-flex-row > * {
+  flex: 1 1 min(100%, 360px) !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+[class$="-grid"],
+[class*="-grid "],
+[class$="-stats-row"],
+[class*="-stats-row "] {
+  max-width: 100%;
+}
+
+[class$="-stat-grid"],
+[class*="-stat-grid "],
+[class$="-cards-grid"],
+[class*="-cards-grid "],
+[class$="-card-grid"],
+[class*="-card-grid "] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--hp-widget-source-min-card), 1fr)) !important;
+  gap: var(--hp-widget-source-gap) !important;
+  width: 100%;
+}
+
+[class$="-header"],
+[class*="-header "],
+[class$="-toolbar"],
+[class*="-toolbar "],
+[class$="-actions"],
+[class*="-actions "],
+[class$="-controls"],
+[class*="-controls "] {
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+}
+
+[class$="-list"],
+[class*="-list "],
+[class$="-body"],
+[class*="-body "],
+[class$="-guide"],
+[class*="-guide "] {
+  max-width: 100%;
+  scrollbar-width: thin;
+}
+
+.apexcharts-canvas,
+.apexcharts-svg,
+.recharts-wrapper,
+.recharts-surface,
+canvas,
+svg,
+img {
+  max-width: 100% !important;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --hp-widget-source-gap: 10px;
+    --hp-widget-source-pad: 12px;
+    --hp-widget-source-radius: 14px;
+    --hp-widget-source-min-card: min(100%, 112px);
+  }
+
+  .service-card,
+  .widget-card,
+  [class$="-host"],
+  [class*="-host "] {
+    width: 100% !important;
+    padding: var(--hp-widget-source-pad) !important;
+    border-radius: var(--hp-widget-source-radius) !important;
+    overflow: hidden !important;
+  }
+
+  [class$="-flex-row"],
+  [class*="-flex-row "],
+  .arr-js-flex-row,
+  .arr-lt-flex-row {
+    flex-direction: column !important;
+  }
+
+  [class$="-flex-row"] > *,
+  [class*="-flex-row "] > *,
+  .arr-js-flex-row > *,
+  .arr-lt-flex-row > * {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+  }
+
+  [class$="-toolbar"],
+  [class*="-toolbar "],
+  [class$="-controls"],
+  [class*="-controls "],
+  [class$="-tabs-row"],
+  [class*="-tabs-row "] {
+    overflow-x: auto;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --hp-widget-source-gap: 8px;
+    --hp-widget-source-pad: 10px;
+    --hp-widget-source-min-card: min(100%, 96px);
+  }
+
+  [class$="-stat-grid"],
+  [class*="-stat-grid "],
+  [class$="-cards-grid"],
+  [class*="-cards-grid "],
+  [class$="-card-grid"],
+  [class*="-card-grid "] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
