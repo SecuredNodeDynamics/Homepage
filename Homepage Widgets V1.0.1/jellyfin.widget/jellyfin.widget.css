@@ -1,6 +1,5 @@
 /* =====================================================
-JELLYFIN INJECTED WIDGET
-Append to the bottom of custom.css
+JELLYFIN CONTROLLER WIDGET
 ===================================================== */
 
 
@@ -58,7 +57,7 @@ body.light .jf-monitor-host,
   min-width: 0;
 }
 
-/* Shell */
+/* ── Shell ──────────────────────────────────────── */
 .jf-shell {
   display: flex;
   flex-direction: column;
@@ -66,6 +65,40 @@ body.light .jf-monitor-host,
   padding: 2px 0;
 }
 
+/* ── ARR JS Flex Row height matching ────────────── */
+.arr-js-flex-row {
+  align-items: stretch !important;
+}
+
+.arr-js-flex-row .jf-monitor-host {
+  display: flex !important;
+  flex-direction: column !important;
+  height: auto !important;
+  min-height: 100% !important;
+  margin-bottom: 0 !important;
+  margin-top: 0 !important;
+}
+
+.arr-js-flex-row .sr-host {
+  display: flex !important;
+  flex-direction: column !important;
+  height: auto !important;
+  min-height: 100% !important;
+  margin-bottom: 0 !important;
+  margin-top: 0 !important;
+}
+
+.arr-js-flex-row .jf-monitor-host .jf-shell {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.arr-js-flex-row .sr-host .sr-shell {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
 
 /* Header */
 .jf-header {
@@ -109,6 +142,7 @@ body.light .jf-title,
   color: rgba(8, 12, 18, 0.82);
 }
 
+/* ── Jellyfin — Purple ── */
 .jf-open-link {
   display: inline-flex;
   align-items: center;
@@ -117,19 +151,19 @@ body.light .jf-title,
   font-weight: 600;
   padding: 4px 9px;
   border-radius: 7px;
-  border: 1px solid rgba(34, 197, 94, 0.30);
-  background: rgba(34, 197, 94, 0.08);
-  color: rgba(34, 197, 94, 0.80);
+  border: 1px solid rgba(170, 92, 195, 0.30);
+  background: linear-gradient(135deg, rgba(170, 92, 195, 0.12), rgba(139, 62, 165, 0.12));
+  color: rgba(170, 92, 195, 0.80);
   text-decoration: none;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition: border-color 0.15s, color 0.15s;
   white-space: nowrap;
 }
 
 .jf-open-link:hover {
-  background: rgba(34, 197, 94, 0.16);
-  color: rgba(34, 197, 94, 1);
-  border-color: rgba(34, 197, 94, 0.50);
+  background: linear-gradient(135deg, rgba(170, 92, 195, 0.22), rgba(139, 62, 165, 0.22));
+  color: rgba(170, 92, 195, 1.0);
+  border-color: rgba(170, 92, 195, 0.50);
 }
 
 body.light .jf-open-link,
@@ -466,12 +500,10 @@ body.light .jf-progress-bar,
 .jf-progress-fill {
   height: 100%;
   border-radius: 99px;
-  background: linear-gradient(
-    90deg,
-    rgba(145, 63, 192, 0.95) 0%,
-    rgba(121, 69, 177, 0.92) 38%,
-    rgba(34, 211, 238, 0.95) 100%
-  );
+  background: linear-gradient(90deg,
+      rgba(145, 63, 192, 0.95) 0%,
+      rgba(121, 69, 177, 0.92) 38%,
+      rgba(34, 211, 238, 0.95) 100%);
   box-shadow: 0 0 10px rgba(34, 211, 238, 0.18);
   transition: width 1s linear;
 }
@@ -697,29 +729,30 @@ body.light .jf-footer,
 .jf-skeleton-row {
   height: 58px;
   border-radius: 10px;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.04) 25%,
-    rgba(255, 255, 255, 0.08) 50%,
-    rgba(255, 255, 255, 0.04) 75%
-  );
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0.04) 25%,
+      rgba(255, 255, 255, 0.08) 50%,
+      rgba(255, 255, 255, 0.04) 75%);
   background-size: 200% 100%;
   animation: jf-shimmer 1.6s ease-in-out infinite;
 }
 
 @keyframes jf-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 body.light .jf-skeleton-row,
 [data-theme="light"] .jf-skeleton-row {
-  background: linear-gradient(
-    90deg,
-    rgba(8, 12, 18, 0.04) 25%,
-    rgba(8, 12, 18, 0.08) 50%,
-    rgba(8, 12, 18, 0.04) 75%
-  );
+  background: linear-gradient(90deg,
+      rgba(8, 12, 18, 0.04) 25%,
+      rgba(8, 12, 18, 0.08) 50%,
+      rgba(8, 12, 18, 0.04) 75%);
   background-size: 200% 100%;
 }
 
@@ -780,6 +813,7 @@ body.light .jf-sync-toggle--open,
     opacity: 0;
     transform: translateY(-4px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -930,8 +964,13 @@ body.light .jf-sync-btn--err,
 }
 
 @keyframes jf-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 
@@ -1049,6 +1088,7 @@ body.light .jf-message-count,
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .jf-skeleton-row,
   .jf-sync-spin,
   .jf-sync-wrap--open {
