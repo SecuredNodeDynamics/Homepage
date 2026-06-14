@@ -38,26 +38,28 @@
 /* ── Header ──────────────────────────────────────────────────────── */
 .ldr-hdr {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
   padding-bottom: 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  flex-wrap: wrap;
-  justify-content: space-between;
 }
 
 .ldr-hdr-left {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1;
+  width: 100%;
+  min-width: 0;
 }
 
 .ldr-hdr-right {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-shrink: 0;
+  width: 100%;
+  min-width: 0;
+  justify-content: space-between;
 }
 
 .ldr-title {
@@ -95,9 +97,20 @@
 .ldr-tabs {
   display: flex;
   gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.ldr-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .ldr-tab {
+  flex: 0 0 auto;
   padding: 4px 14px;
   border-radius: 8px;
   font-size: 0.72rem;
@@ -399,13 +412,12 @@
 /* ── Responsive ──────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .ldr-hdr {
-    flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
   }
 
   .ldr-hdr-right {
-    width: 100%;
-    justify-content: space-between;
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .ldr-overview {
@@ -571,5 +583,61 @@ img {
   [class$="-card-grid"],
   [class*="-card-grid "] {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+
+/* =====================================================
+   Multi-Widget Group Layout
+   Supports 2, 3, and 4 injected widgets in the same group.
+===================================================== */
+
+:root {
+  --hp-widget-source-column-min: clamp(220px, 20vw, 320px);
+  --hp-widget-source-tablet-column-min: 240px;
+}
+
+ul.services-list {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--hp-widget-source-column-min)), 1fr)) !important;
+}
+
+[class$="-flex-row"],
+[class*="-flex-row "],
+.arr-js-flex-row,
+.arr-lt-flex-row {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--hp-widget-source-column-min)), 1fr)) !important;
+  gap: var(--hp-widget-source-gap, 16px) !important;
+  align-items: stretch !important;
+  width: 100% !important;
+}
+
+[class$="-flex-row"] > *,
+[class*="-flex-row "] > *,
+.arr-js-flex-row > *,
+.arr-lt-flex-row > * {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: 100%;
+}
+
+@media (max-width: 900px) {
+  ul.services-list,
+  [class$="-flex-row"],
+  [class*="-flex-row "],
+  .arr-js-flex-row,
+  .arr-lt-flex-row {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--hp-widget-source-tablet-column-min)), 1fr)) !important;
+  }
+}
+
+@media (max-width: 560px) {
+  ul.services-list,
+  [class$="-flex-row"],
+  [class*="-flex-row "],
+  .arr-js-flex-row,
+  .arr-lt-flex-row {
+    grid-template-columns: 1fr !important;
   }
 }

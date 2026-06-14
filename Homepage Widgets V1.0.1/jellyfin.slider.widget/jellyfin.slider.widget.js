@@ -687,7 +687,7 @@ JELLYFIN SLIDER
     const logoTitle = document.createElement("div");
     logoTitle.className = "jf-logo-title";
     logoTitle.innerHTML = `
-      <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/jellyswarrm.webp" alt="Jellyfin" class="jf-icon">
+      <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/jellyfin.webp" alt="Jellyfin" class="jf-icon">
       <span class="jf-title">Jellyfin</span>`;
     tabsRow.appendChild(logoTitle);
 

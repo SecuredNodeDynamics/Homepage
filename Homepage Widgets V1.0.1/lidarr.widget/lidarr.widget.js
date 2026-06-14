@@ -302,7 +302,7 @@
       <div class="ldr-shell">
         <div class="ldr-hdr">
           <div class="ldr-hdr-left">
-            <img src="/icons/lidarr.png" alt="Lidarr" style="width:32px;height:32px;object-fit:contain;flex-shrink:0;">
+            <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/lidarr.webp" alt="Lidarr" style="width:32px;height:32px;object-fit:contain;flex-shrink:0;">
             <span class="ldr-title">Lidarr</span>
           </div>
           <div class="ldr-hdr-right">

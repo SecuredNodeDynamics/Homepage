@@ -411,7 +411,7 @@
       <div class="mcal-shell">
         <div class="mcal-hdr">
           <div class="mcal-hdr-left">
-            <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/fluidcalendar.webp" alt="Media Calendar" class="mcal-icon">
+            <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/google-calendar.webp" alt="Media Calendar" class="mcal-icon">
             <span class="mcal-title">Media Calendar</span>
           </div>
           <div class="mcal-hdr-center">

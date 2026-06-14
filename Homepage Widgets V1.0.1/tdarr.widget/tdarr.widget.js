@@ -186,7 +186,7 @@
       <div class="tdr-shell">
         <div class="tdr-hdr">
           <div class="tdr-hdr-left">
-            <img src="/icons/tdarr.png" alt="Tdarr" class="tdr-icon">
+            <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/tdarr.webp" alt="Tdarr" class="tdr-icon">
             <span class="tdr-title">Tdarr</span>
           </div>
           <div class="tdr-hdr-right">

@@ -324,7 +324,7 @@
       <div class="wzr-shell">
         <div class="wzr-hdr">
           <div class="wzr-hdr-left">
-            <img src="/icons/Wizarr.png" alt="Wizarr" class="wzr-icon">
+            <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/wizarr.webp" alt="Wizarr" class="wzr-icon">
             <span class="wzr-title">Wizarr</span>
           </div>
           <div class="wzr-hdr-right">

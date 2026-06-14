@@ -656,7 +656,7 @@
       <div class="jf-shell">
         <div class="jf-header">
           <div class="jf-header-left">
-            <img class="jf-icon" src="/icons/Jellyfin.png" alt="Jellyfin" />
+            <img class="jf-icon" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/jellyfin.webp" alt="Jellyfin" />
             <span class="jf-title">Jellyfin</span>
             ${sessionCount > 0
         ? `<span class="jf-stat-pill" style="padding:2px 8px;font-size:0.65rem;">

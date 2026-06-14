@@ -263,7 +263,7 @@
       <div class="dsp-shell">
         <div class="dsp-header">
           <div class="dsp-header-left">
-            <img src="/icons/dispatcharr.png" alt="Dispatcharr" class="dsp-icon">
+            <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/dispatcharr.webp" alt="Dispatcharr" class="dsp-icon">
             <div class="dsp-title">Dispatcharr</div>
           </div>
           <div class="dsp-header-right">

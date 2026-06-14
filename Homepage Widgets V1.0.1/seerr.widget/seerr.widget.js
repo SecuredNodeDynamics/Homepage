@@ -843,8 +843,7 @@
       <div class="sr-shell">
         <div class="sr-header">
           <div class="sr-header-left">
-            <img class="sr-icon" src="/icons/seerr.png" alt="Jellyseerr"
-                 onerror="this.src='https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/jellyseerr.png'" />
+            <img class="sr-icon" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/jellyseerr.webp" alt="Jellyseerr" />
             <span class="sr-title">Seerr</span>
             ${pendingCount > 0 ? `
               <span class="sr-stat-pill sr-pill--pending" style="padding:2px 8px;font-size:.65rem;">

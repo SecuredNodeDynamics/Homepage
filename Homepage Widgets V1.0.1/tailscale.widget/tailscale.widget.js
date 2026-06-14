@@ -336,8 +336,7 @@
     <div class="ts-shell">
       <div class="ts-hdr">
         <div class="ts-hdr-left">
-          <img src="/icons/tailscale.png" alt="Tailscale" class="ts-icon"
-               onerror="this.src='https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/tailscale.webp'">
+          <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/tailscale.webp" alt="Tailscale" class="ts-icon">
           <span class="ts-title">Tailscale</span>
         </div>
         <div class="ts-hdr-right">

@@ -109,7 +109,7 @@
       <div class="arr-shell">
         <div class="arr-hdr">
           <div class="arr-hdr-left">
-            <img src="/icons/Radarr.png" class="arr-icon-img" alt="Radarr">
+            <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/radarr.webp" class="arr-icon-img" alt="Radarr">
             <span class="arr-title">Radarr</span>
           </div>
           <div class="arr-tabs">${tabs}</div>

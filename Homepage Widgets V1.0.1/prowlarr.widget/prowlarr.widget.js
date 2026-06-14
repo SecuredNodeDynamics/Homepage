@@ -129,7 +129,7 @@
       <div class="pwr-shell">
         <div class="pwr-hdr">
           <div class="pwr-hdr-left">
-            <img src="/icons/Prowlarr.png" alt="Prowlarr" class="pwr-icon">
+            <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/prowlarr.webp" alt="Prowlarr" class="pwr-icon">
             <span class="pwr-title">Prowlarr</span>
           </div>
           <div class="pwr-hdr-right">

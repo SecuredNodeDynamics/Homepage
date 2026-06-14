@@ -149,7 +149,7 @@
       <div class="bzr-shell">
         <div class="bzr-hdr">
           <div class="bzr-hdr-left">
-            <img src="/icons/bazarr.png" alt="Bazarr" class="bzr-icon">
+            <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/bazarr.webp" alt="Bazarr" class="bzr-icon">
             <span class="bzr-title">Bazarr</span>
           </div>
           <div class="bzr-hdr-right">

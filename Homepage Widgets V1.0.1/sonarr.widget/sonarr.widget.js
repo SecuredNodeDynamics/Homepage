@@ -112,7 +112,7 @@
       <div class="arr-shell">
         <div class="arr-hdr">
           <div class="arr-hdr-left">
-            <img src="/icons/Sonarr.png" class="arr-icon-img" alt="Sonarr">
+            <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/sonarr.webp" class="arr-icon-img" alt="Sonarr">
             <span class="arr-title">Sonarr</span>
           </div>
           <div class="arr-tabs">${tabs}</div>

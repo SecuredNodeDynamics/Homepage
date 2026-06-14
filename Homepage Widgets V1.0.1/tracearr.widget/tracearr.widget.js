@@ -534,7 +534,7 @@
       <div class="trr-shell">
         <div class="trr-header">
           <div class="trr-header-left">
-            <img src="/icons/tracearr.png" alt="Tracearr" class="trr-icon">
+            <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/tracearr.webp" alt="Tracearr" class="trr-icon">
             <div>
               <div class="trr-title">Tracearr</div>
             </div>
