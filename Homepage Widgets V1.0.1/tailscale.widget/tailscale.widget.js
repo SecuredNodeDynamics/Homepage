@@ -7,7 +7,7 @@
 
   const TS_CONFIG = {
     groupName: "TAILSCALE-WIDGET",
-    apiKey: "tskey-api-YOURKEY",
+    apiKey: "YOUR_TAILSCALE_API_KEY",
     tailnet: "_",
     proxyUrl: "https://tailscale.YOURTAILSCALEID.workers.dev/tailscale-proxy",
     publicUrl: "https://login.tailscale.com/admin/machines",
