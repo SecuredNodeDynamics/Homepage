@@ -1,0 +1,4 @@
+- UK-MONITOR:
+    - Uptime Kuma:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/uptime-kuma.webp
+        description: Service uptime monitor (injected widget)

@@ -722,10 +722,14 @@ JELLYFIN SLIDER
     openBtn.setAttribute("aria-label", "Open Jellyfin in new tab");
     openBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Open`;
 
+    const headerTools = document.createElement("div");
+    headerTools.className = "jf-header-tools";
+    headerTools.appendChild(serverSwitch);
+    headerTools.appendChild(openBtn);
+    headerTools.appendChild(searchWrap);
+
     tabsRow.appendChild(tabs);
-    tabsRow.appendChild(serverSwitch);
-    tabsRow.appendChild(openBtn);
-    tabsRow.appendChild(searchWrap);
+    tabsRow.appendChild(headerTools);
 
     const panels = document.createElement("div");
     panels.className = "jf-panels";

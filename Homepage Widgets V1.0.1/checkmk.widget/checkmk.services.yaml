@@ -1,0 +1,5 @@
+- CHECKMK - MONITOR:
+
+    - CheckMK Anchor:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/checkmk.webp
+        description: Host & service health (injected widget)

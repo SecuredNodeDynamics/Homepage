@@ -1,0 +1,6 @@
+- CLOUDFLARE - WIDGET:
+
+    - Cloudflare Tunnel:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/cloudflare.webp
+        description: Tunnel Monitor (injected widget)
+        id: cloudflare-tunnel-widget

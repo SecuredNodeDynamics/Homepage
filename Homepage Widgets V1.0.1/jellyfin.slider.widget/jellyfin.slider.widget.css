@@ -1663,3 +1663,314 @@ body.light .jf-server-btn--active,
   border-color: rgba(1, 105, 111, 0.40) !important;
   color: rgba(1, 69, 74, 0.96) !important;
 }
+
+
+/* =====================================================
+   Widget Source Autosize Patch
+   Lets this widget CSS stand alone on phone, tablet, and desktop.
+===================================================== */
+
+:root {
+  --hp-widget-source-gap: clamp(8px, 2vw, 16px);
+  --hp-widget-source-pad: clamp(10px, 2vw, 18px);
+  --hp-widget-source-radius: clamp(14px, 2vw, 20px);
+  --hp-widget-source-min-card: min(100%, 140px);
+}
+
+.service-card,
+.widget-card,
+[class$="-host"],
+[class*="-host "] {
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+.service-card *,
+.widget-card *,
+[class$="-host"] *,
+[class*="-host "] * {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+[class$="-flex-row"],
+[class*="-flex-row "],
+.arr-js-flex-row,
+.arr-lt-flex-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hp-widget-source-gap) !important;
+  width: 100%;
+  align-items: stretch;
+}
+
+[class$="-flex-row"] > *,
+[class*="-flex-row "] > *,
+.arr-js-flex-row > *,
+.arr-lt-flex-row > * {
+  flex: 1 1 min(100%, 360px) !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+[class$="-grid"],
+[class*="-grid "],
+[class$="-stats-row"],
+[class*="-stats-row "] {
+  max-width: 100%;
+}
+
+[class$="-stat-grid"],
+[class*="-stat-grid "],
+[class$="-cards-grid"],
+[class*="-cards-grid "],
+[class$="-card-grid"],
+[class*="-card-grid "] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--hp-widget-source-min-card), 1fr)) !important;
+  gap: var(--hp-widget-source-gap) !important;
+  width: 100%;
+}
+
+[class$="-header"],
+[class*="-header "],
+[class$="-toolbar"],
+[class*="-toolbar "],
+[class$="-actions"],
+[class*="-actions "],
+[class$="-controls"],
+[class*="-controls "] {
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+}
+
+[class$="-list"],
+[class*="-list "],
+[class$="-body"],
+[class*="-body "],
+[class$="-guide"],
+[class*="-guide "] {
+  max-width: 100%;
+  scrollbar-width: thin;
+}
+
+.apexcharts-canvas,
+.apexcharts-svg,
+.recharts-wrapper,
+.recharts-surface,
+canvas,
+svg,
+img {
+  max-width: 100% !important;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --hp-widget-source-gap: 10px;
+    --hp-widget-source-pad: 12px;
+    --hp-widget-source-radius: 14px;
+    --hp-widget-source-min-card: min(100%, 112px);
+  }
+
+  .service-card,
+  .widget-card,
+  [class$="-host"],
+  [class*="-host "] {
+    width: 100% !important;
+    padding: var(--hp-widget-source-pad) !important;
+    border-radius: var(--hp-widget-source-radius) !important;
+    overflow: hidden !important;
+  }
+
+  [class$="-flex-row"],
+  [class*="-flex-row "],
+  .arr-js-flex-row,
+  .arr-lt-flex-row {
+    flex-direction: column !important;
+  }
+
+  [class$="-flex-row"] > *,
+  [class*="-flex-row "] > *,
+  .arr-js-flex-row > *,
+  .arr-lt-flex-row > * {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+  }
+
+  [class$="-toolbar"],
+  [class*="-toolbar "],
+  [class$="-controls"],
+  [class*="-controls "],
+  [class$="-tabs-row"],
+  [class*="-tabs-row "] {
+    overflow-x: auto;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --hp-widget-source-gap: 8px;
+    --hp-widget-source-pad: 10px;
+    --hp-widget-source-min-card: min(100%, 96px);
+  }
+
+  [class$="-stat-grid"],
+  [class*="-stat-grid "],
+  [class$="-cards-grid"],
+  [class*="-cards-grid "],
+  [class$="-card-grid"],
+  [class*="-card-grid "] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* =====================================================
+   Jellyfin Slider Header Responsive Fix
+   Keeps tabs, server switch, Open, and search from crowding.
+===================================================== */
+
+.jf-tabs-row {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  overflow: visible !important;
+  padding-bottom: 12px;
+}
+
+.jf-tabs-row .jf-logo-title {
+  min-width: max-content;
+}
+
+.jf-tabs-row .jf-tabs {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding: 2px 2px 4px;
+  scroll-snap-type: x proximity;
+}
+
+.jf-tabs-row .jf-tab {
+  scroll-snap-align: start;
+}
+
+.jf-header-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: max-content;
+  max-width: 100%;
+}
+
+.jf-header-tools .jf-server-switch,
+.jf-header-tools .jf-open-btn,
+.jf-header-tools .jf-search-wrap {
+  flex: 0 0 auto;
+}
+
+.jf-header-tools .jf-search-wrap {
+  min-width: 32px;
+}
+
+.jf-header-tools .jf-search-input {
+  width: 34px;
+  min-width: 34px;
+  max-width: min(240px, 42vw);
+}
+
+.jf-header-tools .jf-search-input:focus,
+.jf-header-tools .jf-search-input.is-open,
+.jf-header-tools .jf-search-input.has-value {
+  width: min(240px, 42vw);
+}
+
+@media (max-width: 900px) {
+  .jf-tabs-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .jf-header-tools {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .jf-tabs-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  .jf-tabs-row .jf-logo-title {
+    grid-column: 1;
+  }
+
+  .jf-header-tools {
+    grid-column: 2;
+    grid-row: 1;
+    width: auto;
+  }
+
+  .jf-tabs-row .jf-tabs {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+  }
+
+  .jf-header-tools .jf-open-btn {
+    width: 32px;
+    min-width: 32px;
+    height: 30px;
+    justify-content: center;
+    gap: 0;
+    padding: 0;
+    font-size: 0;
+  }
+
+  .jf-header-tools .jf-open-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .jf-header-tools .jf-search-input:focus,
+  .jf-header-tools .jf-search-input.is-open,
+  .jf-header-tools .jf-search-input.has-value {
+    width: min(210px, 58vw);
+  }
+}
+
+@media (max-width: 440px) {
+  .jf-tabs-row {
+    grid-template-columns: 1fr;
+  }
+
+  .jf-header-tools {
+    grid-column: 1;
+    grid-row: 2;
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .jf-tabs-row .jf-tabs {
+    grid-row: 3;
+  }
+
+  .jf-header-tools .jf-search-wrap {
+    flex: 1 1 120px;
+  }
+
+  .jf-header-tools .jf-search-input,
+  .jf-header-tools .jf-search-input:focus,
+  .jf-header-tools .jf-search-input.is-open,
+  .jf-header-tools .jf-search-input.has-value {
+    width: 100%;
+    min-width: 120px;
+  }
+}

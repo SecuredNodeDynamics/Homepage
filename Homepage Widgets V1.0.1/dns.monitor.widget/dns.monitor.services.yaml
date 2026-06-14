@@ -1,0 +1,5 @@
+- ADGUARD-DNS-MONITOR:
+ 
+    - DNS Anchor:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/adguard-home.webp
+        description: AdGuard DNS monitor (injected widget)

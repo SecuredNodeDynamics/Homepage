@@ -5,11 +5,11 @@
 (function () {
 
   const BZR_CONFIG = {
-    groupName: "ARR -- PROWLARR.BAZARR",
-    url: "https://bazarr.janzenmediagroup.com",
-    fallbackUrl: "http://10.128.1.62:6767",
+    groupName: "ARR — BAZARR",
+    url: "http://YOUR_LOCAL_IP:PORT",
+    fallbackUrl: "https://YOUR_TUNNEL_URL", // or null if not using a tunnel
     activeUrl: null,
-    key: "cf3fe7e55472e3c82d4dc4de651c3704",
+    key: "YOUR_API_KEY_HERE",
     pollMs: 60 * 1000,
   };
 

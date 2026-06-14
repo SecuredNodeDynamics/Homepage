@@ -1,0 +1,596 @@
+/* =====================================================
+11) CHECKMK MONITOR WIDGET
+===================================================== */
+.cmk-monitor-host {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 20px !important;
+  padding: 18px 20px !important;
+  overflow: hidden !important;
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  position: relative;
+  background-color: rgba(12, 16, 22, 0.85);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+body.dark .cmk-monitor-host,
+[data-theme="dark"] .cmk-monitor-host {
+  background-color: rgba(12, 16, 22, 0.85) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+body.light .cmk-monitor-host,
+[data-theme="light"] .cmk-monitor-host {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+  border: 1px solid rgba(0, 0, 0, 0.274) !important;
+  color: rgba(8, 12, 18, 0.96) !important;
+}
+
+.cmk-shell {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ── Header ──────────────────────────────────────── */
+
+.cmk-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+body.light .cmk-header,
+[data-theme="light"] .cmk-header {
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
+.cmk-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cmk-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.cmk-title {
+  font-size: 0.98rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.96);
+  line-height: 1.15;
+}
+
+body.light .cmk-title,
+[data-theme="light"] .cmk-title {
+  color: rgba(8, 12, 18, 0.96);
+}
+
+.cmk-subtitle {
+  margin-top: 2px;
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.40);
+}
+
+body.light .cmk-subtitle,
+[data-theme="light"] .cmk-subtitle {
+  color: rgba(8, 12, 18, 0.40);
+}
+
+.cmk-open-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 7px;
+  border: 1px solid rgba(100, 221, 23, 0.30);
+  background: rgba(100, 221, 23, 0.08);
+  color: rgba(23, 221, 112, 0.8);
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+
+.cmk-open-link:hover {
+  background: rgba(100, 221, 23, 0.16);
+  color: rgba(23, 221, 112, 0.8);
+  border-color: rgba(100, 221, 23, 0.50);
+}
+
+/* ── Host overview ───────────────────────────────── */
+
+.cmk-host-overview {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 14px;
+}
+
+.cmk-host-summary {
+  flex: 1;
+  min-width: 0;
+}
+
+.cmk-host-big {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.cmk-host-num {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.cmk-host-denom {
+  font-size: 1rem;
+  opacity: 0.45;
+}
+
+.cmk-host-label {
+  font-size: 0.70rem;
+  opacity: 0.5;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 2px;
+}
+
+.cmk-host-bar-wrap {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.10);
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+body.light .cmk-host-bar-wrap,
+[data-theme="light"] .cmk-host-bar-wrap {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.cmk-host-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+/* ── Stat pills ──────────────────────────────────── */
+
+.cmk-host-pills {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.cmk-stat-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cmk-stat-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cmk-stat-num {
+  font-size: 0.80rem;
+  font-weight: 700;
+  min-width: 20px;
+  text-align: right;
+}
+
+.cmk-stat-lbl {
+  font-size: 0.70rem;
+  opacity: 0.50;
+}
+
+/* ── Divider ─────────────────────────────────────── */
+
+.cmk-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 12px 0;
+}
+
+body.light .cmk-divider,
+[data-theme="light"] .cmk-divider {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* ── Service problems ────────────────────────────── */
+
+.cmk-svc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.cmk-section-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.50;
+}
+
+.cmk-svc-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.cmk-chip {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid;
+  letter-spacing: 0.05em;
+}
+
+.cmk-svc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cmk-svc-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+body.light .cmk-svc-row,
+[data-theme="light"] .cmk-svc-row {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.cmk-svc-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.cmk-svc-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.cmk-svc-body {
+  min-width: 0;
+}
+
+.cmk-svc-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cmk-svc-output {
+  font-size: 0.68rem;
+  opacity: 0.45;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cmk-svc-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.cmk-svc-chip {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid;
+  letter-spacing: 0.06em;
+}
+
+.cmk-svc-when {
+  font-size: 0.64rem;
+  opacity: 0.40;
+}
+
+/* ── All OK state ────────────────────────────────── */
+
+.cmk-all-ok {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 20px;
+  color: #6ee7b7;
+  opacity: 0.7;
+}
+
+.cmk-all-ok-icon {
+  font-size: 1.4rem;
+}
+
+.cmk-all-ok-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ── Footer ──────────────────────────────────────── */
+
+.cmk-footer {
+  margin-top: 12px;
+  font-size: 0.68rem;
+  opacity: 0.35;
+  text-align: right;
+}
+
+
+/* ── Error state ─────────────────────────────────── */
+
+.cmk-error {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px;
+  border-radius: 12px;
+  background: rgba(161, 44, 44, 0.10);
+  border: 1px solid rgba(161, 44, 44, 0.22);
+  text-align: center;
+}
+
+.cmk-error-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.cmk-error-msg {
+  font-size: 0.72rem;
+  opacity: 0.55;
+}
+
+.cmk-error-hint {
+  font-size: 0.65rem;
+  opacity: 0.35;
+  margin-top: 4px;
+  font-family: monospace;
+}
+
+/* ── Skeleton ────────────────────────────────────── */
+
+@keyframes cmk-shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+.cmk-skeleton-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cmk-skeleton-row {
+  height: 48px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 25%, rgba(255, 255, 255, 0.10) 50%, rgba(255, 255, 255, 0.04) 75%);
+  background-size: 800px 100%;
+  animation: cmk-shimmer 1.6s ease-in-out infinite;
+}
+
+body.light .cmk-skeleton-row,
+[data-theme="light"] .cmk-skeleton-row {
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.05) 25%, rgba(0, 0, 0, 0.10) 50%, rgba(0, 0, 0, 0.05) 75%);
+  background-size: 800px 100%;
+}
+
+/* ── Responsive ──────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .cmk-monitor-host {
+    padding: 12px !important;
+    border-radius: 16px !important;
+  }
+
+  .cmk-host-num {
+    font-size: 1.6rem;
+  }
+}
+
+/* =====================================================
+   Widget Source Autosize Patch
+   Lets this widget CSS stand alone on phone, tablet, and desktop.
+===================================================== */
+
+:root {
+  --hp-widget-source-gap: clamp(8px, 2vw, 16px);
+  --hp-widget-source-pad: clamp(10px, 2vw, 18px);
+  --hp-widget-source-radius: clamp(14px, 2vw, 20px);
+  --hp-widget-source-min-card: min(100%, 140px);
+}
+
+.service-card,
+.widget-card,
+[class$="-host"],
+[class*="-host "] {
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+.service-card *,
+.widget-card *,
+[class$="-host"] *,
+[class*="-host "] * {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+[class$="-flex-row"],
+[class*="-flex-row "],
+.arr-js-flex-row,
+.arr-lt-flex-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hp-widget-source-gap) !important;
+  width: 100%;
+  align-items: stretch;
+}
+
+[class$="-flex-row"] > *,
+[class*="-flex-row "] > *,
+.arr-js-flex-row > *,
+.arr-lt-flex-row > * {
+  flex: 1 1 min(100%, 360px) !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+[class$="-grid"],
+[class*="-grid "],
+[class$="-stats-row"],
+[class*="-stats-row "] {
+  max-width: 100%;
+}
+
+[class$="-stat-grid"],
+[class*="-stat-grid "],
+[class$="-cards-grid"],
+[class*="-cards-grid "],
+[class$="-card-grid"],
+[class*="-card-grid "] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--hp-widget-source-min-card), 1fr)) !important;
+  gap: var(--hp-widget-source-gap) !important;
+  width: 100%;
+}
+
+[class$="-header"],
+[class*="-header "],
+[class$="-toolbar"],
+[class*="-toolbar "],
+[class$="-actions"],
+[class*="-actions "],
+[class$="-controls"],
+[class*="-controls "] {
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+}
+
+[class$="-list"],
+[class*="-list "],
+[class$="-body"],
+[class*="-body "],
+[class$="-guide"],
+[class*="-guide "] {
+  max-width: 100%;
+  scrollbar-width: thin;
+}
+
+.apexcharts-canvas,
+.apexcharts-svg,
+.recharts-wrapper,
+.recharts-surface,
+canvas,
+svg,
+img {
+  max-width: 100% !important;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --hp-widget-source-gap: 10px;
+    --hp-widget-source-pad: 12px;
+    --hp-widget-source-radius: 14px;
+    --hp-widget-source-min-card: min(100%, 112px);
+  }
+
+  .service-card,
+  .widget-card,
+  [class$="-host"],
+  [class*="-host "] {
+    width: 100% !important;
+    padding: var(--hp-widget-source-pad) !important;
+    border-radius: var(--hp-widget-source-radius) !important;
+    overflow: hidden !important;
+  }
+
+  [class$="-flex-row"],
+  [class*="-flex-row "],
+  .arr-js-flex-row,
+  .arr-lt-flex-row {
+    flex-direction: column !important;
+  }
+
+  [class$="-flex-row"] > *,
+  [class*="-flex-row "] > *,
+  .arr-js-flex-row > *,
+  .arr-lt-flex-row > * {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+  }
+
+  [class$="-toolbar"],
+  [class*="-toolbar "],
+  [class$="-controls"],
+  [class*="-controls "],
+  [class$="-tabs-row"],
+  [class*="-tabs-row "] {
+    overflow-x: auto;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --hp-widget-source-gap: 8px;
+    --hp-widget-source-pad: 10px;
+    --hp-widget-source-min-card: min(100%, 96px);
+  }
+
+  [class$="-stat-grid"],
+  [class*="-stat-grid "],
+  [class$="-cards-grid"],
+  [class*="-cards-grid "],
+  [class$="-card-grid"],
+  [class*="-card-grid "] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}

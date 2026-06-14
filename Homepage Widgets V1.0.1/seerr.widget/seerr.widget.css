@@ -62,6 +62,20 @@ body.light .sr-host,
   min-width: 0;
 }
 
+/* ── ARR JS Flex Row (Jellyfin Monitor + Seerr) ─── */
+.arr-js-flex-row {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  width: 100%;
+}
+
+.arr-js-flex-row .jf-monitor-host,
+.arr-js-flex-row .sr-host {
+  flex: 1;
+  min-width: 0;
+}
+
 /* Header */
 .sr-header {
   display: flex;
@@ -100,7 +114,7 @@ body.light .sr-host,
 .sr-search-input {
   width: 100%;
   background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(34, 197, 94, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   padding: 5px 10px 5px 28px;
   color: rgba(255, 255, 255, 0.90);
@@ -111,7 +125,7 @@ body.light .sr-host,
 }
 
 .sr-search-input:focus {
-  border-color: rgba(34, 197, 94, 0.70);
+  border-color: rgba(34, 197, 94, 0.40);
   background: rgba(255, 255, 255, 0.10);
 }
 
@@ -156,6 +170,7 @@ body.light .sr-title,
   color: rgba(8, 12, 18, 0.82);
 }
 
+/* ── Seerr — Violet ── */
 .sr-open-link {
   display: inline-flex;
   align-items: center;
@@ -164,18 +179,18 @@ body.light .sr-title,
   font-weight: 600;
   padding: 4px 9px;
   border-radius: 7px;
-  border: 1px solid rgba(34, 197, 94, 0.30);
-  background: rgba(34, 197, 94, 0.08);
-  color: rgba(34, 197, 94, 0.80);
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.12), rgba(99, 102, 241, 0.12));
+  color: rgba(167, 139, 250, 0.90);
   text-decoration: none;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition: border-color 0.15s, color 0.15s;
   white-space: nowrap;
 }
 
 .sr-open-link:hover {
-  background: rgba(34, 197, 94, 0.16);
-  color: rgba(34, 197, 94, 1.0);
-  border-color: rgba(34, 197, 94, 0.50);
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.22), rgba(99, 102, 241, 0.22));
+  color: rgba(167, 139, 250, 1.0);
+  border-color: rgba(167, 139, 250, 0.55);
 }
 
 body.light .sr-open-link,
@@ -1006,182 +1021,163 @@ body.light .sr-skeleton-section,
   border-color: rgba(248, 113, 113, 0.55);
 }
 
+/* =====================================================
+   Widget Source Autosize Patch
+   Lets this widget CSS stand alone on phone, tablet, and desktop.
+===================================================== */
 
-/* ── ARR Widgets ─────────────────────────────────── */
-.arr-host {
-  width: 100%;
+:root {
+  --hp-widget-source-gap: clamp(8px, 2vw, 16px);
+  --hp-widget-source-pad: clamp(10px, 2vw, 18px);
+  --hp-widget-source-radius: clamp(14px, 2vw, 20px);
+  --hp-widget-source-min-card: min(100%, 140px);
+}
+
+.service-card,
+.widget-card,
+[class$="-host"],
+[class*="-host "] {
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+.service-card *,
+.widget-card *,
+[class$="-host"] *,
+[class*="-host "] * {
   box-sizing: border-box;
-  border-radius: 20px !important;
-  padding: 18px 20px !important;
-  overflow: hidden !important;
-  backdrop-filter: blur(18px) saturate(120%);
-  -webkit-backdrop-filter: blur(18px) saturate(120%);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  position: relative;
-  /* Default dark — covers Homepage which doesn't always set body.dark */
-  background-color: rgba(12, 16, 22, 0.85);
-  color: rgba(255, 255, 255, 0.92);
+  min-width: 0;
 }
 
-
-.arr-hdr {
+[class$="-flex-row"],
+[class*="-flex-row "],
+.arr-js-flex-row,
+.arr-lt-flex-row {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   flex-wrap: wrap;
+  gap: var(--hp-widget-source-gap) !important;
+  width: 100%;
+  align-items: stretch;
 }
 
-.arr-hdr-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
+[class$="-flex-row"] > *,
+[class*="-flex-row "] > *,
+.arr-js-flex-row > *,
+.arr-lt-flex-row > * {
+  flex: 1 1 min(100%, 360px) !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
 }
 
-.arr-icon-img {
-  width: 32px;
-  height: 32px;
-  object-fit: contain;
+[class$="-grid"],
+[class*="-grid "],
+[class$="-stats-row"],
+[class*="-stats-row "] {
+  max-width: 100%;
 }
 
-.arr-title {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.85);
-  letter-spacing: 0.02em;
-}
-
-.arr-tabs {
-  display: flex;
-  gap: 6px;
-  flex: 1;
-}
-
-.arr-tab {
-  padding: 4px 14px;
-  border-radius: 8px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.45);
-  transition: background 0.14s, color 0.14s, border-color 0.14s;
-  letter-spacing: 0.03em;
-}
-
-.arr-tab:hover {
-  background: rgba(255, 255, 255, 0.09);
-  color: rgba(255, 255, 255, 0.75);
-}
-
-.arr-tab--active {
-  background: rgba(251, 146, 60, 0.15) !important;
-  border-color: rgba(251, 146, 60, 0.40) !important;
-  color: rgba(251, 146, 60, 0.95) !important;
-}
-
-/* ── ARR Widgets — Open button styled to match Seerr ── */
-.arr-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.68rem;
-  font-weight: 600;
-  padding: 4px 9px;
-  border-radius: 7px;
-  border: 1px solid rgba(34, 197, 94, 0.30);
-  background: rgba(34, 197, 94, 0.08);
-  color: rgba(34, 197, 94, 0.80);
-  text-decoration: none;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.arr-link:hover {
-  background: rgba(34, 197, 94, 0.16);
-  color: rgba(34, 197, 94, 1.0);
-  border-color: rgba(34, 197, 94, 0.50);
-}
-
-.arr-stats {
-  padding: 16px;
-}
-
-.arr-stat-grid {
+[class$="-stat-grid"],
+[class*="-stat-grid "],
+[class$="-cards-grid"],
+[class*="-cards-grid "],
+[class$="-card-grid"],
+[class*="-card-grid "] {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(var(--hp-widget-source-min-card), 1fr)) !important;
+  gap: var(--hp-widget-source-gap) !important;
+  width: 100%;
 }
 
-.arr-stat {
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 10px;
-  padding: 12px 8px;
-  text-align: center;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+[class$="-header"],
+[class*="-header "],
+[class$="-toolbar"],
+[class*="-toolbar "],
+[class$="-actions"],
+[class*="-actions "],
+[class$="-controls"],
+[class*="-controls "] {
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
 }
 
-.arr-stat-value {
-  font-size: 1.4rem;
-  font-weight: 750;
-  color: rgba(255, 255, 255, 0.90);
-  font-variant-numeric: tabular-nums;
-  font-family: 'SF Mono', 'Fira Code', monospace;
-  line-height: 1.1;
+[class$="-list"],
+[class*="-list "],
+[class$="-body"],
+[class*="-body "],
+[class$="-guide"],
+[class*="-guide "] {
+  max-width: 100%;
+  scrollbar-width: thin;
 }
 
-.arr-stat-label {
-  font-size: 0.62rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: rgba(255, 255, 255, 0.35);
-  margin-top: 4px;
+.apexcharts-canvas,
+.apexcharts-svg,
+.recharts-wrapper,
+.recharts-surface,
+canvas,
+svg,
+img {
+  max-width: 100% !important;
 }
 
-.arr-stat--warn .arr-stat-value {
-  color: #f87171;
-}
+@media (max-width: 768px) {
+  :root {
+    --hp-widget-source-gap: 10px;
+    --hp-widget-source-pad: 12px;
+    --hp-widget-source-radius: 14px;
+    --hp-widget-source-min-card: min(100%, 112px);
+  }
 
-.arr-stat--active .arr-stat-value {
-  color: #6ee7b7;
-}
+  .service-card,
+  .widget-card,
+  [class$="-host"],
+  [class*="-host "] {
+    width: 100% !important;
+    padding: var(--hp-widget-source-pad) !important;
+    border-radius: var(--hp-widget-source-radius) !important;
+    overflow: hidden !important;
+  }
 
-.arr-loading {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.72rem;
-  color: rgba(255, 255, 255, 0.30);
-  justify-content: center;
-  padding: 20px 0;
-}
+  [class$="-flex-row"],
+  [class*="-flex-row "],
+  .arr-js-flex-row,
+  .arr-lt-flex-row {
+    flex-direction: column !important;
+  }
 
-.arr-error {
-  font-size: 0.72rem;
-  color: #f87171;
-  text-align: center;
-  padding: 16px;
-}
+  [class$="-flex-row"] > *,
+  [class*="-flex-row "] > *,
+  .arr-js-flex-row > *,
+  .arr-lt-flex-row > * {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+  }
 
-.arr-footer {
-  font-size: 0.62rem;
-  color: rgba(255, 255, 255, 0.20);
-  text-align: right;
-  padding: 6px 16px 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-@keyframes arr-spin {
-  to {
-    transform: rotate(360deg);
+  [class$="-toolbar"],
+  [class*="-toolbar "],
+  [class$="-controls"],
+  [class*="-controls "],
+  [class$="-tabs-row"],
+  [class*="-tabs-row "] {
+    overflow-x: auto;
+    max-width: 100%;
   }
 }
 
-.arr-spin {
-  animation: arr-spin 0.9s linear infinite;
-  flex-shrink: 0;
+@media (max-width: 480px) {
+  :root {
+    --hp-widget-source-gap: 8px;
+    --hp-widget-source-pad: 10px;
+    --hp-widget-source-min-card: min(100%, 96px);
+  }
+
+  [class$="-stat-grid"],
+  [class*="-stat-grid "],
+  [class$="-cards-grid"],
+  [class*="-cards-grid "],
+  [class$="-card-grid"],
+  [class*="-card-grid "] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
 }

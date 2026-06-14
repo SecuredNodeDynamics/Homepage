@@ -4,11 +4,11 @@
 (function () {
 
   const PWR_CONFIG = {
-    groupName: "ARR -- PROWLARR.BAZARR",
-    url: "https://prowlarr.YOUR_DOMAIN.com",
-    fallbackUrl: "http://YOUR_IP:PORT",
+    groupName: "ARR -- PROWLARR",
+    url: "http://YOUR_LOCAL_IP:PORT",
+    fallbackUrl: "https://YOUR_TUNNEL_URL", // or null if not using a tunnel
     activeUrl: null,
-    key: "YOUR_API_KEY",
+    key: "YOUR_API_KEY_HERE",
     pollMs: 120 * 1000,
   };
 

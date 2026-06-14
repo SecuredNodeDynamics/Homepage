@@ -1,0 +1,5 @@
+- TAILSCALE-WIDGET:
+
+    - Tailscale Anchor:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/tailscale.webp
+        description: Tailscale Network Widget (injected widget)
