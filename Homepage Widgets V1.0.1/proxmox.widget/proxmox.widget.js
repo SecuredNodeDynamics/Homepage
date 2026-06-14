@@ -496,7 +496,7 @@ Group: PVE-NODE -You can add as many proxmox nodes here as you want.
             <div class="pve-glances-grid">
 
               <!-- CPU sparkline -->
-              <div class="pve-metric-card">
+              <div class="pve-metric-card pve-metric-card--compact">
                 <div class="pve-metric-header">
                   <span class="pve-metric-name">CPU</span>
                   <span class="pve-metric-value" style="color:${liveCpuColor};">${liveCpuPct}%</span>
@@ -508,7 +508,7 @@ Group: PVE-NODE -You can add as many proxmox nodes here as you want.
               </div>
 
               <!-- Memory sparkline -->
-              <div class="pve-metric-card">
+              <div class="pve-metric-card pve-metric-card--compact">
                 <div class="pve-metric-header">
                   <span class="pve-metric-name">Memory</span>
                   <span class="pve-metric-value" style="color:${liveMemColor};">${liveMemPct}%</span>
@@ -521,7 +521,7 @@ Group: PVE-NODE -You can add as many proxmox nodes here as you want.
               </div>
 
               <!-- Network sparkline -->
-              <div class="pve-metric-card">
+              <div class="pve-metric-card pve-metric-card--wide">
                 <div class="pve-metric-header">
                   <span class="pve-metric-name">Network (${escH(nodeCfg.iface)})</span>
                 </div>
@@ -533,7 +533,7 @@ Group: PVE-NODE -You can add as many proxmox nodes here as you want.
               </div>
 
               <!-- Disk -->
-              <div class="pve-metric-card">
+              <div class="pve-metric-card pve-metric-card--compact">
                 <div class="pve-metric-header">
                   <span class="pve-metric-name">Disk (/)</span>
                   <span class="pve-metric-value" style="color:${diskColor};">${diskPct}%</span>
@@ -545,7 +545,7 @@ Group: PVE-NODE -You can add as many proxmox nodes here as you want.
               </div>
 
               <!-- Kernel & Updates — spans full width -->
-              <div class="pve-metric-card pve-updates-card">
+              <div class="pve-metric-card pve-metric-card--system pve-updates-card">
                 <div class="pve-metric-header">
                   <span class="pve-metric-name">System</span>
                   <span class="pve-update-badge" style="

@@ -222,6 +222,7 @@ PVE NODE COMBINED WIDGET (Proxmox + Glances)
   border-radius: 20px !important;
   padding: 18px 20px !important;
   overflow: hidden !important;
+  container-type: inline-size;
   backdrop-filter: blur(18px) saturate(120%);
   -webkit-backdrop-filter: blur(18px) saturate(120%);
   border: 1px solid rgba(255, 255, 255, 0.10);
@@ -480,8 +481,8 @@ body.light .pve-divider,
 /* ── Glances metric grid ── */
 .pve-glances-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
 }
 
 @media (max-width: 600px) {
@@ -498,6 +499,21 @@ body.light .pve-divider,
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
+  min-height: 112px;
+}
+
+.pve-metric-card--compact {
+  grid-column: auto;
+}
+
+.pve-metric-card--wide {
+  grid-column: auto;
+}
+
+.pve-metric-card--system,
+.pve-updates-card {
+  grid-column: auto;
 }
 
 body.light .pve-metric-card,
@@ -511,6 +527,7 @@ body.light .pve-metric-card,
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  min-width: 0;
 }
 
 .pve-metric-name {
@@ -519,6 +536,8 @@ body.light .pve-metric-card,
   text-transform: uppercase;
   letter-spacing: 0.07em;
   color: rgba(255, 255, 255, 0.35);
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 body.light .pve-metric-name,
@@ -531,6 +550,7 @@ body.light .pve-metric-name,
   font-weight: 750;
   font-variant-numeric: tabular-nums;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 body.light .pve-metric-value,
@@ -575,19 +595,25 @@ body.light .pve-bar-track,
 }
 
 .pve-net-speeds {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
+  align-items: stretch;
 }
 
 .pve-net-chip {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   font-size: 0.72rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+  min-width: 0;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+  white-space: nowrap;
 }
 
 .pve-net-chip--rx {
@@ -599,16 +625,6 @@ body.light .pve-bar-track,
 }
 
 /* ── Kernel & Updates card ── */
-.pve-updates-card {
-  grid-column: span 1;
-}
-
-@media (max-width: 600px) {
-  .pve-updates-card {
-    grid-column: span 1;
-  }
-}
-
 .pve-update-badge {
   display: inline-flex;
   align-items: center;
@@ -1094,6 +1110,19 @@ body.light .pve-stat-sub,
   --hp-widget-source-min-card: min(100%, 140px);
 }
 
+@container (max-width: 760px) {
+  .pve-metric-card--compact,
+  .pve-metric-card--wide,
+  .pve-metric-card--system,
+  .pve-updates-card {
+    grid-column: 1 / -1;
+  }
+
+  .pve-net-speeds {
+    grid-template-columns: 1fr;
+  }
+}
+
 .service-card,
 .widget-card,
 [class$="-host"],
@@ -1300,5 +1329,62 @@ ul.services-list {
   .arr-js-flex-row,
   .arr-lt-flex-row {
     grid-template-columns: 1fr !important;
+  }
+}
+
+/* =====================================================
+   Proxmox Live Metrics Layout Fix
+   Keeps Glances cards readable inside wide and grouped widgets.
+===================================================== */
+.pve-node-host .pve-glances-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  align-items: stretch !important;
+  grid-auto-flow: row dense !important;
+}
+
+.pve-node-host .pve-metric-card {
+  min-width: 0 !important;
+  min-height: 112px;
+}
+
+.pve-node-host .pve-metric-card--compact {
+  grid-column: auto !important;
+}
+
+.pve-node-host .pve-metric-card--wide {
+  grid-column: auto !important;
+}
+
+.pve-node-host .pve-metric-card--system,
+.pve-node-host .pve-updates-card {
+  grid-column: auto !important;
+}
+
+.pve-node-host .pve-net-speeds {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+@container (max-width: 760px) {
+  .pve-node-host .pve-metric-card--compact,
+  .pve-node-host .pve-metric-card--wide,
+  .pve-node-host .pve-metric-card--system,
+  .pve-node-host .pve-updates-card {
+    grid-column: 1 / -1 !important;
+  }
+
+  .pve-node-host .pve-net-speeds {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .pve-node-host .pve-metric-card--compact,
+  .pve-node-host .pve-metric-card--wide,
+  .pve-node-host .pve-metric-card--system,
+  .pve-node-host .pve-updates-card {
+    grid-column: 1 / -1 !important;
   }
 }
