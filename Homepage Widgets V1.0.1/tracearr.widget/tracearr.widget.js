@@ -684,12 +684,12 @@
     const devices = getDevices();
 
     return `
-      <div class="trr-grid trr-grid--2">
-        <div class="trr-card">
+      <div class="trr-grid trr-grid--2 trr-grid--devices">
+        <div class="trr-card trr-device-card trr-device-card--breakdown">
           <div class="trr-card-title">Device Breakdown</div>
           <div class="trr-chart-wrap"><canvas id="trr-devices-donut"></canvas></div>
         </div>
-        <div class="trr-card">
+        <div class="trr-card trr-device-card trr-device-card--players">
           <div class="trr-card-title">Top Players / Devices</div>
           <div class="trr-chart-wrap"><canvas id="trr-devices-bars"></canvas></div>
         </div>
@@ -1084,15 +1084,16 @@
           maintainAspectRatio: false,
           cutout: "64%",
           plugins: {
-            legend: {
-              position: "bottom",
-              labels: {
-                color: "rgba(255,255,255,0.50)",
-                boxWidth: 10,
-                boxHeight: 10,
-                padding: 12,
-              },
-            },
+	            legend: {
+	              position: "bottom",
+	              labels: {
+	                color: "rgba(255,255,255,0.50)",
+	                boxWidth: 9,
+	                boxHeight: 9,
+	                padding: 8,
+	                font: { size: 11 },
+	              },
+	            },
             tooltip: {
               backgroundColor: "rgba(12,16,22,0.96)",
               borderColor: "rgba(255,255,255,0.12)",
@@ -1166,6 +1167,7 @@
     const hist = asArray(_data.history);
     const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const grid = Array.from({ length: 7 }, () => Array(24).fill(0));
+    const sessionsByHour = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => []));
 
     hist.forEach(e => {
       const ts =
@@ -1184,9 +1186,35 @@
       if (Number.isNaN(d.getTime())) return;
 
       grid[d.getDay()][d.getHours()] += 1;
+      sessionsByHour[d.getDay()][d.getHours()].push(e);
     });
 
     const max = Math.max(...grid.flat(), 1);
+    const hourLabel = h => {
+      const start = new Date(2000, 0, 1, h);
+      const end = new Date(2000, 0, 1, h + 1);
+      return `${start.toLocaleTimeString("en-US", { hour: "numeric" })} - ${end.toLocaleTimeString("en-US", { hour: "numeric" })}`;
+    };
+    const sessionTitle = e => {
+      const media = e.media || e.item || e.video || e.track || e.episode || e.movie || e.show || {};
+      if (typeof media === "string") return media;
+      return e.title || e.mediaTitle || e.fullTitle || e.grandparentTitle ||
+        e.parentTitle || media.title || media.name || e.name || "Unknown media";
+    };
+    const sessionUser = e => {
+      const user = e.user || e.userInfo || e.account || e.username || e.userId || e.user_id;
+      if (!user) return "";
+      if (typeof user === "string" || typeof user === "number") return String(user);
+      return user.displayName || user.display_name || user.username || user.name || user.email || "";
+    };
+    const activityLabel = v => {
+      if (!v) return "No activity";
+      const pct = v / max;
+      if (pct >= 0.75) return "Peak activity";
+      if (pct >= 0.50) return "High activity";
+      if (pct >= 0.25) return "Moderate activity";
+      return "Light activity";
+    };
 
     host.innerHTML = `
       <div class="trr-heatmap-grid">
@@ -1194,11 +1222,27 @@
         ${Array.from({ length: 24 }, (_, h) => `<div class="trr-heatmap-hour">${h}</div>`).join("")}
         ${grid.map((row, dayIdx) => `
           <div class="trr-heatmap-day">${days[dayIdx]}</div>
-          ${row.map(v => {
+          ${row.map((v, hour) => {
       const a = v === 0 ? 0.06 : 0.12 + (v / max) * 0.88;
-      return `<div class="trr-heatmap-cell" title="${days[dayIdx]} ${String(
-        row.indexOf(v)
-      ).padStart(2, "0")}:00 • ${v} plays" style="background:rgba(74,222,180,${a})"></div>`;
+      const sessions = sessionsByHour[dayIdx][hour];
+      const watchMins = Math.round(sessions.reduce((sum, e) => sum + getDurationSeconds(e), 0) / 60);
+      const topSessions = sessions.slice(0, 5).map(e => ({
+        title: sessionTitle(e),
+        user: sessionUser(e),
+        duration: fmtDuration(getDurationSeconds(e)),
+      }));
+      const label = `${days[dayIdx]} ${hourLabel(hour)}`;
+      return `<button type="button" class="trr-heatmap-cell"
+                         title="${escH(label)} • ${v} play${v === 1 ? "" : "s"}"
+                         style="background:rgba(74,222,180,${a})"
+                         data-trr-heat-hour="${hour}"
+                         data-trr-label="${escH(label)}"
+                         data-trr-plays="${v}"
+                         data-trr-watch="${watchMins}"
+                         data-trr-sessions="${escH(JSON.stringify(topSessions))}"
+                         data-trr-more="${Math.max(0, sessions.length - topSessions.length)}"
+                         data-trr-empty="No session details for this hour."
+                         data-trr-context="${escH(activityLabel(v))}"></button>`;
     }).join("")}
         `).join("")}
       </div>
@@ -1222,6 +1266,8 @@
     const plays = num(anchor.dataset.trrPlays, 0);
     const watch = num(anchor.dataset.trrWatch, 0);
     const more = num(anchor.dataset.trrMore, 0);
+    const context = anchor.dataset.trrContext || "";
+    const emptyText = anchor.dataset.trrEmpty || "No session details for this day.";
 
     const popup = document.createElement("div");
     popup.className = "trr-cal-popup";
@@ -1229,7 +1275,7 @@
       <div class="trr-cal-popup__head">
         <div>
           <div class="trr-cal-popup__date">${escH(anchor.dataset.trrLabel || "")}</div>
-          <div class="trr-cal-popup__sub">${plays} play${plays === 1 ? "" : "s"} · ${watch} min watched</div>
+          <div class="trr-cal-popup__sub">${plays} play${plays === 1 ? "" : "s"} · ${watch} min watched${context ? ` · ${escH(context)}` : ""}</div>
         </div>
         <button type="button" class="trr-cal-popup__close" aria-label="Close">×</button>
       </div>
@@ -1241,7 +1287,7 @@
               <div class="trr-cal-popup__meta">${escH([item.user, item.duration].filter(Boolean).join(" · "))}</div>
             </div>
           </div>
-        `).join("") : `<div class="trr-cal-popup__empty">No session details for this day.</div>`}
+        `).join("") : `<div class="trr-cal-popup__empty">${escH(emptyText)}</div>`}
         ${more ? `<div class="trr-cal-popup__more">+${more} more session${more === 1 ? "" : "s"}</div>` : ""}
       </div>`;
 
@@ -1264,7 +1310,7 @@
   }
 
   function onCalPopupOutside(e) {
-    if (_calPopup && !_calPopup.contains(e.target) && !e.target.closest?.(".trr-cal-cell")) closeCalPopup();
+    if (_calPopup && !_calPopup.contains(e.target) && !e.target.closest?.(".trr-cal-cell, .trr-heatmap-cell")) closeCalPopup();
   }
 
   function bindCalendarDayEvents(scope) {
@@ -1283,7 +1329,7 @@
     if (!host._trrCalDelegated) {
       host._trrCalDelegated = true;
       host.addEventListener("click", e => {
-        const cell = e.target.closest?.(".trr-cal-cell[data-trr-date]");
+        const cell = e.target.closest?.(".trr-cal-cell[data-trr-date], .trr-heatmap-cell[data-trr-heat-hour]");
         if (!cell || !host.contains(cell)) return;
         e.preventDefault();
         e.stopPropagation();

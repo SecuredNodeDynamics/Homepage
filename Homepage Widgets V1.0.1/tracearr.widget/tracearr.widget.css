@@ -401,10 +401,11 @@
 ===================================================== */
 
 #trr-devices-donut {
-  min-height: 170px !important;
-  height: 170px !important;
-  max-height: 170px !important;
-  max-width: 170px !important;
+  min-height: 230px !important;
+  height: 230px !important;
+  max-height: 230px !important;
+  width: min(100%, 300px) !important;
+  max-width: 300px !important;
   margin: 0 auto;
 }
 
@@ -421,6 +422,15 @@
   padding: 10px 12px;
 }
 
+.trr-grid--devices {
+  align-items: stretch;
+}
+
+.trr-device-card {
+  min-height: 250px;
+  overflow: visible;
+}
+
 .trr-card:has(#trr-devices-donut) .trr-card-title,
 .trr-card:has(#trr-devices-bars) .trr-card-title,
 .trr-card:has(#trr-libraries-chart) .trr-card-title {
@@ -434,6 +444,23 @@
   height: 170px !important;
 }
 
+.trr-card.trr-device-card--breakdown:has(#trr-devices-donut) .trr-chart-wrap {
+  min-height: 230px !important;
+  height: 230px !important;
+}
+
+.trr-card.trr-device-card--players:has(#trr-devices-bars) .trr-chart-wrap {
+  min-height: 230px !important;
+  height: 230px !important;
+}
+
+.trr-card.trr-device-card--players:has(#trr-devices-bars) canvas,
+#trr-devices-bars {
+  min-height: 230px !important;
+  height: 230px !important;
+  max-height: 230px !important;
+}
+
 .trr-card:has(#trr-devices-donut) .trr-chart-wrap {
   display: flex;
   align-items: center;
@@ -441,10 +468,10 @@
 }
 
 .trr-card:has(#trr-devices-donut) canvas {
-  width: 170px !important;
-  height: 170px !important;
-  max-width: 170px !important;
-  max-height: 170px !important;
+  width: min(100%, 300px) !important;
+  height: 230px !important;
+  max-width: 300px !important;
+  max-height: 230px !important;
 }
 
 .trr-card:has(#trr-devices-bars) canvas,
@@ -560,13 +587,25 @@
 }
 
 .trr-heatmap-cell {
+  display: block;
+  width: 100%;
   height: 18px;
+  padding: 0;
+  appearance: none;
+  -webkit-appearance: none;
   border-radius: 4px;
   border: 1px solid rgba(255,255,255,0.04);
+  cursor: pointer;
+  font: inherit;
   transition:
     transform 0.16s ease,
     filter 0.16s ease,
     border-color 0.16s ease;
+}
+
+.trr-heatmap-cell:focus-visible {
+  outline: 2px solid rgba(74,222,180,0.65);
+  outline-offset: 2px;
 }
 
 .trr-heatmap-cell:hover {
