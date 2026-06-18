@@ -281,6 +281,18 @@
     return s.includes("pause") || s.includes("stop");
   }
 
+  function liveRateHtml(t) {
+    const s = (t.state || "").toLowerCase();
+    const isDownload = s.includes("download") || s === "metadl" || s === "forceddl" || s === "checkingdl";
+    const isSeed = s.includes("seed") || s.includes("upload") || s === "stalledup" || s === "checkingup";
+    const parts = [];
+
+    if (isDownload) parts.push(`<span class="qbit-live-rate qbit-live-rate--dl">↓ ${escH(fmtSpeed(t.dlspeed || 0))}</span>`);
+    if (isSeed) parts.push(`<span class="qbit-live-rate qbit-live-rate--ul">↑ ${escH(fmtSpeed(t.upspeed || 0))}</span>`);
+
+    return parts.join("");
+  }
+
   /* ── Filter + sort ── */
   function getFilteredSorted(torrents) {
     let list = [...(torrents || [])];
@@ -473,10 +485,9 @@
     const paused = isPaused(t.state);
     const active = isActive(t.state);
     const fillCls = sClass.replace("qbit-state--", "qbit-progress-fill--");
+    const liveRate = liveRateHtml(t);
 
     const metaChips = [
-      active && t.dlspeed > 0 ? `<span class="qbit-meta-chip qbit-meta-chip--dl">↓ ${escH(fmtSpeed(t.dlspeed))}</span>` : "",
-      active && t.upspeed > 0 ? `<span class="qbit-meta-chip qbit-meta-chip--ul">↑ ${escH(fmtSpeed(t.upspeed))}</span>` : "",
       active && t.eta ? `<span class="qbit-meta-chip">⏱ ${escH(fmtEta(t.eta))}</span>` : "",
       t.num_seeds != null ? `<span class="qbit-meta-chip">🌱 ${t.num_seeds}</span>` : "",
       t.ratio != null ? `<span class="qbit-meta-chip qbit-meta-chip--ratio">⇄ ${escH(fmtRatio(t.ratio))}</span>` : "",
@@ -500,6 +511,7 @@
           <input type="checkbox" class="qbit-torrent-check" data-hash="${escH(t.hash)}" ${sel ? "checked" : ""} />
           <span class="qbit-torrent-name" title="${escH(t.name)}">${escH(t.name)}</span>
           <div class="qbit-torrent-right">
+            ${liveRate}
             <span class="qbit-state-badge ${sClass}">${sLabel}</span>
           </div>
         </div>
@@ -563,8 +575,10 @@
         </div>
 
         ${buildSpeedsBar()}
-        ${buildToolbar()}
-        ${buildFilterBar(counts)}
+        <div class="qbit-control-row">
+          ${buildToolbar()}
+          ${buildFilterBar(counts)}
+        </div>
 
         <div id="qbit-list">
           ${buildTorrentList(torrents)}

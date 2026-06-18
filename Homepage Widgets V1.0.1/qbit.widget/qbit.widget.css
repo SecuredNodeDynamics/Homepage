@@ -269,11 +269,21 @@ body.light .qbit-speed-label,
 }
 
 /* ── Global Controls Toolbar ──────────────────────────────────────── */
+.qbit-control-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  width: 100%;
+  min-width: 0;
+}
+
 .qbit-toolbar {
   display: flex;
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
+  flex: 0 0 auto;
 }
 
 .qbit-toolbar-sep {
@@ -385,11 +395,15 @@ body.light .qbit-toolbar-btn:hover:not(:disabled),
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  flex: 1 1 520px;
+  min-width: 420px;
+  justify-content: flex-start;
 }
 
 .qbit-search {
-  flex: 1;
-  min-width: 140px;
+  flex: 0 1 360px;
+  width: clamp(220px, 26vw, 360px);
+  min-width: 220px;
   padding: 6px 12px;
   border-radius: 9px;
   background: rgba(255, 255, 255, 0.06);
@@ -668,6 +682,47 @@ body.light .qbit-torrent-name,
   align-items: center;
   gap: 7px;
   flex-shrink: 0;
+}
+
+.qbit-live-rate {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.64rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.qbit-live-rate--dl {
+  color: rgba(74, 222, 128, 0.95);
+  background: rgba(74, 222, 128, 0.10);
+  border-color: rgba(74, 222, 128, 0.22);
+}
+
+.qbit-live-rate--ul {
+  color: rgba(96, 165, 250, 0.95);
+  background: rgba(96, 165, 250, 0.10);
+  border-color: rgba(96, 165, 250, 0.22);
+}
+
+body.light .qbit-live-rate--dl,
+[data-theme="light"] .qbit-live-rate--dl {
+  color: rgba(21, 128, 61, 0.95);
+  background: rgba(22, 163, 74, 0.08);
+  border-color: rgba(22, 163, 74, 0.20);
+}
+
+body.light .qbit-live-rate--ul,
+[data-theme="light"] .qbit-live-rate--ul {
+  color: rgba(37, 99, 235, 0.95);
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.20);
 }
 
 /* ── State Badges ──────────────────────────────────────── */
@@ -1209,8 +1264,21 @@ body.light .qbit-confirm-btn--cancel:hover,
     flex-wrap: wrap;
   }
 
+  .qbit-control-row {
+    align-items: stretch;
+  }
+
   .qbit-filter-bar {
     gap: 6px;
+    flex: 1 1 100% !important;
+    min-width: 0;
+    justify-content: flex-start;
+  }
+
+  .qbit-search {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
   }
 }
 
