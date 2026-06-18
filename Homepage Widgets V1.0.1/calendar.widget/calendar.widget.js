@@ -356,6 +356,13 @@
       .sort((a, b) => a.date - b.date);
 
     const typeIcon = { movie: "🎬", episode: "📺", album: "🎵" };
+    const viewTabs = `
+      <div class="mcal-items-view-tabs" aria-label="Today items view">
+        <button class="mcal-items-view-tab ${_calItemsView === "list" ? "mcal-items-view-tab--active" : ""}"
+                data-items-view="list" type="button">List</button>
+        <button class="mcal-items-view-tab ${_calItemsView === "grid" ? "mcal-items-view-tab--active" : ""}"
+                data-items-view="grid" type="button">Grid</button>
+      </div>`;
 
     const itemsHtml = todayEvents.length === 0
       ? `<div class="mcal-today-empty">Nothing scheduled for today</div>`
@@ -363,6 +370,30 @@
         const link = buildMediaLink(ev);
         const tag = link ? "a" : "div";
         const linkAttrs = link ? `href="${escH(link)}" target="_blank" rel="noopener"` : "";
+        if (_calItemsView === "grid") {
+          const poster = ev.poster
+            ? `<img class="mcal-today-poster" src="${escH(ev.poster)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+            : `<div class="mcal-today-poster mcal-today-poster--fallback">${escH((ev.title || "?").charAt(0))}</div>`;
+          return `
+            <${tag} class="mcal-today-card ${link ? "mcal-today-card--link" : ""}" ${linkAttrs}>
+              <div class="mcal-today-poster-wrap">
+                ${poster}
+                <span class="mcal-today-dot mcal-today-dot--poster" style="background:${ev.mediaStatus === 1 ? "#f87171" : escH(ev.color)}"></span>
+              </div>
+              <div class="mcal-today-card-body">
+                <div class="mcal-today-item-top">
+                  <span class="mcal-today-type">${typeIcon[ev.type] || "•"}</span>
+                  <span class="mcal-today-title">${escH(ev.title)}</span>
+                  ${link ? `<span class="mcal-today-arrow">↗</span>` : ""}
+                </div>
+                ${ev.subtitle ? `<div class="mcal-today-sub">${escH(ev.subtitle)}</div>` : ""}
+                <div class="mcal-src-row">
+                  <span class="mcal-today-src" style="color:${escH(ev.color)};opacity:0.85;">${escH(ev.source)}</span>
+                  ${ev.mediaStatus != null ? mediaStatusBadge(ev.mediaStatus) : ""}
+                </div>
+              </div>
+            </${tag}>`;
+        }
         return `
             <${tag} class="mcal-today-item ${link ? "mcal-today-item--link" : ""}" ${linkAttrs}>
               <span class="mcal-today-dot" style="background:${ev.mediaStatus === 1 ? "#f87171" : escH(ev.color)}"></span>
@@ -384,11 +415,14 @@
     return `
       <div class="mcal-today-panel">
         <div class="mcal-today-hdr">
-          <span class="mcal-today-label">Today</span>
-          <span class="mcal-today-date">${today.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</span>
-          <span class="mcal-today-count">${todayEvents.length} release${todayEvents.length !== 1 ? "s" : ""}</span>
+          <div class="mcal-today-hdr-main">
+            <span class="mcal-today-label">Today</span>
+            <span class="mcal-today-date">${today.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</span>
+            <span class="mcal-today-count">${todayEvents.length} release${todayEvents.length !== 1 ? "s" : ""}</span>
+          </div>
+          ${viewTabs}
         </div>
-        <div class="mcal-today-items">${itemsHtml}</div>
+        <div class="mcal-today-items ${_calItemsView === "grid" ? "mcal-today-items--grid" : "mcal-today-items--list"}">${itemsHtml}</div>
       </div>`;
   }
 
@@ -396,6 +430,7 @@
   let _calMonth = new Date().getMonth();
   let _calYear = new Date().getFullYear();
   let _calView = "month";
+  let _calItemsView = "list";
   let _calEvents = [];
 
   function legendHtml() {
@@ -570,6 +605,13 @@
     _calHost.querySelectorAll(".mcal-view-tab").forEach(btn => {
       btn.addEventListener("click", () => {
         _calView = btn.dataset.view;
+        paint();
+      });
+    });
+
+    _calHost.querySelectorAll("[data-items-view]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        _calItemsView = btn.dataset.itemsView === "grid" ? "grid" : "list";
         paint();
       });
     });

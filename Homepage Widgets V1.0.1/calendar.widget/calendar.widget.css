@@ -545,6 +545,50 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.mcal-today-hdr-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.mcal-items-view-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  flex-shrink: 0;
+}
+
+.mcal-items-view-tab {
+  border: 0;
+  border-radius: 7px;
+  padding: 4px 10px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 0.62rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+
+.mcal-items-view-tab:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.mcal-items-view-tab--active {
+  background: rgba(96, 165, 250, 0.16);
+  color: rgba(147, 197, 253, 0.96);
 }
 
 .mcal-today-label {
@@ -584,6 +628,13 @@
   scrollbar-color: rgba(255, 255, 255, 0.10) transparent;
 }
 
+.mcal-today-items--grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+  gap: 8px;
+  align-items: stretch;
+}
+
 .mcal-today-items::-webkit-scrollbar { width: 4px; }
 .mcal-today-items::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.12);
@@ -611,8 +662,75 @@
   background: rgba(255, 255, 255, 0.07);
 }
 
-.mcal-today-item--link:hover .mcal-today-arrow {
+.mcal-today-item--link:hover .mcal-today-arrow,
+.mcal-today-card--link:hover .mcal-today-arrow {
   opacity: 1;
+}
+
+.mcal-today-card {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 9px;
+  min-height: 82px;
+  padding: 8px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: inherit;
+  text-decoration: none;
+  min-width: 0;
+}
+
+.mcal-today-card--link {
+  cursor: pointer;
+  transition: background 0.14s, border-color 0.14s;
+}
+
+.mcal-today-card--link:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.11);
+}
+
+.mcal-today-poster-wrap {
+  position: relative;
+  width: 46px;
+  height: 66px;
+  border-radius: 7px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.mcal-today-poster {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mcal-today-poster--fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.mcal-today-dot--poster {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  margin: 0;
+  box-shadow: 0 0 0 2px rgba(10, 14, 20, 0.85);
+}
+
+.mcal-today-card-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
 }
 
 .mcal-today-dot {
