@@ -238,6 +238,13 @@ body.light .dns-section-label,
   scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
 }
 
+.dns-monitor-host .dns-top-list {
+  display: flex !important;
+  grid-template-columns: none !important;
+  gap: 6px !important;
+  overflow-x: hidden;
+}
+
 .dns-top-row {
   display: flex;
   align-items: center;
@@ -272,6 +279,14 @@ body.light .dns-top-row:hover,
   flex: 1;
   min-width: 0;
   font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.dns-monitor-host .dns-top-label {
+  font-size: 0.76rem;
+}
+
+.dns-monitor-host .dns-top-count {
+  min-width: 58px;
 }
 
 body.light .dns-top-label,
