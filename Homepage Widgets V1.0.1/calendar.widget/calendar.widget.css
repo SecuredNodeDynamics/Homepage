@@ -958,3 +958,31 @@ ul.services-list {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Mobile/tablet: force native service grids and custom widget rows to one column. */
+@media (max-width: 1024px) {
+  ul.services-list {
+    grid-template-columns: 1fr !important;
+  }
+
+  .hp-widget-row,
+  [class$="-flex-row"],
+  [class*="-flex-row "] {
+    display: flex !important;
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    gap: var(--hp-widget-gap, 10px) !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .hp-widget-row > *,
+  [class$="-flex-row"] > *,
+  [class*="-flex-row "] > * {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+}
