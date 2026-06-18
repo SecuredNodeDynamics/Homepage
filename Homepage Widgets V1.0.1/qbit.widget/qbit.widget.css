@@ -397,7 +397,7 @@ body.light .qbit-toolbar-btn:hover:not(:disabled),
   flex-wrap: wrap;
   flex: 1 1 520px;
   min-width: 420px;
-  justify-content: flex-start;
+  justify-content: flex-end;
 }
 
 .qbit-search {
