@@ -1,0 +1,479 @@
+/* =====================================================
+   HOME ASSISTANT WIDGET
+   File: homeassistant.widget.css
+===================================================== */
+
+
+/* ── Host / Wrapper ──────────────────────────────── */
+.ha-flex-row {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  width: 100%;
+}
+
+.ha-flex-row .ha-host,
+.hp-widget-row.ha-flex-row > .ha-host {
+  flex: 1;
+  min-width: 0;
+}
+
+.ha-host {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.ha-shell {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 20px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  position: relative;
+  background-color: rgba(12, 16, 22, 0.85);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+
+/* ── Header ──────────────────────────────────────── */
+.ha-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-wrap: wrap;
+}
+
+.ha-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.ha-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.ha-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.ha-title {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.96);
+  letter-spacing: 0.01em;
+  line-height: 1.15;
+}
+
+.ha-subtitle {
+  margin-top: 2px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.45);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ha-open-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.45);
+  transition: background 0.14s, color 0.14s, border-color 0.14s;
+  letter-spacing: 0.03em;
+}
+
+.ha-open-link:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: rgba(255, 255, 255, 0.72);
+}
+
+
+/* ── Status Badge ────────────────────────────────── */
+.ha-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ha-status::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: currentColor;
+}
+
+.ha-status--ok {
+  background: rgba(74, 222, 128, 0.12);
+  color: #86efac;
+  border: 1px solid rgba(74, 222, 128, 0.28);
+}
+
+.ha-status--warn {
+  background: rgba(251, 191, 36, 0.10);
+  color: #fde68a;
+  border: 1px solid rgba(251, 191, 36, 0.25);
+}
+
+
+/* ── Metrics Grid ────────────────────────────────── */
+.ha-metrics {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+  padding: 10px 12px 8px;
+}
+
+.ha-metric {
+  min-width: 0;
+  border-radius: 8px;
+  padding: 10px 10px 9px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: background 0.14s, border-color 0.14s;
+}
+
+.ha-metric:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.10);
+}
+
+.ha-metric-value {
+  font-size: 0.96rem;
+  font-weight: 800;
+  line-height: 1.05;
+  color: rgba(255, 255, 255, 0.92);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ha-metric-label {
+  margin-top: 6px;
+  font-size: 0.60rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.38);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ha-metric-sub {
+  margin-top: 4px;
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.25);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Accent variants */
+.ha-metric--green {
+  background: rgba(74, 222, 128, 0.08);
+  border-color: rgba(74, 222, 128, 0.18);
+}
+
+.ha-metric--blue {
+  background: rgba(96, 165, 250, 0.10);
+  border-color: rgba(96, 165, 250, 0.22);
+}
+
+.ha-metric--amber {
+  background: rgba(251, 191, 36, 0.08);
+  border-color: rgba(251, 191, 36, 0.18);
+}
+
+.ha-metric--red {
+  background: rgba(248, 113, 113, 0.08);
+  border-color: rgba(248, 113, 113, 0.18);
+}
+
+.ha-metric--cyan {
+  background: rgba(96, 165, 250, 0.10);
+  border-color: rgba(96, 165, 250, 0.24);
+}
+
+
+/* ── Two Column Panels ───────────────────────────── */
+.ha-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 6px 12px 10px;
+}
+
+.ha-panel {
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.ha-panel-title {
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.45);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ha-list {
+  display: flex;
+  flex-direction: column;
+}
+
+
+/* ── Entity Rows ─────────────────────────────────── */
+.ha-entity-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  background: transparent;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 0.14s;
+  min-width: 0;
+}
+
+.ha-entity-row:first-child {
+  border-top: 0;
+}
+
+.ha-entity-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.ha-entity-row--alert {
+  background: rgba(248, 113, 113, 0.06);
+}
+
+.ha-entity-row--alert:hover {
+  background: rgba(248, 113, 113, 0.10);
+}
+
+.ha-entity-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.ha-entity-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ha-entity-id {
+  font-size: 0.63rem;
+  color: rgba(255, 255, 255, 0.42);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ha-entity-state {
+  margin-left: auto;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+
+/* ── Generic States ──────────────────────────────── */
+.ha-loading,
+.ha-empty,
+.ha-error,
+.ha-setup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  padding: 24px 14px;
+  text-align: center;
+}
+
+.ha-loading,
+.ha-empty {
+  color: rgba(255, 255, 255, 0.30);
+}
+
+.ha-error {
+  color: #fca5a5;
+}
+
+.ha-setup {
+  color: rgba(255, 255, 255, 0.45);
+  padding: 18px 16px 20px;
+}
+
+.ha-setup span {
+  color: rgba(96, 165, 250, 0.95);
+  font-weight: 700;
+}
+
+
+/* ── Footer ──────────────────────────────────────── */
+.ha-footer {
+  font-size: 0.60rem;
+  color: rgba(255, 255, 255, 0.18);
+  text-align: right;
+  padding: 6px 16px 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+
+/* ── State Color Helpers ─────────────────────────── */
+.ha-entity-row--alert .ha-entity-state {
+  background: rgba(248, 113, 113, 0.10);
+  color: #fca5a5;
+  border-color: rgba(248, 113, 113, 0.22);
+}
+
+
+/* ── Responsive ──────────────────────────────────── */
+@media (max-width: 1200px) {
+  .ha-metrics {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 820px) {
+  .ha-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .ha-header {
+    align-items: flex-start;
+  }
+
+  .ha-header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 640px) {
+  .ha-shell {
+    border-radius: 18px !important;
+  }
+
+  .ha-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .ha-header {
+    padding: 12px 14px 10px;
+  }
+
+  .ha-metrics {
+    padding: 10px 10px 8px;
+  }
+
+  .ha-columns {
+    padding: 6px 10px 10px;
+  }
+
+  .ha-panel-title {
+    padding: 10px 10px 8px;
+  }
+
+  .ha-entity-row {
+    padding: 8px 9px;
+  }
+
+  .ha-footer {
+    padding: 6px 12px 10px;
+  }
+}
+
+@media (max-width: 420px) {
+  .ha-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .ha-header-right {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .ha-open-link,
+  .ha-status {
+    justify-content: center;
+  }
+
+  .ha-entity-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ha-entity-state {
+    margin-left: 0;
+    align-self: flex-start;
+  }
+}
+
+
+/* ── Reduced Motion ──────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .ha-open-link,
+  .ha-metric,
+  .ha-entity-row {
+    transition: none;
+  }
+}

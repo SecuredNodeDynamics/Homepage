@@ -1,0 +1,5 @@
+- HOME-ASSISTANT-WIDGET:
+
+    - Homeassistant Anchor:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/homeassistant.webp
+        description: Homeassistant Widget (injected widget)
