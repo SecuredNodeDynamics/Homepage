@@ -853,10 +853,13 @@
     rangeStart.setDate(rangeStart.getDate() - (DAYS - 1));
     rangeStart.setDate(rangeStart.getDate() - rangeStart.getDay());
 
+    const rangeEnd = new Date(now);
+    rangeEnd.setDate(rangeEnd.getDate() + (6 - rangeEnd.getDay()));
+
     const weeks = [];
     const cur = new Date(rangeStart);
 
-    while (cur <= now) {
+    while (cur <= rangeEnd) {
       if (!weeks.length || weeks[weeks.length - 1].length === 7) weeks.push([]);
       const key = cur.toISOString().slice(0, 10);
       const info = lookup[key];
@@ -891,30 +894,70 @@
       return t >= 0.50 ? "rgba(0,0,0,0.70)" : "rgba(255,255,255,0.60)";
     }
 
-    function monthLabel(week) {
-      const first = week.find(c => c.inRange && c.date);
-      if (!first) return "";
-      return first.date.getDate() <= 7 ? MONTHS[first.date.getMonth()] : "";
+    const visibleMonths = [...new Set(
+      weeks.flatMap(week => week)
+        .filter(cell => cell.inRange && cell.date)
+        .map(cell => MONTHS[cell.date.getMonth()])
+    )].join(" / ");
+
+    function sessionsForDay(date) {
+      const key = date.toISOString().slice(0, 10);
+      return asArray(_data.history).filter(e => {
+        const ts =
+          e.startedAt || e.stoppedAt || e.date || e.timestamp ||
+          e.started_at || e.startTime || e.created_at || e.time;
+        if (!ts) return false;
+        const d = new Date(ts);
+        return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === key;
+      });
+    }
+
+    function sessionTitle(e) {
+      const media =
+        e.media || e.item || e.video || e.track || e.episode || e.movie || e.show || {};
+      if (typeof media === "string") return media;
+      return e.title || e.mediaTitle || e.fullTitle || e.grandparentTitle ||
+        e.parentTitle || media.title || media.name || e.name || "Unknown media";
+    }
+
+    function sessionUser(e) {
+      const user = e.user || e.userInfo || e.account || e.username || e.userId || e.user_id;
+      if (!user) return "";
+      if (typeof user === "string" || typeof user === "number") return String(user);
+      return user.displayName || user.display_name || user.username || user.name || user.email || "";
     }
 
     host.innerHTML = `
       <div class="trr-cal">
+        <div class="trr-cal-month-title">${visibleMonths}</div>
+        <div class="trr-cal-weekdays">
+          ${DOW.map(d => `<div class="trr-cal-dow-item">${d}</div>`).join("")}
+        </div>
         <div class="trr-cal-body">
-          <div class="trr-cal-dow">
-            ${DOW.map(d => `<div class="trr-cal-dow-item">${d}</div>`).join("")}
-          </div>
           <div class="trr-cal-scroll">
-            <div class="trr-cal-months">
-              ${weeks.map(w => `<div class="trr-cal-month-lbl">${monthLabel(w)}</div>`).join("")}
-            </div>
             <div class="trr-cal-grid">
               ${weeks.map(week => `
-                <div class="trr-cal-col">
+                <div class="trr-cal-week">
                   ${week.map(cell => cell.inRange
-      ? `<div class="trr-cal-cell"
-                             style="background:${cellColor(cell.plays || 0)};color:${textColor(cell.plays || 0)};display:flex;align-items:center;justify-content:center;font-size:0.52rem;font-weight:700;"
+      ? (() => {
+        const sessions = sessionsForDay(cell.date);
+        const watchMins = Math.round(sessions.reduce((sum, e) => sum + getDurationSeconds(e), 0) / 60);
+        const topSessions = sessions.slice(0, 5).map(e => ({
+          title: sessionTitle(e),
+          user: sessionUser(e),
+          duration: fmtDuration(getDurationSeconds(e)),
+        }));
+        return `<button type="button" class="trr-cal-cell"
+                             style="background:${cellColor(cell.plays || 0)};color:${textColor(cell.plays || 0)};"
                              title="${cell.date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}: ${cell.plays || 0} play${cell.plays !== 1 ? "s" : ""}"
-                        >${cell.date.getDate()}</div>`
+                             data-trr-date="${cell.date.toISOString().slice(0, 10)}"
+                             data-trr-label="${escH(cell.date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }))}"
+                             data-trr-plays="${cell.plays || 0}"
+                             data-trr-watch="${watchMins}"
+                             data-trr-sessions="${escH(JSON.stringify(topSessions))}"
+                             data-trr-more="${Math.max(0, sessions.length - topSessions.length)}"
+                        >${cell.date.getDate()}</button>`;
+      })()
       : `<div class="trr-cal-cell trr-cal-cell--void"></div>`
     ).join("")}
                 </div>
@@ -931,6 +974,8 @@
         </div>
       </div>
     `;
+
+    bindCalendarDayEvents(host);
   }
 
   function renderHistoryCharts() {
@@ -1160,11 +1205,97 @@
     `;
   }
 
+  let _calPopup = null;
+
+  function closeCalPopup() {
+    if (_calPopup) {
+      _calPopup.remove();
+      _calPopup = null;
+    }
+  }
+
+  function openCalPopup(anchor) {
+    closeCalPopup();
+    let sessions = [];
+    try { sessions = JSON.parse(anchor.dataset.trrSessions || "[]"); } catch (_) { sessions = []; }
+
+    const plays = num(anchor.dataset.trrPlays, 0);
+    const watch = num(anchor.dataset.trrWatch, 0);
+    const more = num(anchor.dataset.trrMore, 0);
+
+    const popup = document.createElement("div");
+    popup.className = "trr-cal-popup";
+    popup.innerHTML = `
+      <div class="trr-cal-popup__head">
+        <div>
+          <div class="trr-cal-popup__date">${escH(anchor.dataset.trrLabel || "")}</div>
+          <div class="trr-cal-popup__sub">${plays} play${plays === 1 ? "" : "s"} · ${watch} min watched</div>
+        </div>
+        <button type="button" class="trr-cal-popup__close" aria-label="Close">×</button>
+      </div>
+      <div class="trr-cal-popup__list">
+        ${sessions.length ? sessions.map(item => `
+          <div class="trr-cal-popup__row">
+            <div class="trr-cal-popup__main">
+              <div class="trr-cal-popup__title">${escH(item.title)}</div>
+              <div class="trr-cal-popup__meta">${escH([item.user, item.duration].filter(Boolean).join(" · "))}</div>
+            </div>
+          </div>
+        `).join("") : `<div class="trr-cal-popup__empty">No session details for this day.</div>`}
+        ${more ? `<div class="trr-cal-popup__more">+${more} more session${more === 1 ? "" : "s"}</div>` : ""}
+      </div>`;
+
+    document.body.appendChild(popup);
+    _calPopup = popup;
+
+    const rect = anchor.getBoundingClientRect();
+    const popRect = popup.getBoundingClientRect();
+    const margin = 12;
+    let left = rect.left + rect.width / 2 - popRect.width / 2;
+    let top = rect.bottom + 10;
+    left = Math.max(margin, Math.min(left, window.innerWidth - popRect.width - margin));
+    if (top + popRect.height > window.innerHeight - margin) top = rect.top - popRect.height - 10;
+    top = Math.max(margin, top);
+    popup.style.left = `${left}px`;
+    popup.style.top = `${top}px`;
+
+    popup.querySelector(".trr-cal-popup__close")?.addEventListener("click", closeCalPopup);
+    setTimeout(() => document.addEventListener("click", onCalPopupOutside, { once: true, capture: true }), 0);
+  }
+
+  function onCalPopupOutside(e) {
+    if (_calPopup && !_calPopup.contains(e.target) && !e.target.closest?.(".trr-cal-cell")) closeCalPopup();
+  }
+
+  function bindCalendarDayEvents(scope) {
+    scope.querySelectorAll(".trr-cal-cell[data-trr-date]").forEach(cell => {
+      if (cell._calBound) return;
+      cell._calBound = true;
+      cell.addEventListener("click", e => {
+        e.preventDefault();
+        e.stopPropagation();
+        openCalPopup(cell);
+      });
+    });
+  }
+
   function bindEvents(host) {
+    if (!host._trrCalDelegated) {
+      host._trrCalDelegated = true;
+      host.addEventListener("click", e => {
+        const cell = e.target.closest?.(".trr-cal-cell[data-trr-date]");
+        if (!cell || !host.contains(cell)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        openCalPopup(cell);
+      });
+    }
+
     host.querySelectorAll("[data-tab]").forEach(btn => {
       if (btn._bound) return;
       btn._bound = true;
       btn.addEventListener("click", () => {
+        closeCalPopup();
         _activeTab = btn.dataset.tab;
         render(host);
       });
@@ -1192,12 +1323,17 @@
   function render(host) {
     if (!host) return;
     const scrollY = window.scrollY;
+    closeCalPopup();
     host.innerHTML = buildWidget();
     bindEvents(host);
     mountCharts();
     _rendered = true;
     window.scrollTo({ top: scrollY, behavior: "instant" });
   }
+
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") closeCalPopup();
+  });
 
   async function refresh() {
     const group = findGroupContainer(TRACEARR_CONFIG.groupName);
