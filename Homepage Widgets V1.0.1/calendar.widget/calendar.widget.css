@@ -175,7 +175,9 @@
 }
 
 @keyframes mcal-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .mcal-spin {
@@ -267,6 +269,19 @@
   flex-shrink: 0;
 }
 
+.mcal-dot.mcal-status-dot--missing,
+.mcal-today-dot.mcal-status-dot--missing,
+.mcal-agenda-dot.mcal-status-dot--missing {
+  --mcal-missing-color: #f87171;
+  background-color: var(--mcal-src-color);
+  animation: mcal-dot-missing-pulse 2.8s ease-in-out infinite;
+}
+
+@keyframes mcal-dot-missing-pulse {
+  0%, 100% { background-color: var(--mcal-src-color); }
+  50% { background-color: var(--mcal-missing-color); }
+}
+
 .mcal-dot-more {
   font-size: 0.52rem;
   color: rgba(255, 255, 255, 0.35);
@@ -303,25 +318,30 @@
 .mcal-agenda-items {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 8px;
+}
+
+.mcal-agenda-item,
+.mcal-agenda-item--link {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .mcal-agenda-item--link {
   cursor: pointer;
   text-decoration: none;
   color: inherit;
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 5px 8px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  transition: background 0.14s;
-  margin: 0;
+  transition: background 0.14s, border-color 0.14s;
 }
 
 .mcal-agenda-item--link:hover {
   background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.09);
 }
 
 .mcal-agenda-dot {
@@ -393,14 +413,21 @@
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.60);
   overflow: hidden;
   animation: mcal-popup-in 0.15s ease;
-  max-height: 480px;
+  max-height: 520px;
   display: flex;
   flex-direction: column;
 }
 
 @keyframes mcal-popup-in {
-  from { opacity: 0; transform: scale(0.94) translateY(6px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .mcal-popup-hdr {
@@ -427,14 +454,35 @@
 
 .mcal-popup-items {
   overflow-y: auto;
-  padding: 8px 10px 12px;
+  padding: 10px 12px 14px;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.mcal-popup-items::-webkit-scrollbar { width: 4px; }
-.mcal-popup-items::-webkit-scrollbar-track { background: transparent; }
+.mcal-popup-items--grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  align-items: stretch;
+}
+
+.mcal-popup-items--grid .mcal-today-card {
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.mcal-popup-items--grid .mcal-today-card--link:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.mcal-popup-items::-webkit-scrollbar {
+  width: 4px;
+}
+
+.mcal-popup-items::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 .mcal-popup-items::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.12);
   border-radius: 4px;
@@ -630,12 +678,59 @@
 
 .mcal-today-items--grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 10px;
+  align-items: stretch;
+  max-height: 280px;
+}
+
+.mcal-today-items--list {
   gap: 8px;
+  max-height: 340px;
+}
+
+.mcal-media-list-row {
   align-items: stretch;
 }
 
-.mcal-today-items::-webkit-scrollbar { width: 4px; }
+.mcal-today-item.mcal-media-list-row,
+.mcal-agenda-item.mcal-media-list-row,
+.mcal-agenda-item--link.mcal-media-list-row {
+  align-items: stretch;
+}
+
+.mcal-today-poster-wrap--list {
+  position: relative;
+  flex: 0 0 48px;
+  width: 48px;
+  min-height: 72px;
+  align-self: stretch;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.mcal-media-list-row .mcal-today-item-body,
+.mcal-media-list-row .mcal-agenda-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  min-height: 72px;
+}
+
+.mcal-today-items--list .mcal-today-item {
+  padding: 8px 10px;
+}
+
+.mcal-today-items::-webkit-scrollbar {
+  width: 4px;
+}
+
 .mcal-today-items::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.12);
   border-radius: 4px;
@@ -668,12 +763,11 @@
 }
 
 .mcal-today-card {
-  display: grid;
-  grid-template-columns: 46px minmax(0, 1fr);
-  gap: 9px;
-  min-height: 82px;
-  padding: 8px;
-  border-radius: 9px;
+  display: flex;
+  align-items: stretch;
+  gap: 11px;
+  padding: 10px 11px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid rgba(255, 255, 255, 0.06);
   color: inherit;
@@ -683,27 +777,37 @@
 
 .mcal-today-card--link {
   cursor: pointer;
-  transition: background 0.14s, border-color 0.14s;
+  transition: background 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
 }
 
 .mcal-today-card--link:hover {
   background: rgba(255, 255, 255, 0.07);
   border-color: rgba(255, 255, 255, 0.11);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
 }
 
 .mcal-today-poster-wrap {
   position: relative;
-  width: 46px;
-  height: 66px;
-  border-radius: 7px;
+  flex: 0 0 62px;
+  width: 62px;
+  min-height: 90px;
+  align-self: stretch;
+  border-radius: 8px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+}
+
+.mcal-today-poster,
+.mcal-today-poster--fallback {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .mcal-today-poster {
-  width: 100%;
-  height: 100%;
   object-fit: cover;
   display: block;
 }
@@ -712,15 +816,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
+  font-size: 1.15rem;
   font-weight: 800;
   color: rgba(255, 255, 255, 0.35);
 }
 
 .mcal-today-dot--poster {
   position: absolute;
-  right: 4px;
-  bottom: 4px;
+  right: 5px;
+  bottom: 5px;
   margin: 0;
   box-shadow: 0 0 0 2px rgba(10, 14, 20, 0.85);
 }
@@ -729,8 +833,88 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 4px;
+  gap: 5px;
+  flex: 1;
   min-width: 0;
+  min-height: 90px;
+  padding: 1px 0;
+}
+
+.mcal-today-card .mcal-today-item-top {
+  align-items: flex-start;
+}
+
+.mcal-today-card .mcal-today-type {
+  margin-top: 1px;
+}
+
+.mcal-today-card .mcal-today-title {
+  font-size: 0.78rem;
+  line-height: 1.25;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.mcal-today-card .mcal-today-sub {
+  line-height: 1.35;
+}
+
+.mcal-today-card .mcal-src-row {
+  gap: 5px;
+  margin-top: 1px;
+}
+
+.mcal-today-card .mcal-today-src {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Today Panel — enlarged grid cards ───────────── */
+.mcal-today-panel .mcal-today-items--grid {
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 12px;
+  max-height: 340px;
+}
+
+.mcal-today-panel .mcal-today-card {
+  gap: 13px;
+  padding: 12px 14px;
+  border-radius: 11px;
+}
+
+.mcal-today-panel .mcal-today-poster-wrap {
+  flex: 0 0 74px;
+  width: 74px;
+  min-height: 108px;
+  border-radius: 9px;
+}
+
+.mcal-today-panel .mcal-today-card-body {
+  min-height: 108px;
+  gap: 6px;
+}
+
+.mcal-today-panel .mcal-today-card .mcal-today-title {
+  font-size: 0.84rem;
+  line-height: 1.28;
+}
+
+.mcal-today-panel .mcal-today-card .mcal-today-sub {
+  font-size: 0.68rem;
+}
+
+.mcal-today-panel .mcal-today-card .mcal-today-type {
+  font-size: 0.76rem;
+}
+
+.mcal-today-panel .mcal-today-poster--fallback {
+  font-size: 1.35rem;
 }
 
 .mcal-today-dot {
@@ -854,253 +1038,4 @@
   text-align: right;
   padding: 6px 16px 10px;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-/* =====================================================
-   Widget Source Autosize Patch
-   Lets this widget CSS stand alone on phone, tablet, and desktop.
-===================================================== */
-
-:root {
-  --hp-widget-source-gap: clamp(8px, 2vw, 16px);
-  --hp-widget-source-pad: clamp(10px, 2vw, 18px);
-  --hp-widget-source-radius: clamp(14px, 2vw, 20px);
-  --hp-widget-source-min-card: min(100%, 140px);
-}
-
-.service-card,
-.widget-card,
-[class$="-host"],
-[class*="-host "] {
-  box-sizing: border-box !important;
-  max-width: 100% !important;
-}
-
-.service-card *,
-.widget-card *,
-[class$="-host"] *,
-[class*="-host "] * {
-  box-sizing: border-box;
-  min-width: 0;
-}
-
-.hp-widget-row,
-[class$="-flex-row"],
-[class*="-flex-row "],
-.arr-js-flex-row,
-.arr-lt-flex-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--hp-widget-source-gap) !important;
-  width: 100%;
-  align-items: stretch;
-}
-
-.hp-widget-row > *,
-[class$="-flex-row"] > *,
-[class*="-flex-row "] > *,
-.arr-js-flex-row > *,
-.arr-lt-flex-row > * {
-  flex: 1 1 min(100%, 360px) !important;
-  min-width: 0 !important;
-  max-width: 100% !important;
-}
-
-[class$="-grid"],
-[class*="-grid "],
-[class$="-stats-row"],
-[class*="-stats-row "] {
-  max-width: 100%;
-}
-
-[class$="-stat-grid"],
-[class*="-stat-grid "],
-[class$="-cards-grid"],
-[class*="-cards-grid "],
-[class$="-card-grid"],
-[class*="-card-grid "] {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(var(--hp-widget-source-min-card), 1fr)) !important;
-  gap: var(--hp-widget-source-gap) !important;
-  width: 100%;
-}
-
-[class$="-header"],
-[class*="-header "],
-[class$="-toolbar"],
-[class*="-toolbar "],
-[class$="-actions"],
-[class*="-actions "],
-[class$="-controls"],
-[class*="-controls "] {
-  flex-wrap: wrap;
-  min-width: 0;
-  max-width: 100%;
-}
-
-[class$="-list"],
-[class*="-list "],
-[class$="-body"],
-[class*="-body "],
-[class$="-guide"],
-[class*="-guide "] {
-  max-width: 100%;
-  scrollbar-width: thin;
-}
-
-.apexcharts-canvas,
-.apexcharts-svg,
-.recharts-wrapper,
-.recharts-surface,
-canvas,
-svg,
-img {
-  max-width: 100% !important;
-}
-
-@media (max-width: 768px) {
-  :root {
-    --hp-widget-source-gap: 10px;
-    --hp-widget-source-pad: 12px;
-    --hp-widget-source-radius: 14px;
-    --hp-widget-source-min-card: min(100%, 112px);
-  }
-
-  .service-card,
-  .widget-card,
-  [class$="-host"],
-  [class*="-host "] {
-    width: 100% !important;
-    padding: var(--hp-widget-source-pad) !important;
-    border-radius: var(--hp-widget-source-radius) !important;
-    overflow: hidden !important;
-  }
-
-  [class$="-flex-row"],
-  [class*="-flex-row "],
-  .arr-js-flex-row,
-  .arr-lt-flex-row {
-    flex-direction: column !important;
-  }
-
-  [class$="-flex-row"] > *,
-  [class*="-flex-row "] > *,
-  .arr-js-flex-row > *,
-  .arr-lt-flex-row > * {
-    flex: 1 1 auto !important;
-    width: 100% !important;
-  }
-
-  [class$="-toolbar"],
-  [class*="-toolbar "],
-  [class$="-controls"],
-  [class*="-controls "],
-  [class$="-tabs-row"],
-  [class*="-tabs-row "] {
-    overflow-x: auto;
-    max-width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  :root {
-    --hp-widget-source-gap: 8px;
-    --hp-widget-source-pad: 10px;
-    --hp-widget-source-min-card: min(100%, 96px);
-  }
-
-  [class$="-stat-grid"],
-  [class*="-stat-grid "],
-  [class$="-cards-grid"],
-  [class*="-cards-grid "],
-  [class$="-card-grid"],
-  [class*="-card-grid "] {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-}
-
-
-/* =====================================================
-   Multi-Widget Group Layout
-   Supports 2, 3, and 4 injected widgets in the same group.
-===================================================== */
-
-:root {
-  --hp-widget-source-column-min: clamp(220px, 20vw, 320px);
-  --hp-widget-source-tablet-column-min: 240px;
-}
-
-ul.services-list {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--hp-widget-source-column-min)), 1fr)) !important;
-}
-
-.hp-widget-row,
-[class$="-flex-row"],
-[class*="-flex-row "],
-.arr-js-flex-row,
-.arr-lt-flex-row {
-  display: grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--hp-widget-source-column-min)), 1fr)) !important;
-  gap: var(--hp-widget-source-gap, 16px) !important;
-  align-items: stretch !important;
-  width: 100% !important;
-}
-
-.hp-widget-row > *,
-[class$="-flex-row"] > *,
-[class*="-flex-row "] > *,
-.arr-js-flex-row > *,
-.arr-lt-flex-row > * {
-  width: 100% !important;
-  min-width: 0 !important;
-  max-width: 100% !important;
-  height: 100%;
-}
-
-@media (max-width: 900px) {
-  ul.services-list,
-  [class$="-flex-row"],
-  [class*="-flex-row "],
-  .arr-js-flex-row,
-  .arr-lt-flex-row {
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--hp-widget-source-tablet-column-min)), 1fr)) !important;
-  }
-}
-
-@media (max-width: 560px) {
-  ul.services-list,
-  [class$="-flex-row"],
-  [class*="-flex-row "],
-  .arr-js-flex-row,
-  .arr-lt-flex-row {
-    grid-template-columns: 1fr !important;
-  }
-}
-
-/* Mobile/tablet: force native service grids and custom widget rows to one column. */
-@media (max-width: 1024px) {
-  ul.services-list {
-    grid-template-columns: 1fr !important;
-  }
-
-  .hp-widget-row,
-  [class$="-flex-row"],
-  [class*="-flex-row "] {
-    display: flex !important;
-    flex-direction: column !important;
-    flex-wrap: nowrap !important;
-    align-items: stretch !important;
-    width: 100% !important;
-    gap: var(--hp-widget-gap, 10px) !important;
-    grid-template-columns: 1fr !important;
-  }
-
-  .hp-widget-row > *,
-  [class$="-flex-row"] > *,
-  [class*="-flex-row "] > * {
-    flex: 1 1 auto !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-  }
 }

@@ -10,10 +10,12 @@
     pollMs: 10 * 120 * 1000,
     timezone: "America/Los_Angeles",
     sources: [
-      { type: "sonarr", label: "Sonarr 1", color: "#2dd4bf", url: "http://YOUR_LOCAL_SONARR_IP:PORT", fallbackUrl: "https://YOUR__SONARR_TUNNEL_URL", activeUrl: null, key: "YOUR_API_KEY_HERE" },
-      { type: "radarr", label: "Radarr 1", color: "#fb923c", url: "http://YOUR_LOCAL_RADARR_IP:PORT", fallbackUrl: "https://YOUR__RADARR_TUNNEL_URL", activeUrl: null, key: "YOUR_API_KEY_HERE" },
-      { type: "lidarr", label: "Lidarr", color: "#c084fc", url: "http://YOUR_LOCAL_LIDARR_IP:PORT", fallbackUrl: "https://YOUR__LIDARR_TUNNEL_URL", activeUrl: null, key: "YOUR_API_KEY_HERE" },
-      { type: "jellyseerr", label: "Seerr", color: "#a78bfa", url: "http://YOUR_LOCAL_SEERR_IP:PORT", fallbackUrl: "https://YOUR__SEERR_TUNNEL_URL", activeUrl: null, key: "YOUR_API_KEY_HERE" },
+      { type: "sonarr", label: "Sonarr 1", color: "#2dd4bf", url: "http://YOUR_LOCAL_SONARR1_IP:PORT", fallbackUrl: "https://YOUR_SONARR1_TUNNEL_URL", activeUrl: null, key: "YOUR_SONARR_API_KEY" },
+      { type: "sonarr", label: "Sonarr 2", color: "#67e8f9", url: "http://YOUR_LOCAL_SONARR2_IP:PORT", fallbackUrl: "https://YOUR_SONARR2_TUNNEL_URL", activeUrl: null, key: "YOUR_SONARR_API_KEY" },
+      { type: "radarr", label: "Radarr 1", color: "#fb923c", url: "http://YOUR_LOCAL_RADARR1_IP:PORT", fallbackUrl: "https://YOUR_RADARR1_TUNNEL_URL", activeUrl: null, key: "YOUR_RADARR_API_KEY" },
+      { type: "radarr", label: "Radarr 2", color: "#fbbf24", url: "http://YOUR_LOCAL_RADARR2_IP:PORT", fallbackUrl: "https://YOUR_RADARR2_TUNNEL_URL", activeUrl: null, key: "YOUR_RADARR_API_KEY" },
+      { type: "lidarr", label: "Lidarr", color: "#c084fc", url: "http://YOUR_LOCAL_LIDARR_IP:PORT", fallbackUrl: "https://YOUR_LIDARR_TUNNEL_URL", activeUrl: null, key: "YOUR_LIDARR_API_KEY" },
+      { type: "seerr", label: "Seerr", color: "#a78bfa", url: "http://YOUR_LOCAL_SEERR_IP:PORT", fallbackUrl: "https://YOUR_SEERR_TUNNEL_URL", activeUrl: null, key: "YOUR_SEERR_API_KEY" },
     ],
   };
 
@@ -43,8 +45,6 @@
       row = document.createElement("div");
       row.className = "hp-widget-row mcal-flex-row";
       group.appendChild(row);
-    } else {
-      row.classList.add("hp-widget-row", "mcal-flex-row");
     }
     let host = row.querySelector("." + cls);
     if (host) return host;
@@ -87,7 +87,7 @@
   }
 
   /* ── Media status badge ────────────────────────── */
-  // Jellyseerr mediaInfo.status values:
+  // Seerr mediaInfo.status values:
   //   0 = not in Seerr  1 = Unknown  2 = Pending
   //   3 = Processing    4 = Partial  5 = Available
   function mediaStatusBadge(status) {
@@ -186,7 +186,7 @@
     })).filter(e => e.date);
   }
 
-  async function fetchJellyseerrCalendar(src) {
+  async function fetchSeerrCalendar(src) {
     const now = new Date();
     const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const twoMonthsAhead = new Date(now.getFullYear(), now.getMonth() + 3, 0);
@@ -232,7 +232,7 @@
         if (src.type === "radarr") return fetchRadarrCalendar(src);
         if (src.type === "sonarr") return fetchSonarrCalendar(src);
         if (src.type === "lidarr") return fetchLidarrCalendar(src);
-        if (src.type === "jellyseerr") return fetchJellyseerrCalendar(src);
+        if (src.type === "seerr") return fetchSeerrCalendar(src);
         return Promise.resolve([]);
       })
     );
@@ -246,6 +246,81 @@
     if (ev.type === "episode" && ev.titleSlug) return `${ev.serverUrl}/series/${ev.titleSlug}`;
     if (ev.type === "album" && ev.titleSlug) return `${ev.serverUrl}/artist/${ev.titleSlug}`;
     return ev.serverUrl;
+  }
+
+  const MEDIA_TYPE_ICON = { movie: "🎬", episode: "📺", album: "🎵" };
+
+  function mediaDotAttrs(ev, baseClass = "mcal-dot") {
+    if (ev.mediaStatus === 1) {
+      return `class="${baseClass} mcal-status-dot--missing" style="--mcal-src-color:${escH(ev.color)}"`;
+    }
+    return `class="${baseClass}" style="background:${escH(ev.color)}"`;
+  }
+
+  function buildMediaPosterHtml(ev) {
+    return ev.poster
+      ? `<img class="mcal-today-poster" src="${escH(ev.poster)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+      : `<div class="mcal-today-poster mcal-today-poster--fallback">${escH((ev.title || "?").charAt(0))}</div>`;
+  }
+
+  function buildMediaBodyHtml(ev, opts = {}) {
+    const link = buildMediaLink(ev);
+    const {
+      bodyClass = "mcal-today-item-body",
+      titleClass = "mcal-today-title",
+      subClass = "mcal-today-sub",
+      srcClass = "mcal-today-src",
+      arrowClass = "mcal-today-arrow",
+      showInlineArrow = true,
+    } = opts;
+    return `
+      <div class="${bodyClass}">
+        <div class="mcal-today-item-top">
+          <span class="mcal-today-type">${MEDIA_TYPE_ICON[ev.type] || "•"}</span>
+          <span class="${titleClass}">${escH(ev.title)}</span>
+          ${link && showInlineArrow ? `<span class="${arrowClass}">↗</span>` : ""}
+        </div>
+        ${ev.subtitle ? `<div class="${subClass}">${escH(ev.subtitle)}</div>` : ""}
+        <div class="mcal-src-row">
+          <span class="${srcClass}" style="color:${escH(ev.color)};opacity:0.85;">${escH(ev.source)}</span>
+          ${ev.mediaStatus != null ? mediaStatusBadge(ev.mediaStatus) : ""}
+        </div>
+      </div>`;
+  }
+
+  function buildMediaListCard(ev, opts = {}) {
+    const link = buildMediaLink(ev);
+    const tag = link ? "a" : "div";
+    const linkAttrs = link ? `href="${escH(link)}" target="_blank" rel="noopener"` : "";
+    const {
+      itemClass = "mcal-today-item",
+      linkClass = "mcal-today-item--link",
+      trailingArrow = false,
+      bodyOpts = {},
+    } = opts;
+    return `
+      <${tag} class="${itemClass}${link ? ` ${linkClass}` : ""} mcal-media-list-row" ${linkAttrs}>
+        <div class="mcal-today-poster-wrap mcal-today-poster-wrap--list">
+          ${buildMediaPosterHtml(ev)}
+          <span ${mediaDotAttrs(ev, "mcal-today-dot mcal-today-dot--poster")}></span>
+        </div>
+        ${buildMediaBodyHtml(ev, bodyOpts)}
+        ${trailingArrow && link ? `<span class="mcal-agenda-arrow">↗</span>` : ""}
+      </${tag}>`;
+  }
+
+  function buildMediaGridCard(ev) {
+    const link = buildMediaLink(ev);
+    const tag = link ? "a" : "div";
+    const linkAttrs = link ? `href="${escH(link)}" target="_blank" rel="noopener"` : "";
+    return `
+      <${tag} class="mcal-today-card ${link ? "mcal-today-card--link" : ""}" ${linkAttrs}>
+        <div class="mcal-today-poster-wrap">
+          ${buildMediaPosterHtml(ev)}
+          <span ${mediaDotAttrs(ev, "mcal-today-dot mcal-today-dot--poster")}></span>
+        </div>
+        ${buildMediaBodyHtml(ev, { bodyClass: "mcal-today-card-body" })}
+      </${tag}>`;
   }
 
   /* ── Calendar grid view ────────────────────────── */
@@ -279,7 +354,7 @@
       const isPast = date < startOfDay(today);
 
       const dots = dayEvents.slice(0, 4).map(ev =>
-        `<span class="mcal-dot" style="background:${ev.mediaStatus === 1 ? "#f87171" : escH(ev.color)}" title="${escH(ev.title)}"></span>`
+        `<span ${mediaDotAttrs(ev, "mcal-dot")} title="${escH(ev.title)}"></span>`
       ).join("");
       const moreDots = dayEvents.length > 4
         ? `<span class="mcal-dot-more">+${dayEvents.length - 4}</span>` : "";
@@ -321,24 +396,20 @@
 
     return grouped.map(g => {
       const isToday = sameDay(g.date, new Date());
-      const items = g.events.map(ev => {
-        const link = buildMediaLink(ev);
-        const tag = link ? "a" : "div";
-        const linkAttrs = link ? `href="${escH(link)}" target="_blank" rel="noopener"` : "";
-        return `
-        <${tag} class="mcal-agenda-item${link ? " mcal-agenda-item--link" : ""}" ${linkAttrs}>
-          <span class="mcal-agenda-dot" style="background:${ev.mediaStatus === 1 ? "#f87171" : escH(ev.color)}"></span>
-          <div class="mcal-agenda-text">
-            <span class="mcal-agenda-title">${escH(ev.title)}</span>
-            ${ev.subtitle ? `<span class="mcal-agenda-sub">${escH(ev.subtitle)}</span>` : ""}
-            <div class="mcal-src-row">
-              <span class="mcal-agenda-src" style="color:${escH(ev.color)};opacity:0.85;">${escH(ev.source)}</span>
-              ${ev.mediaStatus != null ? mediaStatusBadge(ev.mediaStatus) : ""}
-            </div>
-          </div>
-          ${link ? `<span class="mcal-agenda-arrow">↗</span>` : ""}
-        </${tag}>`;
-      }).join("");
+      const items = g.events.map(ev =>
+        buildMediaListCard(ev, {
+          itemClass: "mcal-agenda-item",
+          linkClass: "mcal-agenda-item--link",
+          trailingArrow: true,
+          bodyOpts: {
+            bodyClass: "mcal-agenda-text",
+            titleClass: "mcal-agenda-title",
+            subClass: "mcal-agenda-sub",
+            srcClass: "mcal-agenda-src",
+            showInlineArrow: false,
+          },
+        })
+      ).join("");
 
       return `
         <div class="mcal-agenda-group ${isToday ? "mcal-agenda-group--today" : ""}">
@@ -355,7 +426,6 @@
       .filter(ev => ev.date && sameDay(ev.date, today))
       .sort((a, b) => a.date - b.date);
 
-    const typeIcon = { movie: "🎬", episode: "📺", album: "🎵" };
     const viewTabs = `
       <div class="mcal-items-view-tabs" aria-label="Today items view">
         <button class="mcal-items-view-tab ${_calItemsView === "list" ? "mcal-items-view-tab--active" : ""}"
@@ -367,49 +437,8 @@
     const itemsHtml = todayEvents.length === 0
       ? `<div class="mcal-today-empty">Nothing scheduled for today</div>`
       : todayEvents.map(ev => {
-        const link = buildMediaLink(ev);
-        const tag = link ? "a" : "div";
-        const linkAttrs = link ? `href="${escH(link)}" target="_blank" rel="noopener"` : "";
-        if (_calItemsView === "grid") {
-          const poster = ev.poster
-            ? `<img class="mcal-today-poster" src="${escH(ev.poster)}" alt="" loading="lazy" onerror="this.style.display='none'">`
-            : `<div class="mcal-today-poster mcal-today-poster--fallback">${escH((ev.title || "?").charAt(0))}</div>`;
-          return `
-            <${tag} class="mcal-today-card ${link ? "mcal-today-card--link" : ""}" ${linkAttrs}>
-              <div class="mcal-today-poster-wrap">
-                ${poster}
-                <span class="mcal-today-dot mcal-today-dot--poster" style="background:${ev.mediaStatus === 1 ? "#f87171" : escH(ev.color)}"></span>
-              </div>
-              <div class="mcal-today-card-body">
-                <div class="mcal-today-item-top">
-                  <span class="mcal-today-type">${typeIcon[ev.type] || "•"}</span>
-                  <span class="mcal-today-title">${escH(ev.title)}</span>
-                  ${link ? `<span class="mcal-today-arrow">↗</span>` : ""}
-                </div>
-                ${ev.subtitle ? `<div class="mcal-today-sub">${escH(ev.subtitle)}</div>` : ""}
-                <div class="mcal-src-row">
-                  <span class="mcal-today-src" style="color:${escH(ev.color)};opacity:0.85;">${escH(ev.source)}</span>
-                  ${ev.mediaStatus != null ? mediaStatusBadge(ev.mediaStatus) : ""}
-                </div>
-              </div>
-            </${tag}>`;
-        }
-        return `
-            <${tag} class="mcal-today-item ${link ? "mcal-today-item--link" : ""}" ${linkAttrs}>
-              <span class="mcal-today-dot" style="background:${ev.mediaStatus === 1 ? "#f87171" : escH(ev.color)}"></span>
-              <div class="mcal-today-item-body">
-                <div class="mcal-today-item-top">
-                  <span class="mcal-today-type">${typeIcon[ev.type] || "•"}</span>
-                  <span class="mcal-today-title">${escH(ev.title)}</span>
-                  ${link ? `<span class="mcal-today-arrow">↗</span>` : ""}
-                </div>
-                ${ev.subtitle ? `<div class="mcal-today-sub">${escH(ev.subtitle)}</div>` : ""}
-                <div class="mcal-src-row">
-                  <span class="mcal-today-src" style="color:${escH(ev.color)};opacity:0.85;">${escH(ev.source)}</span>
-                  ${ev.mediaStatus != null ? mediaStatusBadge(ev.mediaStatus) : ""}
-                </div>
-              </div>
-            </${tag}>`;
+        if (_calItemsView === "grid") return buildMediaGridCard(ev);
+        return buildMediaListCard(ev);
       }).join("");
 
     return `
@@ -430,7 +459,7 @@
   let _calMonth = new Date().getMonth();
   let _calYear = new Date().getFullYear();
   let _calView = "month";
-  let _calItemsView = "list";
+  let _calItemsView = "grid";
   let _calEvents = [];
 
   function legendHtml() {
@@ -448,7 +477,7 @@
       <div class="mcal-shell">
         <div class="mcal-hdr">
           <div class="mcal-hdr-left">
-            <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/google-calendar.webp" alt="Media Calendar" class="mcal-icon">
+            <img src="https://cdn.jsdelivr.net/gh/selfhst/icons/webp/fluidcalendar.webp" alt="Media Calendar" class="mcal-icon">
             <span class="mcal-title">Media Calendar</span>
           </div>
           <div class="mcal-hdr-center">
@@ -490,8 +519,15 @@
 
   document.addEventListener("keydown", e => { if (e.key === "Escape") closeCalPopup(); });
 
-  function positionCalPopup(popup, anchorEl) {
-    const PW = 340;
+  function popupWidthForEvents(count) {
+    const vw = window.innerWidth;
+    if (count <= 0) return 280;
+    if (count === 1) return Math.min(320, vw - 16);
+    return Math.min(560, vw - 16);
+  }
+
+  function positionCalPopup(popup, anchorEl, eventCount = 1) {
+    const PW = popupWidthForEvents(eventCount);
     const rect = anchorEl.getBoundingClientRect();
     const vw = window.innerWidth;
     const vh = window.innerHeight;
@@ -517,31 +553,9 @@
       weekday: "long", month: "long", day: "numeric", year: "numeric"
     });
 
-    const typeIcon = { movie: "🎬", episode: "📺", album: "🎵" };
-
     const itemsHtml = events.length === 0
       ? `<div class="mcal-popup-empty">Nothing scheduled</div>`
-      : events.map(ev => {
-        const link = buildMediaLink(ev);
-        const tag = link ? "a" : "div";
-        const linkAttrs = link ? `href="${escH(link)}" target="_blank" rel="noopener"` : "";
-        return `
-            <${tag} class="mcal-popup-item ${link ? "mcal-popup-item--link" : ""}" ${linkAttrs}>
-              <span class="mcal-popup-dot" style="background:${ev.mediaStatus === 1 ? "#f87171" : escH(ev.color)}"></span>
-              <div class="mcal-popup-item-body">
-                <div class="mcal-popup-item-top">
-                  <span class="mcal-popup-type">${typeIcon[ev.type] || "•"}</span>
-                  <span class="mcal-popup-title">${escH(ev.title)}</span>
-                  ${link ? `<span class="mcal-popup-arrow">↗</span>` : ""}
-                </div>
-                ${ev.subtitle ? `<div class="mcal-popup-sub">${escH(ev.subtitle)}</div>` : ""}
-                <div class="mcal-src-row">
-                  <span class="mcal-popup-src" style="color:${escH(ev.color)};opacity:0.85;">${escH(ev.source)}</span>
-                  ${ev.mediaStatus != null ? mediaStatusBadge(ev.mediaStatus) : ""}
-                </div>
-              </div>
-            </${tag}>`;
-      }).join("");
+      : events.map(ev => buildMediaGridCard(ev)).join("");
 
     const popup = document.createElement("div");
     popup.className = "mcal-popup";
@@ -550,7 +564,7 @@
         <div class="mcal-popup-date">${escH(dateLabel)}</div>
         <div class="mcal-popup-count">${events.length} release${events.length !== 1 ? "s" : ""}</div>
       </div>
-      <div class="mcal-popup-items">${itemsHtml}</div>`;
+      <div class="mcal-popup-items mcal-popup-items--grid">${itemsHtml}</div>`;
 
     document.body.appendChild(popup);
     _calPopup = popup;
@@ -561,9 +575,9 @@
     document.body.appendChild(backdrop);
     _calPopupBackdrop = backdrop;
 
-    positionCalPopup(popup, anchorEl);
+    positionCalPopup(popup, anchorEl, events.length);
 
-    const reposition = () => { if (_calPopup === popup) positionCalPopup(popup, anchorEl); };
+    const reposition = () => { if (_calPopup === popup) positionCalPopup(popup, anchorEl, events.length); };
     window.addEventListener("resize", reposition, { passive: true });
     window.addEventListener("scroll", reposition, { passive: true, capture: true });
     backdrop.addEventListener("click", () => {
