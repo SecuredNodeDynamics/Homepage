@@ -840,6 +840,26 @@ body.light .abs-footer,
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
+.abs-lib-card--btn {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+.abs-lib-card--btn:hover {
+  background: rgba(249, 115, 22, 0.08);
+  border-color: rgba(249, 115, 22, 0.35);
+}
+.abs-lib-card--active {
+  background: rgba(249, 115, 22, 0.14);
+  border-color: rgba(249, 115, 22, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.25);
+}
+.abs-lib-switcher {
+  margin: 0 0 12px;
+}
 .abs-lib-name { font-size: 0.82rem; font-weight: 700; }
 .abs-lib-meta { font-size: 0.68rem; opacity: 0.55; margin-top: 3px; }
 
