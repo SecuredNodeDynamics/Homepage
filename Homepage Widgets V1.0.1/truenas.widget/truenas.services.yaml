@@ -1,0 +1,4 @@
+- TRUENAS - STORAGE:
+    - TrueNAS Anchor:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/truenas.webp
+        description: TrueNAS pools, alerts & system status (injected widget)
