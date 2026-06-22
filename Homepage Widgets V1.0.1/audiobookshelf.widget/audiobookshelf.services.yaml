@@ -1,0 +1,5 @@
+- AUDIOBOOKSHELF-LIBRARY:
+
+    - Audiobookshelf Anchor:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/audiobookshelf.webp
+        description: Audiobooks & podcasts (injected widget)
