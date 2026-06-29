@@ -1,0 +1,5 @@
+- PIHOLE-CONTROL:
+
+    - Pi-hole Control Panel:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/pi-hole.webp
+        description: Pi-hole DNS control panel (injected widget)
