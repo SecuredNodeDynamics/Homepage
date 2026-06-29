@@ -1,0 +1,5 @@
+- TAUTULLI-MONITOR:
+
+    - Tautulli Anchor:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/tautulli.webp
+        description: Plex analytics & stream monitor (injected widget)
