@@ -1,0 +1,5 @@
+- MEALIE-KITCHEN:
+
+    - Mealie Anchor:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/mealie.webp
+        description: Recipes, meal plan, and shopping lists (injected widget)
