@@ -1,0 +1,5 @@
+- PLEX-SLIDER:
+
+    - Plex Slider Anchor:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/plex.webp
+        description: Plex recent media slider (injected widget)
