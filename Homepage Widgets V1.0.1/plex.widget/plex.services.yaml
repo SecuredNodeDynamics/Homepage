@@ -1,0 +1,5 @@
+- PLEX-MEDIA:
+
+    - Plex Anchor:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/plex.webp
+        description: Plex live sessions & library controls (injected widget)
