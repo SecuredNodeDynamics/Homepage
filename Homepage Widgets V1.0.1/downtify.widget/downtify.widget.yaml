@@ -1,0 +1,5 @@
+- DOWNTIFY-MUSIC:
+ 
+    - Downtify Anchor:
+        icon: https://github.com/SecuredNodeDynamics/Downtify/blob/main/frontend/assets/logo.svg
+        description: Downtify Music (injected widget)
