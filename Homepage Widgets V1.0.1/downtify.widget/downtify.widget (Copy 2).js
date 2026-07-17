@@ -3,8 +3,8 @@
 ===================================================== */
 (function () {
   const DOWNTIFY_CONFIG = {
-    baseUrl: "http://YOUR_LOCAL_IP:PORT",
-    fallbackUrl: "https://YOUR_TUNNEL_URL",
+    baseUrl: "http://10.128.1.63:8000",
+    fallbackUrl: "https://downtify.janzenmediagroup.com",
     pathPrefix: "",
     activeUrl: null,
     groupName: "DOWNTIFY-MUSIC",
@@ -65,20 +65,6 @@
     return c.signal;
   }
 
-  function clientId() {
-    const key = "downtify_homepage_client_id";
-    try {
-      let id = localStorage.getItem(key);
-      if (!id) {
-        id = `homepage-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-        localStorage.setItem(key, id);
-      }
-      return id;
-    } catch {
-      return "homepage-widget";
-    }
-  }
-
   async function apiFetch(path, opts = {}) {
     let lastErr = null;
     for (const base of urlCandidates()) {
@@ -89,23 +75,10 @@
           headers: { Accept: "application/json", ...(opts.headers || {}) },
           signal: opts.signal || abortSignal(10000),
         });
-        const contentType = res.headers.get("content-type") || "";
-        if (!res.ok) {
-          let detail = "";
-          try {
-            if (contentType.includes("application/json")) {
-              const data = await res.json();
-              detail = data?.detail || data?.message || "";
-            } else {
-              detail = await res.text();
-            }
-          } catch { }
-          throw new Error(detail || `Downtify ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`Downtify ${res.status}`);
         DOWNTIFY_CONFIG.activeUrl = base;
         if (res.status === 204) return null;
-        if (contentType.includes("application/json")) return res.json();
-        return res.text();
+        return res.json();
       } catch (err) {
         lastErr = err;
       }
@@ -128,14 +101,6 @@
     if (bytes >= 1e6) return (bytes / 1e6).toFixed(1) + " MB";
     if (bytes >= 1e3) return (bytes / 1e3).toFixed(0) + " KB";
     return `${bytes} B`;
-  }
-
-  function firstNumber(...values) {
-    for (const value of values) {
-      const num = Number(value);
-      if (Number.isFinite(num) && num > 0) return num;
-    }
-    return 0;
   }
 
   function fmtDate(value) {
@@ -307,16 +272,12 @@
     if (_lastPayload && !force) return _lastPayload;
 
     const [healthRes, queueRes, historyRes, libraryRes, monitorRes] = await Promise.allSettled([
-      apiFetch("/api/health", { signal: abortSignal(3500) }),
+      apiFetch("/api/health"),
       apiFetch("/api/queue"),
       apiFetch("/api/history?limit=25&include_active=true&reconcile=false"),
       apiFetch("/api/library/files"),
       apiFetch("/api/monitor/playlists"),
     ]);
-    const coreResults = [queueRes, historyRes, libraryRes];
-    const coreOnline = coreResults.some(r => r.status === "fulfilled");
-    const coreErrors = coreResults.filter(r => r.status === "rejected").length;
-    const optionalErrors = [healthRes, monitorRes].filter(r => r.status === "rejected").length;
 
     const payload = {
       health: healthRes.status === "fulfilled" ? healthRes.value : null,
@@ -324,10 +285,7 @@
       history: historyRes.status === "fulfilled" && Array.isArray(historyRes.value) ? historyRes.value : [],
       library: libraryRes.status === "fulfilled" && Array.isArray(libraryRes.value) ? libraryRes.value : [],
       monitor: monitorRes.status === "fulfilled" && Array.isArray(monitorRes.value) ? monitorRes.value : [],
-      coreOnline,
-      coreErrors,
-      optionalErrors,
-      errors: coreErrors,
+      errors: [healthRes, queueRes, historyRes, libraryRes, monitorRes].filter(r => r.status === "rejected").length,
     };
     _lastPayload = payload;
     return payload;
@@ -770,7 +728,6 @@
   }
 
   async function requestSearchResult(shell, index, action) {
-    if (action !== "download") return;
     const item = _searchResults[index];
     if (!item) return;
     const url = songUrl(item);
@@ -778,13 +735,10 @@
     const button = shell.querySelector(`[data-result-index="${index}"]`);
     if (button) {
       button.disabled = true;
-      button.textContent = "Requesting...";
+      button.textContent = "Queued...";
     }
     try {
-      const params = new URLSearchParams({ url, client_id: clientId() });
-      await apiPost(`/api/download/url?${params.toString()}`, {
-        ...item,
-        url,
+      await apiPost(`/api/download/url?url=${encodeURIComponent(url)}`, {
         source: "homepage-widget",
         media_type: songType(item),
         title: songTitle(item),
@@ -809,40 +763,11 @@
     const artists = countBy(library, item => item.artist || item.artists || item.album_artist);
     const albums = countBy(library, item => item.album || item.album_name);
     const size = health.downloads?.size_bytes || library.reduce((sum, item) => sum + Number(item.size || item.size_bytes || 0), 0);
-    const freeBytes = firstNumber(
-      health.downloads?.free_bytes,
-      health.downloads?.available_bytes,
-      health.downloads?.free,
-      health.downloads?.available,
-      health.storage?.free_bytes,
-      health.storage?.available_bytes,
-      health.disk?.free_bytes,
-      health.disk?.available_bytes
-    );
-    const reportedTotalBytes = firstNumber(
-      health.downloads?.total_bytes,
-      health.downloads?.capacity_bytes,
-      health.downloads?.total,
-      health.downloads?.capacity,
-      health.storage?.total_bytes,
-      health.storage?.capacity_bytes,
-      health.disk?.total_bytes,
-      health.disk?.capacity_bytes
-    );
-    const totalBytes = reportedTotalBytes || (freeBytes ? size + freeBytes : 0);
-    const storagePercent = totalBytes ? Math.min(100, Math.max(0, Math.round((size / totalBytes) * 100))) : 0;
-    const storageMeterWidth = totalBytes ? Math.max(4, storagePercent) : 100;
-    const storageTitle = totalBytes ? `${fmtBytes(size)} of ${fmtBytes(totalBytes)} used` : `${fmtBytes(size)} used`;
-    const storageSub = totalBytes && freeBytes ? `${fmtBytes(freeBytes)} available` : "Storage";
     const active = queue.filter(item => songStatus(item) === "downloading");
     const shownRecent = recent.filter(item => ["done", "skipped", "error"].includes(songStatus(item))).slice(0, 25);
     _overviewRecentItems = shownRecent;
-    const hasHealth = !!data.health;
-    const readyTools = hasHealth ? [health.tools?.ffmpeg?.available, health.tools?.yt_dlp?.available].filter(Boolean).length : null;
-    const toolPill = available => {
-      if (!hasHealth) return `<span class="downtify-pill downtify-pill--muted">unknown</span>`;
-      return `<span class="downtify-pill ${available ? "downtify-pill--ok" : "downtify-pill--warn"}">${available ? "ready" : "missing"}</span>`;
-    };
+    const queueLabel = active.length ? `${active.length} downloading now` : "Queue idle";
+    const readyTools = [health.tools?.ffmpeg?.available, health.tools?.yt_dlp?.available].filter(Boolean).length;
 
     return `
       <div class="downtify-overview">
@@ -853,36 +778,36 @@
           <div class="downtify-overview-copy">
             <div class="downtify-section-label">Library</div>
             <div class="downtify-overview-total">${library.length.toLocaleString()}</div>
-            <div class="downtify-muted">${artists.toLocaleString()} artists · ${albums.toLocaleString()} albums</div>
+            <div class="downtify-muted">${artists.toLocaleString()} artists · ${albums.toLocaleString()} albums · ${fmtBytes(size)}</div>
           </div>
         </div>
         <div class="downtify-overview-stats">
           ${overviewStat(queue.length.toLocaleString(), "Queue", `<path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/>`)}
-          ${overviewStat(hasHealth ? readyTools + "/2" : "-", "Tools Ready", `<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.3-3.3a5 5 0 0 1-6.7 6.7L7 20l-3-3 7.3-7.3a5 5 0 0 1 6.7-6.7l-3.3 3.3z"/>`)}
+          ${overviewStat(readyTools + "/2", "Tools Ready", `<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.3-3.3a5 5 0 0 1-6.7 6.7L7 20l-3-3 7.3-7.3a5 5 0 0 1 6.7-6.7l-3.3 3.3z"/>`)}
+          ${overviewStat(fmtBytes(size), "Storage", `<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>`)}
         </div>
       </div>
       <div class="downtify-overview-grid">
-        <div class="downtify-mini-panel downtify-storage-panel">
+        <div class="downtify-mini-panel downtify-queue-panel">
           <div class="downtify-panel-head">
             <div>
-              <div class="downtify-section-label">Storage</div>
-              <div class="downtify-panel-title">${storageTitle}</div>
-              <div class="downtify-muted">${storageSub}</div>
+              <div class="downtify-section-label">Downloads</div>
+              <div class="downtify-panel-title">${queueLabel}</div>
             </div>
-            <span class="downtify-pill ${totalBytes ? "downtify-pill--active" : "downtify-pill--muted"}">${totalBytes ? `${storagePercent}% used` : "used"}</span>
+            <span class="downtify-pill ${active.length ? "downtify-pill--active" : "downtify-pill--muted"}">${queue.length.toLocaleString()} queued</span>
           </div>
-          <div class="downtify-queue-meter"><span style="width:${storageMeterWidth}%"></span></div>
+          <div class="downtify-queue-meter"><span style="width:${Math.min(100, Math.max(6, queue.length * 12))}%"></span></div>
         </div>
         <div class="downtify-mini-panel downtify-system-panel">
           <div class="downtify-panel-head">
             <div>
               <div class="downtify-section-label">System</div>
-              <div class="downtify-panel-title">${hasHealth ? (readyTools === 2 ? "Ready to download" : "Needs attention") : "Health check unavailable"}</div>
+              <div class="downtify-panel-title">${readyTools === 2 ? "Ready to download" : "Needs attention"}</div>
             </div>
           </div>
           <div class="downtify-tool-grid">
-            <div class="downtify-tool-chip"><span>ffmpeg</span>${toolPill(health.tools?.ffmpeg?.available)}</div>
-            <div class="downtify-tool-chip"><span>yt-dlp</span>${toolPill(health.tools?.yt_dlp?.available)}</div>
+            <div class="downtify-tool-chip"><span>ffmpeg</span><span class="downtify-pill ${health.tools?.ffmpeg?.available ? "downtify-pill--ok" : "downtify-pill--warn"}">${health.tools?.ffmpeg?.available ? "ready" : "missing"}</span></div>
+            <div class="downtify-tool-chip"><span>yt-dlp</span><span class="downtify-pill ${health.tools?.yt_dlp?.available ? "downtify-pill--ok" : "downtify-pill--warn"}">${health.tools?.yt_dlp?.available ? "ready" : "missing"}</span></div>
           </div>
         </div>
       </div>
@@ -894,7 +819,7 @@
           </div>
         </div>
         <div class="downtify-overview-recent">${shownRecent.map((item, i) => trackRow(item, i, { popupIndex: i })).join("")}</div>` : ""}
-      ${data.coreErrors ? `<div class="downtify-footer-note">${data.coreErrors} core endpoint${data.coreErrors === 1 ? "" : "s"} unavailable</div>` : ""}`;
+      ${data.errors ? `<div class="downtify-footer-note">${data.errors} optional endpoint${data.errors === 1 ? "" : "s"} unavailable</div>` : ""}`;
   }
 
   async function renderRecent() {
@@ -978,29 +903,6 @@
     { key: "search", label: "Search", render: renderSearch },
   ];
 
-  function updateFooterStatus(shell, state = "connected", text = "") {
-    const footer = shell?.querySelector?.(".downtify-footer");
-    if (!footer) return;
-    const pill = footer.querySelector(".downtify-connection-pill");
-    const updated = footer.querySelector(".downtify-updated-text");
-    const payload = _lastPayload;
-    const coreErrors = Number(payload?.coreErrors || 0);
-    const coreOnline = payload?.coreOnline !== false;
-    const resolvedState = state === "connected" && !coreOnline
-      ? "offline"
-      : state === "connected" && coreErrors > 0
-        ? "partial"
-        : state;
-    const label = text || (resolvedState === "offline" ? "Offline" : resolvedState === "partial" ? "Partial connection" : "Connected");
-    if (pill) {
-      pill.className = `downtify-connection-pill downtify-connection-pill--${resolvedState}`;
-      pill.textContent = label;
-    }
-    if (updated) {
-      updated.textContent = `Updated ${new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true })}`;
-    }
-  }
-
   function buildShell() {
     const tabs = TABS.map((t, i) => `
       <button class="downtify-tab${i === 0 ? " downtify-tab--active" : ""}" data-tab="${t.key}" type="button" role="tab"
@@ -1028,10 +930,7 @@
         <div class="downtify-panel">
           <div class="downtify-skeleton-wrap">${Array.from({ length: 5 }, () => `<div class="downtify-skeleton-row"></div>`).join("")}</div>
         </div>
-        <div class="downtify-footer">
-          <span class="downtify-connection-pill downtify-connection-pill--connecting">Connecting</span>
-          <span class="downtify-updated-text">Updated just now</span>
-        </div>
+        <div class="downtify-footer">Updated just now</div>
       </div>`;
   }
 
@@ -1183,7 +1082,6 @@
       if (key === "search") bindSearchPanel(shell);
       if (key === "recent") bindRecentSlider(panel);
       revealRows(panel);
-      updateFooterStatus(shell);
       return;
     }
 
@@ -1203,7 +1101,9 @@
       if (key === "library") bindLibraryPanel(panel);
       if (key === "recent") bindRecentSlider(panel);
       revealRows(panel);
-      updateFooterStatus(shell);
+      if (footer) {
+        footer.textContent = `Updated ${new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true })}`;
+      }
     } catch (err) {
       console.error("[Homepage Downtify]", err);
       panel.innerHTML = `
@@ -1211,7 +1111,6 @@
           <div class="downtify-error-title">Failed to load Downtify</div>
           <div class="downtify-error-msg">${escH(err.message)}</div>
         </div>`;
-      updateFooterStatus(shell, "offline", "Offline");
     }
   }
 

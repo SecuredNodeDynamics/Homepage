@@ -125,11 +125,16 @@ body.light .downtify-open-btn,
 .downtify-tabs {
     display: flex;
     gap: 5px;
+    width: max-content;
+    max-width: 100%;
+    min-width: 0;
     overflow-x: auto;
+    overflow-y: hidden;
     scrollbar-width: none;
     -ms-overflow-style: none;
     padding-bottom: 2px;
     flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
 }
 
 .downtify-tabs::-webkit-scrollbar {
@@ -261,7 +266,7 @@ body.light .downtify-tab--active,
 
 .downtify-overview-stats {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
 }
 
@@ -1612,8 +1617,13 @@ body.light .downtify-mode-btn,
 .downtify-search-modes {
     display: flex;
     gap: 6px;
+    width: 100%;
+    min-width: 0;
     overflow-x: auto;
+    overflow-y: hidden;
     scrollbar-width: none;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
 }
 
 .downtify-search-modes::-webkit-scrollbar {
@@ -1926,6 +1936,10 @@ body.light .downtify-skeleton-row,
 }
 
 .downtify-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
     font-size: 0.66rem;
     color: rgba(255, 255, 255, 0.30);
     text-align: right;
@@ -1934,6 +1948,76 @@ body.light .downtify-skeleton-row,
 body.light .downtify-footer,
 [data-theme="light"] .downtify-footer {
     color: rgba(8, 12, 18, 0.34);
+}
+
+.downtify-connection-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 20px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.56);
+    font-size: 0.66rem;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.downtify-connection-pill--connected {
+    background: rgba(34, 197, 94, 0.13);
+    border-color: rgba(34, 197, 94, 0.34);
+    color: rgba(134, 239, 172, 0.94);
+}
+
+.downtify-connection-pill--partial,
+.downtify-connection-pill--connecting {
+    background: rgba(245, 158, 11, 0.12);
+    border-color: rgba(245, 158, 11, 0.30);
+    color: rgba(253, 230, 138, 0.92);
+}
+
+.downtify-connection-pill--offline {
+    background: rgba(239, 68, 68, 0.13);
+    border-color: rgba(239, 68, 68, 0.34);
+    color: rgba(252, 165, 165, 0.94);
+}
+
+.downtify-updated-text {
+    margin-left: auto;
+    white-space: nowrap;
+}
+
+body.light .downtify-connection-pill,
+[data-theme="light"] .downtify-connection-pill {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.10);
+    color: rgba(8, 12, 18, 0.52);
+}
+
+body.light .downtify-connection-pill--connected,
+[data-theme="light"] .downtify-connection-pill--connected {
+    background: rgba(22, 163, 74, 0.10);
+    border-color: rgba(22, 163, 74, 0.30);
+    color: rgba(21, 128, 61, 0.92);
+}
+
+body.light .downtify-connection-pill--partial,
+body.light .downtify-connection-pill--connecting,
+[data-theme="light"] .downtify-connection-pill--partial,
+[data-theme="light"] .downtify-connection-pill--connecting {
+    background: rgba(217, 119, 6, 0.10);
+    border-color: rgba(217, 119, 6, 0.30);
+    color: rgba(180, 83, 9, 0.92);
+}
+
+body.light .downtify-connection-pill--offline,
+[data-theme="light"] .downtify-connection-pill--offline {
+    background: rgba(220, 38, 38, 0.10);
+    border-color: rgba(220, 38, 38, 0.30);
+    color: rgba(185, 28, 28, 0.92);
 }
 
 @media (max-width: 760px) {
@@ -1952,13 +2036,31 @@ body.light .downtify-footer,
         grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
         gap: 8px;
+        overflow: visible;
     }
 
     .downtify-tabs {
+        grid-column: 1;
+        grid-row: 1;
         width: 100%;
         min-width: 0;
+        max-width: 100%;
         overflow-x: auto;
+        overflow-y: hidden;
         padding-bottom: 4px;
+        visibility: visible;
+        opacity: 1;
+    }
+
+    .downtify-open-btn {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .downtify-search-modes {
+        min-height: 30px;
+        visibility: visible;
+        opacity: 1;
     }
 
     .downtify-stats-grid,
@@ -2026,7 +2128,17 @@ body.light .downtify-footer,
         grid-template-columns: 1fr;
     }
 
+    .downtify-tabs,
     .downtify-open-btn {
+        grid-column: 1;
+    }
+
+    .downtify-tabs {
+        grid-row: 1;
+    }
+
+    .downtify-open-btn {
+        grid-row: 2;
         justify-self: end;
     }
 
