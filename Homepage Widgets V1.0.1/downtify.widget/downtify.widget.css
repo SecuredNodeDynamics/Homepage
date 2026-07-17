@@ -1942,9 +1942,23 @@ body.light .downtify-footer,
         flex-direction: column;
     }
 
-    .downtify-header-right,
+    .downtify-header-left,
+    .downtify-header-right {
+        width: 100%;
+    }
+
+    .downtify-header-right {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 8px;
+    }
+
     .downtify-tabs {
         width: 100%;
+        min-width: 0;
+        overflow-x: auto;
+        padding-bottom: 4px;
     }
 
     .downtify-stats-grid,
@@ -2006,6 +2020,14 @@ body.light .downtify-footer,
 @media (max-width: 480px) {
     .downtify-widget-host {
         padding: 15px !important;
+    }
+
+    .downtify-header-right {
+        grid-template-columns: 1fr;
+    }
+
+    .downtify-open-btn {
+        justify-self: end;
     }
 
     .downtify-stats-grid,

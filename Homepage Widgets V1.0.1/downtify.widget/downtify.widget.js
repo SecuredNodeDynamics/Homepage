@@ -3,8 +3,8 @@
 ===================================================== */
 (function () {
   const DOWNTIFY_CONFIG = {
-    baseUrl: "http://YOUR_LOCAL_IP:PORT",
-    fallbackUrl: "https://YOUR_TUNNEL_URL",
+    baseUrl: "http://10.128.1.63:8000",
+    fallbackUrl: "https://downtify.janzenmediagroup.com",
     pathPrefix: "",
     activeUrl: null,
     groupName: "DOWNTIFY-MUSIC",
