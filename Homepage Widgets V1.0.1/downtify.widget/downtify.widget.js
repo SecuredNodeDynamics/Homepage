@@ -305,25 +305,39 @@
 
   async function loadWidgetData(force = false) {
     if (_lastPayload && !force) return _lastPayload;
+    const previous = _lastPayload;
 
     const [healthRes, queueRes, historyRes, libraryRes, monitorRes] = await Promise.allSettled([
-      apiFetch("/api/health", { signal: abortSignal(3500) }),
+      apiFetch("/api/health", { signal: abortSignal(15000) }),
       apiFetch("/api/queue"),
       apiFetch("/api/history?limit=25&include_active=true&reconcile=false"),
-      apiFetch("/api/library/files"),
-      apiFetch("/api/monitor/playlists"),
+      apiFetch("/api/library/files", { signal: abortSignal(25000) }),
+      apiFetch("/api/monitor/playlists", { signal: abortSignal(15000) }),
     ]);
-    const coreResults = [queueRes, historyRes, libraryRes];
-    const coreOnline = coreResults.some(r => r.status === "fulfilled");
-    const coreErrors = coreResults.filter(r => r.status === "rejected").length;
+    const nextQueue = queueRes.status === "fulfilled" && Array.isArray(queueRes.value) ? queueRes.value : previous?.queue || [];
+    const nextHistory = historyRes.status === "fulfilled" && Array.isArray(historyRes.value) ? historyRes.value : previous?.history || [];
+    const nextLibrary = libraryRes.status === "fulfilled" && Array.isArray(libraryRes.value) ? libraryRes.value : previous?.library || [];
+    const nextMonitor = monitorRes.status === "fulfilled" && Array.isArray(monitorRes.value) ? monitorRes.value : previous?.monitor || [];
+    const nextHealth = healthRes.status === "fulfilled" ? healthRes.value : previous?.health || null;
+    const coreOnline = Boolean(
+      queueRes.status === "fulfilled" ||
+      historyRes.status === "fulfilled" ||
+      libraryRes.status === "fulfilled" ||
+      previous?.coreOnline
+    );
+    const coreErrors = [
+      queueRes.status === "rejected" && !previous?.queue,
+      historyRes.status === "rejected" && !previous?.history,
+      libraryRes.status === "rejected" && !previous?.library,
+    ].filter(Boolean).length;
     const optionalErrors = [healthRes, monitorRes].filter(r => r.status === "rejected").length;
 
     const payload = {
-      health: healthRes.status === "fulfilled" ? healthRes.value : null,
-      queue: queueRes.status === "fulfilled" && Array.isArray(queueRes.value) ? queueRes.value : [],
-      history: historyRes.status === "fulfilled" && Array.isArray(historyRes.value) ? historyRes.value : [],
-      library: libraryRes.status === "fulfilled" && Array.isArray(libraryRes.value) ? libraryRes.value : [],
-      monitor: monitorRes.status === "fulfilled" && Array.isArray(monitorRes.value) ? monitorRes.value : [],
+      health: nextHealth,
+      queue: nextQueue,
+      history: nextHistory,
+      library: nextLibrary,
+      monitor: nextMonitor,
       coreOnline,
       coreErrors,
       optionalErrors,
@@ -793,7 +807,6 @@
       });
       _searchMessage = `Queued ${songTitle(item)}`;
       _tabCache = {};
-      _lastPayload = null;
     } catch (err) {
       _searchMessage = err.message || "Request failed";
     }
@@ -806,6 +819,7 @@
     const library = data.library || [];
     const queue = data.queue || [];
     const recent = data.history || [];
+    const libraryTotal = library.length || firstNumber(health.downloads?.audio_count, health.downloads?.file_count);
     const artists = countBy(library, item => item.artist || item.artists || item.album_artist);
     const albums = countBy(library, item => item.album || item.album_name);
     const size = health.downloads?.size_bytes || library.reduce((sum, item) => sum + Number(item.size || item.size_bytes || 0), 0);
@@ -814,8 +828,12 @@
       health.downloads?.available_bytes,
       health.downloads?.free,
       health.downloads?.available,
+      health.downloads?.disk?.free_bytes,
+      health.downloads?.disk?.available_bytes,
       health.storage?.free_bytes,
       health.storage?.available_bytes,
+      health.storage?.disk?.free_bytes,
+      health.storage?.disk?.available_bytes,
       health.disk?.free_bytes,
       health.disk?.available_bytes
     );
@@ -824,8 +842,12 @@
       health.downloads?.capacity_bytes,
       health.downloads?.total,
       health.downloads?.capacity,
+      health.downloads?.disk?.total_bytes,
+      health.downloads?.disk?.capacity_bytes,
       health.storage?.total_bytes,
       health.storage?.capacity_bytes,
+      health.storage?.disk?.total_bytes,
+      health.storage?.disk?.capacity_bytes,
       health.disk?.total_bytes,
       health.disk?.capacity_bytes
     );
@@ -852,7 +874,7 @@
           </div>
           <div class="downtify-overview-copy">
             <div class="downtify-section-label">Library</div>
-            <div class="downtify-overview-total">${library.length.toLocaleString()}</div>
+            <div class="downtify-overview-total">${libraryTotal.toLocaleString()}</div>
             <div class="downtify-muted">${artists.toLocaleString()} artists · ${albums.toLocaleString()} albums</div>
           </div>
         </div>
@@ -1240,10 +1262,10 @@
     _pollTimer = setInterval(async () => {
       if (document.hidden || _refreshing || _currentTab === "search") return;
       _refreshing = true;
-      _tabCache = {};
-      _lastPayload = null;
       const shell = document.querySelector(".downtify-widget-host .downtify-shell");
       try {
+        await loadWidgetData(true);
+        _tabCache = {};
         if (shell) await switchTab(shell, _currentTab, true);
       } finally {
         _refreshing = false;
