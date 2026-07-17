@@ -917,6 +917,7 @@
     const storageMeterWidth = totalBytes ? Math.max(4, storagePercent) : 100;
     const storageTitle = totalBytes ? `${fmtBytes(size)} of ${fmtBytes(totalBytes)} used` : `${fmtBytes(size)} used`;
     const storageSub = totalBytes && freeBytes ? `${fmtBytes(freeBytes)} available` : "Storage";
+    const librarySizeGb = size > 0 ? `${(size / 1e9).toFixed(size >= 1e10 ? 1 : 2)} GB` : "-";
     const active = queue.filter(item => songStatus(item) === "downloading");
     const shownRecent = recent.filter(item => ["done", "skipped", "error"].includes(songStatus(item))).slice(0, 25);
     _overviewRecentItems = shownRecent;
@@ -946,6 +947,7 @@
         <div class="downtify-overview-stats">
           ${overviewStat(firstNumber(queueSummary.total, queue.length).toLocaleString(), "Queue", `<path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/>`)}
           ${overviewStat(toolsValue, "Tools Ready", `<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.3-3.3a5 5 0 0 1-6.7 6.7L7 20l-3-3 7.3-7.3a5 5 0 0 1 6.7-6.7l-3.3 3.3z"/>`)}
+          ${overviewStat(librarySizeGb, "Library Size", `<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/>`)}
         </div>
       </div>
       <div class="downtify-overview-grid">
