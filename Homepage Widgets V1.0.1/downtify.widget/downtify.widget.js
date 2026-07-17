@@ -28,6 +28,8 @@
   let _overviewRecentItems = [];
   let _libraryArtists = [];
   let _libraryAlbums = [];
+  let _slowRefreshPromise = null;
+  let _renderingSlowUpdate = false;
 
   function log(...args) {
     if (DOWNTIFY_CONFIG.debug) console.log("[Homepage Downtify]", ...args);
@@ -303,48 +305,115 @@
     return index.tracks.has(libraryKey(title, artist, album));
   }
 
+  function mergePayload(partial = {}) {
+    const previous = _lastPayload || {};
+    _lastPayload = {
+      health: partial.health !== undefined ? partial.health : previous.health || null,
+      queue: Array.isArray(partial.queue) ? partial.queue : previous.queue || [],
+      history: Array.isArray(partial.history) ? partial.history : previous.history || [],
+      library: Array.isArray(partial.library) ? partial.library : previous.library || [],
+      monitor: Array.isArray(partial.monitor) ? partial.monitor : previous.monitor || [],
+      summary: partial.summary !== undefined ? partial.summary : previous.summary || null,
+      capabilities: partial.capabilities !== undefined ? partial.capabilities : previous.capabilities || null,
+      coreOnline: partial.coreOnline !== undefined ? partial.coreOnline : previous.coreOnline || false,
+      coreErrors: partial.coreErrors !== undefined ? partial.coreErrors : previous.coreErrors || 0,
+      optionalErrors: partial.optionalErrors !== undefined ? partial.optionalErrors : previous.optionalErrors || 0,
+      errors: partial.coreErrors !== undefined ? partial.coreErrors : previous.errors || 0,
+    };
+    return _lastPayload;
+  }
+
+  function refreshCurrentTabFromBackground() {
+    if (_currentTab === "search") return;
+    const shell = document.querySelector(".downtify-widget-host .downtify-shell");
+    if (!shell || _refreshing) return;
+    _tabCache = {};
+    _renderingSlowUpdate = true;
+    switchTab(shell, _currentTab, true)
+      .catch(err => console.error("[Homepage Downtify]", err))
+      .finally(() => {
+        _renderingSlowUpdate = false;
+      });
+  }
+
+  function startSlowDataRefresh(force = false) {
+    const needsSlowData = force || !_lastPayload?.summary || !_lastPayload?.health || !_lastPayload?.monitor?.length;
+    if (!needsSlowData || _slowRefreshPromise) return _slowRefreshPromise;
+
+    _slowRefreshPromise = Promise.allSettled([
+      apiFetch("/api/summary", { signal: abortSignal(10000) }),
+      apiFetch("/api/health", { signal: abortSignal(20000) }),
+      apiFetch("/api/monitor/playlists", { signal: abortSignal(20000) }),
+    ]).then(([summaryRes, healthRes, monitorRes]) => {
+      const partial = {};
+      if (summaryRes.status === "fulfilled") partial.summary = summaryRes.value;
+      if (healthRes.status === "fulfilled") partial.health = healthRes.value;
+      if (monitorRes.status === "fulfilled" && Array.isArray(monitorRes.value)) partial.monitor = monitorRes.value;
+      partial.optionalErrors = [summaryRes, healthRes, monitorRes].filter(r => r.status === "rejected").length;
+      mergePayload(partial);
+      refreshCurrentTabFromBackground();
+    }).catch(err => {
+      console.error("[Homepage Downtify]", err);
+    }).finally(() => {
+      _slowRefreshPromise = null;
+    });
+
+    return _slowRefreshPromise;
+  }
+
   async function loadWidgetData(force = false) {
     if (_lastPayload && !force) return _lastPayload;
     const previous = _lastPayload;
 
-    const [healthRes, queueRes, historyRes, libraryRes, monitorRes] = await Promise.allSettled([
-      apiFetch("/api/health", { signal: abortSignal(15000) }),
-      apiFetch("/api/queue"),
-      apiFetch("/api/history?limit=25&include_active=true&reconcile=false"),
-      apiFetch("/api/library/files", { signal: abortSignal(25000) }),
-      apiFetch("/api/monitor/playlists", { signal: abortSignal(15000) }),
+    const [summaryRes, queueRes, historyRes, capsRes] = await Promise.allSettled([
+      apiFetch("/api/summary", { signal: abortSignal(7000) }),
+      apiFetch("/api/queue", { signal: abortSignal(6000) }),
+      apiFetch("/api/history?limit=25&include_active=true&reconcile=false", { signal: abortSignal(8000) }),
+      apiFetch("/api/capabilities", { signal: abortSignal(6000) }),
     ]);
+    const nextSummary = summaryRes.status === "fulfilled" ? summaryRes.value : previous?.summary || null;
     const nextQueue = queueRes.status === "fulfilled" && Array.isArray(queueRes.value) ? queueRes.value : previous?.queue || [];
     const nextHistory = historyRes.status === "fulfilled" && Array.isArray(historyRes.value) ? historyRes.value : previous?.history || [];
-    const nextLibrary = libraryRes.status === "fulfilled" && Array.isArray(libraryRes.value) ? libraryRes.value : previous?.library || [];
-    const nextMonitor = monitorRes.status === "fulfilled" && Array.isArray(monitorRes.value) ? monitorRes.value : previous?.monitor || [];
-    const nextHealth = healthRes.status === "fulfilled" ? healthRes.value : previous?.health || null;
+    const nextCapabilities = capsRes.status === "fulfilled" ? capsRes.value : previous?.capabilities || null;
     const coreOnline = Boolean(
+      summaryRes.status === "fulfilled" ||
       queueRes.status === "fulfilled" ||
       historyRes.status === "fulfilled" ||
-      libraryRes.status === "fulfilled" ||
+      capsRes.status === "fulfilled" ||
       previous?.coreOnline
     );
     const coreErrors = [
+      summaryRes.status === "rejected" && !previous?.summary,
       queueRes.status === "rejected" && !previous?.queue,
       historyRes.status === "rejected" && !previous?.history,
-      libraryRes.status === "rejected" && !previous?.library,
+      capsRes.status === "rejected" && !previous?.capabilities,
     ].filter(Boolean).length;
-    const optionalErrors = [healthRes, monitorRes].filter(r => r.status === "rejected").length;
 
-    const payload = {
-      health: nextHealth,
+    const payload = mergePayload({
+      summary: nextSummary,
       queue: nextQueue,
       history: nextHistory,
-      library: nextLibrary,
-      monitor: nextMonitor,
+      capabilities: nextCapabilities,
       coreOnline,
       coreErrors,
-      optionalErrors,
-      errors: coreErrors,
-    };
-    _lastPayload = payload;
+    });
+    if (!_renderingSlowUpdate) startSlowDataRefresh(force);
     return payload;
+  }
+
+  async function ensureLibraryData(force = false) {
+    const payload = await loadWidgetData();
+    if (payload.library?.length && !force) return payload.library;
+    try {
+      const items = await apiFetch("/api/library/files", { signal: abortSignal(30000) });
+      if (Array.isArray(items)) {
+        mergePayload({ library: items });
+        return items;
+      }
+    } catch (err) {
+      console.error("[Homepage Downtify]", err);
+    }
+    return _lastPayload?.library || [];
   }
 
   function findGroupContainer() {
@@ -815,41 +884,33 @@
 
   async function renderOverview() {
     const data = await loadWidgetData();
+    const summary = data.summary || {};
     const health = data.health || {};
-    const library = data.library || [];
     const queue = data.queue || [];
     const recent = data.history || [];
-    const libraryTotal = library.length || firstNumber(health.downloads?.audio_count, health.downloads?.file_count);
-    const artists = countBy(library, item => item.artist || item.artists || item.album_artist);
-    const albums = countBy(library, item => item.album || item.album_name);
-    const size = health.downloads?.size_bytes || library.reduce((sum, item) => sum + Number(item.size || item.size_bytes || 0), 0);
+    const libraryStats = summary.counts?.library || {};
+    const queueSummary = summary.counts?.queue || {};
+    const downloadsStorage = summary.storage?.downloads || health.downloads || {};
+    const tools = summary.tools || health.tools || {};
+    const libraryTotal = firstNumber(libraryStats.tracks, downloadsStorage.audio_count, downloadsStorage.file_count);
+    const artists = firstNumber(libraryStats.artists);
+    const albums = firstNumber(libraryStats.albums);
+    const size = downloadsStorage.size_bytes || 0;
     const freeBytes = firstNumber(
-      health.downloads?.free_bytes,
-      health.downloads?.available_bytes,
-      health.downloads?.free,
-      health.downloads?.available,
-      health.downloads?.disk?.free_bytes,
-      health.downloads?.disk?.available_bytes,
-      health.storage?.free_bytes,
-      health.storage?.available_bytes,
-      health.storage?.disk?.free_bytes,
-      health.storage?.disk?.available_bytes,
-      health.disk?.free_bytes,
-      health.disk?.available_bytes
+      downloadsStorage.free_bytes,
+      downloadsStorage.available_bytes,
+      downloadsStorage.free,
+      downloadsStorage.available,
+      downloadsStorage.disk?.free_bytes,
+      downloadsStorage.disk?.available_bytes
     );
     const reportedTotalBytes = firstNumber(
-      health.downloads?.total_bytes,
-      health.downloads?.capacity_bytes,
-      health.downloads?.total,
-      health.downloads?.capacity,
-      health.downloads?.disk?.total_bytes,
-      health.downloads?.disk?.capacity_bytes,
-      health.storage?.total_bytes,
-      health.storage?.capacity_bytes,
-      health.storage?.disk?.total_bytes,
-      health.storage?.disk?.capacity_bytes,
-      health.disk?.total_bytes,
-      health.disk?.capacity_bytes
+      downloadsStorage.total_bytes,
+      downloadsStorage.capacity_bytes,
+      downloadsStorage.total,
+      downloadsStorage.capacity,
+      downloadsStorage.disk?.total_bytes,
+      downloadsStorage.disk?.capacity_bytes
     );
     const totalBytes = reportedTotalBytes || (freeBytes ? size + freeBytes : 0);
     const storagePercent = totalBytes ? Math.min(100, Math.max(0, Math.round((size / totalBytes) * 100))) : 0;
@@ -859,10 +920,14 @@
     const active = queue.filter(item => songStatus(item) === "downloading");
     const shownRecent = recent.filter(item => ["done", "skipped", "error"].includes(songStatus(item))).slice(0, 25);
     _overviewRecentItems = shownRecent;
-    const hasHealth = !!data.health;
-    const readyTools = hasHealth ? [health.tools?.ffmpeg?.available, health.tools?.yt_dlp?.available].filter(Boolean).length : null;
+    const hasHealth = !!(data.summary || data.health);
+    const ffmpegReady = tools.ffmpeg?.available ?? data.capabilities?.ffmpeg;
+    const ytDlpReady = tools.yt_dlp?.available;
+    const readyTools = [ffmpegReady, ytDlpReady].filter(Boolean).length;
+    const knownTools = [ffmpegReady, ytDlpReady].filter(value => value !== undefined && value !== null).length;
+    const toolsValue = knownTools ? `${readyTools}/2` : "-";
     const toolPill = available => {
-      if (!hasHealth) return `<span class="downtify-pill downtify-pill--muted">unknown</span>`;
+      if (available === undefined || available === null) return `<span class="downtify-pill downtify-pill--muted">checking</span>`;
       return `<span class="downtify-pill ${available ? "downtify-pill--ok" : "downtify-pill--warn"}">${available ? "ready" : "missing"}</span>`;
     };
 
@@ -879,8 +944,8 @@
           </div>
         </div>
         <div class="downtify-overview-stats">
-          ${overviewStat(queue.length.toLocaleString(), "Queue", `<path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/>`)}
-          ${overviewStat(hasHealth ? readyTools + "/2" : "-", "Tools Ready", `<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.3-3.3a5 5 0 0 1-6.7 6.7L7 20l-3-3 7.3-7.3a5 5 0 0 1 6.7-6.7l-3.3 3.3z"/>`)}
+          ${overviewStat(firstNumber(queueSummary.total, queue.length).toLocaleString(), "Queue", `<path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/>`)}
+          ${overviewStat(toolsValue, "Tools Ready", `<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.3-3.3a5 5 0 0 1-6.7 6.7L7 20l-3-3 7.3-7.3a5 5 0 0 1 6.7-6.7l-3.3 3.3z"/>`)}
         </div>
       </div>
       <div class="downtify-overview-grid">
@@ -899,12 +964,12 @@
           <div class="downtify-panel-head">
             <div>
               <div class="downtify-section-label">System</div>
-              <div class="downtify-panel-title">${hasHealth ? (readyTools === 2 ? "Ready to download" : "Needs attention") : "Health check unavailable"}</div>
+              <div class="downtify-panel-title">${knownTools ? (readyTools === 2 ? "Ready to download" : hasHealth ? "Needs attention" : "Checking tools") : "Checking tools"}</div>
             </div>
           </div>
           <div class="downtify-tool-grid">
-            <div class="downtify-tool-chip"><span>ffmpeg</span>${toolPill(health.tools?.ffmpeg?.available)}</div>
-            <div class="downtify-tool-chip"><span>yt-dlp</span>${toolPill(health.tools?.yt_dlp?.available)}</div>
+            <div class="downtify-tool-chip"><span>ffmpeg</span>${toolPill(ffmpegReady)}</div>
+            <div class="downtify-tool-chip"><span>yt-dlp</span>${toolPill(ytDlpReady)}</div>
           </div>
         </div>
       </div>
@@ -928,7 +993,7 @@
 
   async function renderLibrary() {
     const data = await loadWidgetData();
-    const items = data.library || [];
+    const items = await ensureLibraryData();
     if (!items.length) return `<div class="downtify-empty"><div>No library files found</div></div>`;
     const monitored = monitoredArtistSet(data.monitor);
     const artists = groupedMedia(items, item => songArtists(item).split(",")[0], "artist")
@@ -971,7 +1036,8 @@
 
   async function renderSearch() {
     const data = await loadWidgetData();
-    const index = libraryIndex(data.library || []);
+    const library = await ensureLibraryData();
+    const index = libraryIndex(library || []);
     return `
       <div class="downtify-search-shell">
         <form class="downtify-search-form">
