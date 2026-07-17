@@ -168,7 +168,14 @@
 
   function songUrl(item) {
     const song = item?.song || item || {};
-    return song.url || song.source_url || item?.url || item?.source_url || "";
+    if (song.url || song.source_url || item?.url || item?.source_url) {
+      return song.url || song.source_url || item?.url || item?.source_url || "";
+    }
+    const videoId = song.videoId || song.video_id || item?.videoId || item?.video_id;
+    if (videoId) return `https://music.youtube.com/watch?v=${encodeURIComponent(videoId)}`;
+    const browseId = song.browse_id || song.browseId || item?.browse_id || item?.browseId;
+    if (browseId) return `https://music.youtube.com/browse/${encodeURIComponent(browseId)}`;
+    return "";
   }
 
   function songFile(item) {
@@ -864,16 +871,35 @@
       button.textContent = "Requesting...";
     }
     try {
-      const params = new URLSearchParams({ url, client_id: clientId() });
-      await apiPost(`/api/download/url?${params.toString()}`, {
-        ...item,
-        url,
-        source: "homepage-widget",
-        media_type: songType(item),
-        title: songTitle(item),
-        artists: songArtists(item),
-        album: songAlbum(item),
-      });
+      const type = songType(item);
+      if (type === "album") {
+        const browseId = item?.browse_id || item?.browseId || item?.song?.browse_id || item?.song?.browseId;
+        if (!browseId) throw new Error("Album browse ID missing");
+        const album = await apiFetch(`/api/album/youtube?browse_id=${encodeURIComponent(browseId)}`, { signal: abortSignal(20000) });
+        const tracks = Array.isArray(album) ? album : (album?.tracks || []);
+        if (!tracks.length) throw new Error("No album tracks found");
+        await apiPost("/api/download/batch", {
+          songs: tracks.map(track => ({
+            ...track,
+            source: "homepage-widget",
+            media_type: "track",
+            album_name: track.album_name || item.album_name || item.name || "",
+          })),
+          playlist_url: "",
+          generate_m3u: false,
+        });
+      } else {
+        const params = new URLSearchParams({ url, client_id: clientId() });
+        await apiPost(`/api/download/url?${params.toString()}`, {
+          ...item,
+          url,
+          source: "homepage-widget",
+          media_type: type,
+          title: songTitle(item),
+          artists: songArtists(item),
+          album: songAlbum(item),
+        });
+      }
       _searchMessage = `Queued ${songTitle(item)}`;
       _tabCache = {};
     } catch (err) {
