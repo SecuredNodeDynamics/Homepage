@@ -51,25 +51,42 @@ body.light .sm-widget-host,
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-bottom: 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    gap: 10px;
+    padding-bottom: 10px;
+    flex-wrap: nowrap;
+    min-width: 0;
 }
 
-body.light .sm-header,
-[data-theme="light"] .sm-header {
-    border-bottom-color: rgba(0, 0, 0, 0.08);
-}
-
-.sm-header-left,
-.sm-header-right {
+.sm-header-left {
     display: flex;
     align-items: center;
     gap: 8px;
+    flex: 0 0 auto;
+    min-width: 0;
 }
 
 .sm-header-right {
-    gap: 10px;
-    flex-wrap: wrap;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex: 0 1 auto;
+    flex-wrap: nowrap;
+    min-width: 0;
+    margin-left: auto;
+}
+
+.sm-controls {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    padding: 0 0 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+body.light .sm-controls,
+[data-theme="light"] .sm-controls {
+    border-bottom-color: rgba(0, 0, 0, 0.08);
 }
 
 .sm-icon {
@@ -85,6 +102,9 @@ body.light .sm-header,
     font-weight: 800;
     color: rgba(255, 255, 255, 0.96);
     letter-spacing: 0.01em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 body.light .sm-title,
@@ -96,22 +116,24 @@ body.light .sm-title,
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    padding: 6px 13px;
-    border-radius: 999px;
-    background: rgba(167, 139, 250, 0.12);
-    border: 1px solid rgba(167, 139, 250, 0.28);
+    padding: 4px 9px;
+    border-radius: 7px;
+    background: linear-gradient(135deg, rgba(167, 139, 250, 0.12), rgba(139, 92, 246, 0.12));
+    border: 1px solid rgba(167, 139, 250, 0.30);
     color: rgba(196, 181, 253, 0.95);
-    font-size: 0.74rem;
-    font-weight: 500;
+    font-size: 0.68rem;
+    font-weight: 600;
     text-decoration: none;
     transition: background 0.15s, border-color 0.15s, color 0.15s;
     white-space: nowrap;
-    flex-shrink: 0;
+    flex: 0 0 auto;
+    width: auto;
+    max-width: max-content;
 }
 
 .sm-open-btn:hover {
-    background: rgba(167, 139, 250, 0.20);
-    border-color: rgba(167, 139, 250, 0.45);
+    background: linear-gradient(135deg, rgba(167, 139, 250, 0.22), rgba(139, 92, 246, 0.22));
+    border-color: rgba(167, 139, 250, 0.50);
     color: rgba(221, 214, 254, 1.0);
 }
 
@@ -132,7 +154,11 @@ body.light .sm-open-btn:hover,
 .sm-tabs {
     display: flex;
     gap: 5px;
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
     overflow-x: auto;
+    overflow-y: hidden;
     scrollbar-width: none;
     -ms-overflow-style: none;
     padding-bottom: 2px;
@@ -188,8 +214,9 @@ body.light .sm-tab--active,
 
 .sm-card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(96px, 110px));
     gap: 10px;
+    justify-content: start;
 }
 
 .sm-card {
@@ -203,6 +230,8 @@ body.light .sm-tab--active,
     opacity: 0;
     transform: translateY(8px);
     transition: opacity 0.26s ease, transform 0.26s ease;
+    max-width: 110px;
+    width: 100%;
 }
 
 .sm-card:hover .sm-card-art img { transform: scale(1.05); }
@@ -561,10 +590,47 @@ body.light .sm-section-label,
 
 @media (max-width: 768px) {
     .sm-widget-host { padding: 12px !important; border-radius: 16px !important; }
-    .sm-card-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
+    .sm-card-grid {
+      grid-template-columns: repeat(auto-fill, minmax(88px, 100px));
+      gap: 8px;
+      justify-content: start;
+    }
+    .sm-card { max-width: 100px; }
     .sm-stats-grid { grid-template-columns: repeat(2, 1fr); }
     .sm-tab { padding: 5px 10px; font-size: 0.70rem; }
     .sm-stat-num { font-size: 1.1rem; }
+
+    .sm-header {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      gap: 10px !important;
+      flex-wrap: nowrap !important;
+      min-width: 0 !important;
+    }
+
+    .sm-header-right {
+      display: flex !important;
+      margin-left: auto !important;
+      flex: 0 0 auto !important;
+    }
+
+    .sm-open-btn {
+      width: auto !important;
+      max-width: max-content !important;
+      flex: 0 0 auto !important;
+    }
+
+    .sm-controls {
+      width: 100% !important;
+      min-width: 0 !important;
+    }
+
+    .sm-tabs {
+      width: 100% !important;
+      max-width: 100% !important;
+      overflow-x: auto !important;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {

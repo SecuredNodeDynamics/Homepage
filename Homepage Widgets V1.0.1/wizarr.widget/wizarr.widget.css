@@ -74,8 +74,20 @@
 .wzr-hdr-right {
   display: flex;
   align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  margin-left: auto;
+}
+
+/* ── Controls / Tabs row ───────────────────────── */
+
+.wzr-controls {
+  display: flex;
+  align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
+  min-width: 0;
+  padding: 10px 0 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 /* ── Tabs ──────────────────────────────────────── */
@@ -392,6 +404,7 @@
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
   white-space: nowrap;
+  flex: 0 0 auto;
 }
 
 .wzr-create-btn:hover {
@@ -679,253 +692,89 @@
   cursor: not-allowed;
 }
 
-
-
-/* =====================================================
-   Widget Source Autosize Patch
-   Lets this widget CSS stand alone on phone, tablet, and desktop.
-===================================================== */
-
-:root {
-  --hp-widget-source-gap: clamp(8px, 2vw, 16px);
-  --hp-widget-source-pad: clamp(10px, 2vw, 18px);
-  --hp-widget-source-radius: clamp(14px, 2vw, 20px);
-  --hp-widget-source-min-card: min(100%, 140px);
-}
-
-.service-card,
-.widget-card,
-[class$="-host"],
-[class*="-host "] {
-  box-sizing: border-box !important;
-  max-width: 100% !important;
-}
-
-.service-card *,
-.widget-card *,
-[class$="-host"] *,
-[class*="-host "] * {
-  box-sizing: border-box;
-  min-width: 0;
-}
-
-.hp-widget-row,
-[class$="-flex-row"],
-[class*="-flex-row "],
-.arr-js-flex-row,
-.arr-lt-flex-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--hp-widget-source-gap) !important;
-  width: 100%;
-  align-items: stretch;
-}
-
-.hp-widget-row > *,
-[class$="-flex-row"] > *,
-[class*="-flex-row "] > *,
-.arr-js-flex-row > *,
-.arr-lt-flex-row > * {
-  flex: 1 1 min(100%, 360px) !important;
-  min-width: 0 !important;
-  max-width: 100% !important;
-}
-
-[class$="-grid"],
-[class*="-grid "],
-[class$="-stats-row"],
-[class*="-stats-row "] {
-  max-width: 100%;
-}
-
-[class$="-stat-grid"],
-[class*="-stat-grid "],
-[class$="-cards-grid"],
-[class*="-cards-grid "],
-[class$="-card-grid"],
-[class*="-card-grid "] {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(var(--hp-widget-source-min-card), 1fr)) !important;
-  gap: var(--hp-widget-source-gap) !important;
-  width: 100%;
-}
-
-[class$="-header"],
-[class*="-header "],
-[class$="-toolbar"],
-[class*="-toolbar "],
-[class$="-actions"],
-[class*="-actions "],
-[class$="-controls"],
-[class*="-controls "] {
-  flex-wrap: wrap;
-  min-width: 0;
-  max-width: 100%;
-}
-
-[class$="-list"],
-[class*="-list "],
-[class$="-body"],
-[class*="-body "],
-[class$="-guide"],
-[class*="-guide "] {
-  max-width: 100%;
-  scrollbar-width: thin;
-}
-
-.apexcharts-canvas,
-.apexcharts-svg,
-.recharts-wrapper,
-.recharts-surface,
-canvas,
-svg,
-img {
-  max-width: 100% !important;
-}
-
-@media (max-width: 768px) {
-  :root {
-    --hp-widget-source-gap: 10px;
-    --hp-widget-source-pad: 12px;
-    --hp-widget-source-radius: 14px;
-    --hp-widget-source-min-card: min(100%, 112px);
-  }
-
-  .service-card,
-  .widget-card,
-  [class$="-host"],
-  [class*="-host "] {
-    width: 100% !important;
-    padding: var(--hp-widget-source-pad) !important;
-    border-radius: var(--hp-widget-source-radius) !important;
-    overflow: hidden !important;
-  }
-
-  [class$="-flex-row"],
-  [class*="-flex-row "],
-  .arr-js-flex-row,
-  .arr-lt-flex-row {
-    flex-direction: column !important;
-  }
-
-  [class$="-flex-row"] > *,
-  [class*="-flex-row "] > *,
-  .arr-js-flex-row > *,
-  .arr-lt-flex-row > * {
-    flex: 1 1 auto !important;
-    width: 100% !important;
-  }
-
-  [class$="-toolbar"],
-  [class*="-toolbar "],
-  [class$="-controls"],
-  [class*="-controls "],
-  [class$="-tabs-row"],
-  [class*="-tabs-row "] {
-    overflow-x: auto;
-    max-width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  :root {
-    --hp-widget-source-gap: 8px;
-    --hp-widget-source-pad: 10px;
-    --hp-widget-source-min-card: min(100%, 96px);
-  }
-
-  [class$="-stat-grid"],
-  [class*="-stat-grid "],
-  [class$="-cards-grid"],
-  [class*="-cards-grid "],
-  [class$="-card-grid"],
-  [class*="-card-grid "] {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-}
-
-
-/* =====================================================
-   Multi-Widget Group Layout
-   Supports 2, 3, and 4 injected widgets in the same group.
-===================================================== */
-
-:root {
-  --hp-widget-source-column-min: clamp(220px, 20vw, 320px);
-  --hp-widget-source-tablet-column-min: 240px;
-}
-
-ul.services-list {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--hp-widget-source-column-min)), 1fr)) !important;
-}
-
-.hp-widget-row,
-[class$="-flex-row"],
-[class*="-flex-row "],
-.arr-js-flex-row,
-.arr-lt-flex-row {
+/* Header layout: Open stays with title; tabs/Create live below. */
+.wzr-host .wzr-hdr {
   display: grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--hp-widget-source-column-min)), 1fr)) !important;
-  gap: var(--hp-widget-source-gap, 16px) !important;
-  align-items: stretch !important;
-  width: 100% !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding-bottom: 0 !important;
+  border-bottom: 0 !important;
+  flex-direction: row !important;
 }
 
-.hp-widget-row > *,
-[class$="-flex-row"] > *,
-[class*="-flex-row "] > *,
-.arr-js-flex-row > *,
-.arr-lt-flex-row > * {
-  width: 100% !important;
+.wzr-host .wzr-hdr-left {
+  min-width: 0 !important;
+  flex-wrap: nowrap !important;
+  overflow: hidden !important;
+}
+
+.wzr-host .wzr-title {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.wzr-host .wzr-hdr-right {
+  width: auto !important;
+  min-width: 0 !important;
+  justify-content: flex-end !important;
+  flex-wrap: nowrap !important;
+  gap: 8px !important;
+}
+
+.wzr-host .wzr-open-link,
+.wzr-host .wzr-create-btn {
+  width: auto !important;
+  min-width: max-content !important;
+  max-width: max-content !important;
+  flex: 0 0 auto !important;
+}
+
+.wzr-host .wzr-controls {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 10px !important;
+  min-width: 0 !important;
+  padding: 10px 0 12px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+.wzr-host .wzr-tabs {
   min-width: 0 !important;
   max-width: 100% !important;
-  height: 100%;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none !important;
 }
 
-@media (max-width: 900px) {
-  ul.services-list,
-  [class$="-flex-row"],
-  [class*="-flex-row "],
-  .arr-js-flex-row,
-  .arr-lt-flex-row {
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--hp-widget-source-tablet-column-min)), 1fr)) !important;
+.wzr-host .wzr-tabs::-webkit-scrollbar {
+  display: none !important;
+}
+
+@media (max-width: 640px) {
+  .wzr-host .wzr-hdr {
+    flex-wrap: wrap !important;
+    align-items: center !important;
+  }
+
+  .wzr-host .wzr-hdr-right {
+    margin-left: auto !important;
+  }
+
+  .wzr-host .wzr-controls {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .wzr-host .wzr-open-link,
+  .wzr-host .wzr-create-btn {
+    min-height: 30px !important;
+    padding: 6px 10px !important;
+    font-size: 0.72rem !important;
+    line-height: 1 !important;
   }
 }
 
-@media (max-width: 560px) {
-  ul.services-list,
-  [class$="-flex-row"],
-  [class*="-flex-row "],
-  .arr-js-flex-row,
-  .arr-lt-flex-row {
-    grid-template-columns: 1fr !important;
-  }
-}
-
-/* Mobile/tablet: force native service grids and custom widget rows to one column. */
-@media (max-width: 1024px) {
-  ul.services-list {
-    grid-template-columns: 1fr !important;
-  }
-
-  .hp-widget-row,
-  [class$="-flex-row"],
-  [class*="-flex-row "] {
-    display: flex !important;
-    flex-direction: column !important;
-    flex-wrap: nowrap !important;
-    align-items: stretch !important;
-    width: 100% !important;
-    gap: var(--hp-widget-gap, 10px) !important;
-    grid-template-columns: 1fr !important;
-  }
-
-  .hp-widget-row > *,
-  [class$="-flex-row"] > *,
-  [class*="-flex-row "] > * {
-    flex: 1 1 auto !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-  }
-}

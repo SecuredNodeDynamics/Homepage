@@ -239,6 +239,16 @@ body.light .nd-tab--active,
     gap: 10px;
 }
 
+.nd-card-grid--compact {
+    grid-template-columns: repeat(auto-fill, minmax(72px, 88px));
+    justify-content: start;
+    gap: 8px;
+}
+
+.nd-card-grid--compact .nd-card-sub {
+    display: none;
+}
+
 .nd-card {
     display: flex;
     flex-direction: column;
@@ -739,6 +749,11 @@ body.light .nd-footer,
     .nd-card-grid {
         grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
         gap: 8px;
+    }
+
+    .nd-card-grid--compact {
+        grid-template-columns: repeat(auto-fill, minmax(64px, 76px));
+        gap: 6px;
     }
 
     .nd-stats-grid {

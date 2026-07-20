@@ -6,11 +6,11 @@
 (function () {
   const PLS_CONFIG = {
     groupName: "PLEX-SLIDER",
-    baseUrl: "http://10.128.1.64:32400",
+    baseUrl: "http://YOUR_LOCAL_IP:32400",
     fallbackUrl: null, // or null
     activeUrl: null,
-    token: "mRovD3tPzVjcHYxTLWoi",
-    href: "http://10.128.1.64:32400/web",
+    token: "PASTE_YOUR_PLEX_TOKEN_HERE",
+    href: "http://YOUR_LOCAL_IP:32400/web",
     fallbackHref: null,
     limit: 18,
     pollMs: 10 * 60 * 1000,
@@ -404,25 +404,41 @@
   }
 
   function buildShell() {
+    const hasQuery = !!_searchQuery.trim();
     return `
       <div class="pls-shelf">
-        <div class="pls-head">
-          <div class="pls-logo-title">
-            <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/plex.webp" alt="Plex" class="pls-icon">
-            <div>
-              <div class="pls-title">Plex Slider</div>
-              <div class="pls-subtitle">${_searchQuery ? "Search results" : "Recently added"}</div>
+        <div class="pls-header">
+          <div class="pls-header-top">
+            <div class="pls-logo-title">
+              <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/plex.webp" alt="Plex" class="pls-icon">
+              <span class="pls-title">Plex</span>
+            </div>
+            <div class="pls-header-tools">
+              <a class="pls-open-btn" href="${esc(getHref())}" target="_blank" rel="noopener noreferrer"
+                 title="Open Plex" aria-label="Open Plex in new tab">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+                  <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+                Open
+              </a>
             </div>
           </div>
-          <a class="pls-open-btn" href="${esc(getHref())}" target="_blank" rel="noopener noreferrer">Open</a>
-        </div>
-        <div class="pls-tabs-row">
-          <div class="pls-tabs">${buildTabs()}</div>
           <div class="pls-search-wrap">
-            <input class="pls-search-input${_searchQuery ? " is-open" : ""}" type="search" value="${esc(_searchQuery)}" placeholder="Search Plex">
-            <span class="pls-search-icon">⌕</span>
-            <button class="pls-search-clear${_searchQuery ? " is-visible" : ""}" aria-label="Clear search">×</button>
+            <span class="pls-search-icon" aria-hidden="true">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+              </svg>
+            </span>
+            <input class="pls-search-input${hasQuery ? " has-value" : ""}" type="search"
+                   value="${esc(_searchQuery)}" placeholder="Search…"
+                   autocomplete="off" autocorrect="off" spellcheck="false"
+                   aria-label="Search all media">
+            <button class="pls-search-clear${hasQuery ? " is-visible" : ""}" type="button" aria-label="Clear search">✕</button>
           </div>
+        </div>
+        <div class="pls-controls">
+          <div class="pls-tabs" role="tablist">${buildTabs()}</div>
         </div>
         ${buildRail()}
       </div>`;
@@ -491,9 +507,16 @@
     });
 
     const input = host.querySelector(".pls-search-input");
+    const clearBtn = host.querySelector(".pls-search-clear");
     if (input) {
+      const syncClear = () => {
+        const hasValue = !!input.value.trim();
+        input.classList.toggle("has-value", hasValue);
+        clearBtn?.classList.toggle("is-visible", hasValue);
+      };
       input.addEventListener("input", () => {
         _searchQuery = input.value;
+        syncClear();
         clearTimeout(_searchDebounce);
         _searchDebounce = setTimeout(async () => {
           try {
@@ -505,10 +528,10 @@
           updateHost();
         }, 350);
       });
-      input.addEventListener("focus", () => input.classList.add("is-open"));
+      syncClear();
     }
 
-    host.querySelector(".pls-search-clear")?.addEventListener("click", () => {
+    clearBtn?.addEventListener("click", () => {
       _searchQuery = "";
       _searchResults = [];
       updateHost();

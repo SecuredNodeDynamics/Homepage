@@ -39,16 +39,16 @@
   min-width: 0;
 }
 
-/* ── Header ───────────────────────────────── */
+/* ── Header ─────────────────────────────────────── */
 
 .trr-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  flex-wrap: wrap;
+  padding-bottom: 10px;
+  flex-wrap: nowrap;
+  min-width: 0;
 }
 
 .trr-header-left {
@@ -61,8 +61,19 @@
 .trr-header-right {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: nowrap;
+  margin-left: auto;
+  min-width: 0;
+}
+
+.trr-controls {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 0 0 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .trr-icon {
@@ -70,6 +81,21 @@
   height: 32px;
   object-fit: contain;
   flex-shrink: 0;
+}
+
+.trr-title {
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.1;
+}
+
+.trr-subtitle {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.35);
+  margin-top: 2px;
 }
 
 .trr-status {
@@ -82,6 +108,7 @@
   font-weight: 700;
   letter-spacing: 0.01em;
   white-space: nowrap;
+  flex: 0 0 auto;
 }
 
 .trr-status--active {
@@ -111,6 +138,7 @@
   text-decoration: none;
   transition: border-color 0.15s, color 0.15s, background 0.15s;
   white-space: nowrap;
+  flex: 0 0 auto;
 }
 
 .trr-open-link:hover {
@@ -125,7 +153,19 @@
 
 .trr-tabs {
   display: flex;
+  flex-wrap: nowrap;
   gap: 3px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.trr-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .trr-tab {
@@ -140,6 +180,7 @@
   transition: background 0.14s, color 0.14s, border-color 0.14s;
   letter-spacing: 0.03em;
   white-space: nowrap;
+  flex: 0 0 auto;
 }
 
 .trr-tab:hover {
@@ -305,18 +346,46 @@
   min-height: 260px !important;
 }
 
+/* History tab — compact cards */
+.trr-card:has(#trr-history-main),
+.trr-card:has(#trr-history-trend) {
+  padding: 10px 12px 10px;
+}
+
+.trr-card:has(#trr-history-main) .trr-card-title,
+.trr-card:has(#trr-history-trend) .trr-card-title {
+  margin-bottom: 6px;
+}
+
+.trr-card:has(#trr-history-main) .trr-chart-wrap,
+.trr-card:has(#trr-history-trend) .trr-chart-wrap {
+  min-height: 120px !important;
+  height: 120px !important;
+}
+
+#trr-history-main,
+#trr-history-trend {
+  min-height: 120px !important;
+  height: 120px !important;
+  max-height: 120px !important;
+}
+
+.trr-card:has(#trr-history-main) canvas,
+.trr-card:has(#trr-history-trend) canvas {
+  height: 120px !important;
+  max-height: 120px !important;
+}
+
 /* =====================================================
    USERS
 ===================================================== */
 
-/* Stack the two Users cards vertically */
 .trr-grid--users,
 .trr-grid:has(#trr-users-chart) {
   grid-template-columns: 1fr !important;
   gap: 12px;
 }
 
-/* Top users chart card */
 .trr-card:has(#trr-users-chart) {
   padding: 10px 12px;
 }
@@ -401,11 +470,10 @@
 ===================================================== */
 
 #trr-devices-donut {
-  min-height: 230px !important;
-  height: 230px !important;
-  max-height: 230px !important;
-  width: min(100%, 300px) !important;
-  max-width: 300px !important;
+  min-height: 170px !important;
+  height: 170px !important;
+  max-height: 170px !important;
+  max-width: 170px !important;
   margin: 0 auto;
 }
 
@@ -422,15 +490,6 @@
   padding: 10px 12px;
 }
 
-.trr-grid--devices {
-  align-items: stretch;
-}
-
-.trr-device-card {
-  min-height: 250px;
-  overflow: visible;
-}
-
 .trr-card:has(#trr-devices-donut) .trr-card-title,
 .trr-card:has(#trr-devices-bars) .trr-card-title,
 .trr-card:has(#trr-libraries-chart) .trr-card-title {
@@ -444,23 +503,6 @@
   height: 170px !important;
 }
 
-.trr-card.trr-device-card--breakdown:has(#trr-devices-donut) .trr-chart-wrap {
-  min-height: 230px !important;
-  height: 230px !important;
-}
-
-.trr-card.trr-device-card--players:has(#trr-devices-bars) .trr-chart-wrap {
-  min-height: 230px !important;
-  height: 230px !important;
-}
-
-.trr-card.trr-device-card--players:has(#trr-devices-bars) canvas,
-#trr-devices-bars {
-  min-height: 230px !important;
-  height: 230px !important;
-  max-height: 230px !important;
-}
-
 .trr-card:has(#trr-devices-donut) .trr-chart-wrap {
   display: flex;
   align-items: center;
@@ -468,10 +510,10 @@
 }
 
 .trr-card:has(#trr-devices-donut) canvas {
-  width: min(100%, 300px) !important;
-  height: 230px !important;
-  max-width: 300px !important;
-  max-height: 230px !important;
+  width: 170px !important;
+  height: 170px !important;
+  max-width: 170px !important;
+  max-height: 170px !important;
 }
 
 .trr-card:has(#trr-devices-bars) canvas,
@@ -496,7 +538,7 @@
 }
 
 /* =====================================================
-   LIBRARIES - STACK CARDS
+   LIBRARIES — STACKED CARDS
 ===================================================== */
 
 .trr-grid--libraries,
@@ -587,31 +629,64 @@
 }
 
 .trr-heatmap-cell {
-  display: block;
-  width: 100%;
   height: 18px;
-  padding: 0;
-  appearance: none;
-  -webkit-appearance: none;
   border-radius: 4px;
   border: 1px solid rgba(255,255,255,0.04);
-  cursor: pointer;
-  font: inherit;
   transition:
     transform 0.16s ease,
     filter 0.16s ease,
     border-color 0.16s ease;
 }
 
-.trr-heatmap-cell:focus-visible {
-  outline: 2px solid rgba(74,222,180,0.65);
-  outline-offset: 2px;
-}
-
 .trr-heatmap-cell:hover {
   transform: translateY(-1px);
   filter: brightness(1.06);
   border-color: rgba(255,255,255,0.12);
+}
+
+/* =====================================================
+   BANDWIDTH
+===================================================== */
+
+/* Spinner used in the bandwidth loading state */
+@keyframes trr-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Synthesised-data notice */
+.trr-synth-note {
+  font-size: 0.62rem;
+  color: rgba(255,255,255,0.32);
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+}
+
+/* Bandwidth chart card sizing */
+.trr-card:has(#trr-bw-chart) {
+  padding: 10px 12px;
+}
+
+.trr-card:has(#trr-bw-chart) .trr-card-title {
+  margin-bottom: 6px;
+}
+
+.trr-card:has(#trr-bw-chart) .trr-chart-wrap {
+  min-height: 160px !important;
+  height: 160px !important;
+}
+
+#trr-bw-chart {
+  min-height: 160px !important;
+  height: 160px !important;
+  max-height: 160px !important;
+}
+
+.trr-card:has(#trr-bw-chart) canvas {
+  height: 160px !important;
+  max-height: 160px !important;
 }
 
 /* =====================================================
@@ -634,148 +709,6 @@
   font-size: 0.65rem;
   color: rgba(255,255,255,0.20);
   border-top: 1px solid rgba(255,255,255,0.05);
-}
-
-/* =====================================================
-   RESPONSIVE
-===================================================== */
-
-@media (max-width: 980px) {
-  .trr-metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .trr-grid--2 {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 640px) {
-  .trr-host {
-    padding: 16px;
-    border-radius: 18px;
-  }
-
-  .trr-shell {
-    gap: 12px;
-  }
-
-  .trr-header {
-    align-items: flex-start;
-  }
-
-  .trr-tabs {
-    gap: 3px;
-  }
-
-  .trr-tab {
-    padding: 7px 12px;
-    font-size: 0.70rem;
-  }
-
-  .trr-metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-  }
-
-  .trr-card {
-    padding: 12px;
-    border-radius: 16px;
-  }
-
-  .trr-chart-wrap,
-  #trr-overview-plays,
-  #trr-overview-watchtime,
-  #trr-history-main,
-  #trr-history-trend,
-  #trr-users-chart,
-  #trr-devices-donut,
-  #trr-devices-bars,
-  #trr-libraries-chart {
-    min-height: 210px !important;
-  }
-
-  .trr-toolbar {
-    gap: 8px;
-  }
-
-  .trr-toggle-group {
-    width: 100%;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .trr-toggle-group::-webkit-scrollbar {
-    display: none;
-  }
-
-  .trr-list-row {
-    padding: 11px 12px;
-  }
-
-  .trr-list-title {
-    font-size: 0.80rem;
-  }
-
-  .trr-list-side {
-    font-size: 0.74rem;
-  }
-}
-
-@media (max-width: 460px) {
-  .trr-metrics {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .trr-title {
-    font-size: 0.92rem;
-  }
-
-  .trr-subtitle {
-    font-size: 0.65rem;
-  }
-
-  .trr-metric {
-    min-height: 74px;
-  }
-
-  .trr-metric-value {
-    font-size: 1.08rem;
-  }
-
-  .trr-metric-label {
-    font-size: 0.60rem;
-  }
-}
-
-/* History tab - make both cards much shorter */
-.trr-card:has(#trr-history-main),
-.trr-card:has(#trr-history-trend) {
-  padding: 10px 12px 10px;
-}
-
-.trr-card:has(#trr-history-main) .trr-card-title,
-.trr-card:has(#trr-history-trend) .trr-card-title {
-  margin-bottom: 6px;
-}
-
-.trr-card:has(#trr-history-main) .trr-chart-wrap,
-.trr-card:has(#trr-history-trend) .trr-chart-wrap {
-  min-height: 120px !important;
-  height: 120px !important;
-}
-
-#trr-history-main,
-#trr-history-trend {
-  min-height: 120px !important;
-  height: 120px !important;
-  max-height: 120px !important;
-}
-
-.trr-card:has(#trr-history-main) canvas,
-.trr-card:has(#trr-history-trend) canvas {
-  height: 120px !important;
-  max-height: 120px !important;
 }
 
 /* =====================================================
@@ -807,7 +740,7 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
-  padding-top: 19px; /* aligns with grid rows, below month-label row */
+  padding-top: 19px;
   flex-shrink: 0;
 }
 
@@ -906,276 +839,6 @@
   border: 1px solid rgba(255,255,255,0.05);
 }
 
-/* Match the overview calendar's usable height to the watch-time chart. */
-.trr-card:has(#trr-overview-cal) {
-  min-height: 310px;
-}
-
-.trr-card:has(#trr-overview-cal) .trr-cal-wrap {
-  min-height: 240px;
-  height: 240px;
-  padding: 4px 2px 0;
-  justify-content: stretch;
-}
-
-.trr-card:has(#trr-overview-cal) .trr-cal {
-  height: 100%;
-  gap: 12px;
-}
-
-.trr-card:has(#trr-overview-cal) .trr-cal-body {
-  flex: 1;
-  align-items: stretch;
-}
-
-.trr-card:has(#trr-overview-cal) .trr-cal-scroll {
-  height: 100%;
-}
-
-.trr-card:has(#trr-overview-cal) .trr-cal-months {
-  height: 18px;
-  flex-shrink: 0;
-}
-
-.trr-card:has(#trr-overview-cal) .trr-cal-grid {
-  flex: 1;
-  gap: 4px;
-}
-
-.trr-card:has(#trr-overview-cal) .trr-cal-col {
-  gap: 4px;
-}
-
-.trr-card:has(#trr-overview-cal) .trr-cal-cell {
-  flex: 1 1 0;
-  height: auto;
-  min-height: 0;
-  border-radius: 4px;
-}
-
-.trr-card:has(#trr-overview-cal) .trr-cal-dow {
-  padding-top: 22px;
-  gap: 4px;
-}
-
-.trr-card:has(#trr-overview-cal) .trr-cal-dow-item {
-  flex: 1 1 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  height: auto;
-  line-height: 1;
-}
-
-@media (max-width: 768px) {
-  .trr-card:has(#trr-overview-cal) {
-    min-height: 280px;
-  }
-
-  .trr-card:has(#trr-overview-cal) .trr-cal-wrap {
-    min-height: 210px;
-    height: 210px;
-  }
-}
-
-/* Month-view layout for Tracearr overview calendar. */
-.trr-card:has(#trr-overview-cal),
-.trr-card:has(#trr-overview-watchtime) {
-  min-height: 390px;
-}
-
-.trr-card:has(#trr-overview-watchtime) .trr-chart-wrap {
-  min-height: 320px;
-  height: 320px;
-}
-
-.trr-card:has(#trr-overview-cal) .trr-cal-wrap {
-  min-height: 320px;
-  height: 320px;
-  padding: 2px 0 0;
-}
-
-.trr-card:has(#trr-overview-cal) .trr-cal {
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
-  height: 100%;
-  gap: 8px;
-}
-
-.trr-cal-month-title {
-  min-height: 18px;
-  font-size: 0.68rem;
-  font-weight: 800;
-  color: rgba(255, 255, 255, 0.42);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.trr-cal-weekdays {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 6px;
-}
-
-.trr-card:has(#trr-overview-cal) .trr-cal-weekdays .trr-cal-dow-item {
-  width: auto;
-  height: auto;
-  justify-content: center;
-  padding: 0;
-  text-align: center;
-  font-size: 0.6rem;
-}
-
-.trr-card:has(#trr-overview-cal) .trr-cal-body {
-  min-height: 0;
-  display: block;
-}
-
-.trr-card:has(#trr-overview-cal) .trr-cal-scroll {
-  height: 100%;
-  overflow: hidden;
-}
-
-.trr-card:has(#trr-overview-cal) .trr-cal-grid {
-  display: grid;
-  grid-template-rows: repeat(6, minmax(0, 1fr));
-  gap: 6px;
-  height: 100%;
-}
-
-.trr-cal-week {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 6px;
-  min-height: 0;
-}
-
-.trr-card:has(#trr-overview-cal) .trr-cal-cell {
-  min-height: 0;
-  height: auto;
-  border-radius: 7px;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-end;
-  padding: 7px 8px;
-  font-size: 0.7rem;
-  font-weight: 800;
-  appearance: none;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.trr-card:has(#trr-overview-cal) .trr-cal-cell:hover {
-  transform: none;
-  filter: brightness(1.25);
-}
-
-.trr-card:has(#trr-overview-cal) .trr-cal-legend {
-  padding-top: 2px;
-}
-
-@media (max-width: 768px) {
-  .trr-card:has(#trr-overview-cal),
-  .trr-card:has(#trr-overview-watchtime) {
-    min-height: 340px;
-  }
-
-  .trr-card:has(#trr-overview-cal) .trr-cal-wrap,
-  .trr-card:has(#trr-overview-watchtime) .trr-chart-wrap {
-    min-height: 270px;
-    height: 270px;
-  }
-}
-
-.trr-cal-popup {
-  position: fixed;
-  z-index: 9999;
-  width: min(320px, calc(100vw - 24px));
-  padding: 12px;
-  border-radius: 14px;
-  background: rgba(10, 14, 20, 0.96);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(18px) saturate(130%);
-  -webkit-backdrop-filter: blur(18px) saturate(130%);
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.trr-cal-popup__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.trr-cal-popup__date {
-  font-size: 0.82rem;
-  font-weight: 800;
-}
-
-.trr-cal-popup__sub {
-  margin-top: 3px;
-  font-size: 0.68rem;
-  color: rgba(74, 222, 180, 0.78);
-}
-
-.trr-cal-popup__close {
-  width: 24px;
-  height: 24px;
-  border: 0;
-  border-radius: 7px;
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.55);
-  cursor: pointer;
-}
-
-.trr-cal-popup__close:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.trr-cal-popup__list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 260px;
-  overflow-y: auto;
-  padding-top: 10px;
-}
-
-.trr-cal-popup__row {
-  padding: 8px 9px;
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.045);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.trr-cal-popup__title {
-  font-size: 0.74rem;
-  font-weight: 750;
-  color: rgba(255, 255, 255, 0.88);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.trr-cal-popup__meta,
-.trr-cal-popup__more,
-.trr-cal-popup__empty {
-  margin-top: 3px;
-  font-size: 0.64rem;
-  color: rgba(255, 255, 255, 0.42);
-}
-
-.trr-cal-popup__more,
-.trr-cal-popup__empty {
-  text-align: center;
-  padding: 8px 0 2px;
-}
-
 /* Watch-time no-data overlay */
 .trr-no-data {
   position: absolute;
@@ -1196,250 +859,118 @@
 }
 
 /* =====================================================
-   Widget Source Autosize Patch
-   Lets this widget CSS stand alone on phone, tablet, and desktop.
+   RESPONSIVE
 ===================================================== */
 
-:root {
-  --hp-widget-source-gap: clamp(8px, 2vw, 16px);
-  --hp-widget-source-pad: clamp(10px, 2vw, 18px);
-  --hp-widget-source-radius: clamp(14px, 2vw, 20px);
-  --hp-widget-source-min-card: min(100%, 140px);
-}
-
-.service-card,
-.widget-card,
-[class$="-host"],
-[class*="-host "] {
-  box-sizing: border-box !important;
-  max-width: 100% !important;
-}
-
-.service-card *,
-.widget-card *,
-[class$="-host"] *,
-[class*="-host "] * {
-  box-sizing: border-box;
-  min-width: 0;
-}
-
-.hp-widget-row,
-[class$="-flex-row"],
-[class*="-flex-row "],
-.arr-js-flex-row,
-.arr-lt-flex-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--hp-widget-source-gap) !important;
-  width: 100%;
-  align-items: stretch;
-}
-
-.hp-widget-row > *,
-[class$="-flex-row"] > *,
-[class*="-flex-row "] > *,
-.arr-js-flex-row > *,
-.arr-lt-flex-row > * {
-  flex: 1 1 min(100%, 360px) !important;
-  min-width: 0 !important;
-  max-width: 100% !important;
-}
-
-[class$="-grid"],
-[class*="-grid "],
-[class$="-stats-row"],
-[class*="-stats-row "] {
-  max-width: 100%;
-}
-
-[class$="-stat-grid"],
-[class*="-stat-grid "],
-[class$="-cards-grid"],
-[class*="-cards-grid "],
-[class$="-card-grid"],
-[class*="-card-grid "] {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(var(--hp-widget-source-min-card), 1fr)) !important;
-  gap: var(--hp-widget-source-gap) !important;
-  width: 100%;
-}
-
-[class$="-header"],
-[class*="-header "],
-[class$="-toolbar"],
-[class*="-toolbar "],
-[class$="-actions"],
-[class*="-actions "],
-[class$="-controls"],
-[class*="-controls "] {
-  flex-wrap: wrap;
-  min-width: 0;
-  max-width: 100%;
-}
-
-[class$="-list"],
-[class*="-list "],
-[class$="-body"],
-[class*="-body "],
-[class$="-guide"],
-[class*="-guide "] {
-  max-width: 100%;
-  scrollbar-width: thin;
-}
-
-.apexcharts-canvas,
-.apexcharts-svg,
-.recharts-wrapper,
-.recharts-surface,
-canvas,
-svg,
-img {
-  max-width: 100% !important;
-}
-
-@media (max-width: 768px) {
-  :root {
-    --hp-widget-source-gap: 10px;
-    --hp-widget-source-pad: 12px;
-    --hp-widget-source-radius: 14px;
-    --hp-widget-source-min-card: min(100%, 112px);
+@media (max-width: 980px) {
+  .trr-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .service-card,
-  .widget-card,
-  [class$="-host"],
-  [class*="-host "] {
-    width: 100% !important;
-    padding: var(--hp-widget-source-pad) !important;
-    border-radius: var(--hp-widget-source-radius) !important;
-    overflow: hidden !important;
+  .trr-grid--2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .trr-host {
+    padding: 16px;
+    border-radius: 18px;
   }
 
-  [class$="-flex-row"],
-  [class*="-flex-row "],
-  .arr-js-flex-row,
-  .arr-lt-flex-row {
-    flex-direction: column !important;
+  .trr-shell {
+    gap: 12px;
   }
 
-  [class$="-flex-row"] > *,
-  [class*="-flex-row "] > *,
-  .arr-js-flex-row > *,
-  .arr-lt-flex-row > * {
-    flex: 1 1 auto !important;
-    width: 100% !important;
+  .trr-header {
+    align-items: center;
+    flex-wrap: wrap;
   }
 
-  [class$="-toolbar"],
-  [class*="-toolbar "],
-  [class$="-controls"],
-  [class*="-controls "],
-  [class$="-tabs-row"],
-  [class*="-tabs-row "] {
+  .trr-header-right {
+    margin-left: auto;
+  }
+
+  .trr-tabs {
+    gap: 3px;
+  }
+
+  .trr-tab {
+    padding: 7px 12px;
+    font-size: 0.70rem;
+  }
+
+  .trr-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .trr-card {
+    padding: 12px;
+    border-radius: 16px;
+  }
+
+  .trr-chart-wrap,
+  #trr-overview-plays,
+  #trr-overview-watchtime,
+  #trr-history-main,
+  #trr-history-trend,
+  #trr-users-chart,
+  #trr-devices-donut,
+  #trr-devices-bars,
+  #trr-libraries-chart {
+    min-height: 210px !important;
+  }
+
+  .trr-toolbar {
+    gap: 8px;
+  }
+
+  .trr-toggle-group {
+    width: 100%;
     overflow-x: auto;
-    max-width: 100%;
+    scrollbar-width: none;
+  }
+
+  .trr-toggle-group::-webkit-scrollbar {
+    display: none;
+  }
+
+  .trr-list-row {
+    padding: 11px 12px;
+  }
+
+  .trr-list-title {
+    font-size: 0.80rem;
+  }
+
+  .trr-list-side {
+    font-size: 0.74rem;
   }
 }
 
-@media (max-width: 480px) {
-  :root {
-    --hp-widget-source-gap: 8px;
-    --hp-widget-source-pad: 10px;
-    --hp-widget-source-min-card: min(100%, 96px);
+@media (max-width: 460px) {
+  .trr-metrics {
+    grid-template-columns: 1fr 1fr;
   }
 
-  [class$="-stat-grid"],
-  [class*="-stat-grid "],
-  [class$="-cards-grid"],
-  [class*="-cards-grid "],
-  [class$="-card-grid"],
-  [class*="-card-grid "] {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-}
-
-
-/* =====================================================
-   Multi-Widget Group Layout
-   Supports 2, 3, and 4 injected widgets in the same group.
-===================================================== */
-
-:root {
-  --hp-widget-source-column-min: clamp(220px, 20vw, 320px);
-  --hp-widget-source-tablet-column-min: 240px;
-}
-
-ul.services-list {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--hp-widget-source-column-min)), 1fr)) !important;
-}
-
-.hp-widget-row,
-[class$="-flex-row"],
-[class*="-flex-row "],
-.arr-js-flex-row,
-.arr-lt-flex-row {
-  display: grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--hp-widget-source-column-min)), 1fr)) !important;
-  gap: var(--hp-widget-source-gap, 16px) !important;
-  align-items: stretch !important;
-  width: 100% !important;
-}
-
-.hp-widget-row > *,
-[class$="-flex-row"] > *,
-[class*="-flex-row "] > *,
-.arr-js-flex-row > *,
-.arr-lt-flex-row > * {
-  width: 100% !important;
-  min-width: 0 !important;
-  max-width: 100% !important;
-  height: 100%;
-}
-
-@media (max-width: 900px) {
-  ul.services-list,
-  [class$="-flex-row"],
-  [class*="-flex-row "],
-  .arr-js-flex-row,
-  .arr-lt-flex-row {
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--hp-widget-source-tablet-column-min)), 1fr)) !important;
-  }
-}
-
-@media (max-width: 560px) {
-  ul.services-list,
-  [class$="-flex-row"],
-  [class*="-flex-row "],
-  .arr-js-flex-row,
-  .arr-lt-flex-row {
-    grid-template-columns: 1fr !important;
-  }
-}
-
-/* Mobile/tablet: force native service grids and custom widget rows to one column. */
-@media (max-width: 1024px) {
-  ul.services-list {
-    grid-template-columns: 1fr !important;
+  .trr-title {
+    font-size: 0.92rem;
   }
 
-  .hp-widget-row,
-  [class$="-flex-row"],
-  [class*="-flex-row "] {
-    display: flex !important;
-    flex-direction: column !important;
-    flex-wrap: nowrap !important;
-    align-items: stretch !important;
-    width: 100% !important;
-    gap: var(--hp-widget-gap, 10px) !important;
-    grid-template-columns: 1fr !important;
+  .trr-subtitle {
+    font-size: 0.65rem;
   }
 
-  .hp-widget-row > *,
-  [class$="-flex-row"] > *,
-  [class*="-flex-row "] > * {
-    flex: 1 1 auto !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
+  .trr-metric {
+    min-height: 74px;
+  }
+
+  .trr-metric-value {
+    font-size: 1.08rem;
+  }
+
+  .trr-metric-label {
+    font-size: 0.60rem;
   }
 }

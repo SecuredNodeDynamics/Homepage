@@ -84,6 +84,11 @@
   }
 
   /* ── Fallback-aware fetch ──────────────────────── */
+  function withApiKey(path) {
+    const joiner = path.includes("?") ? "&" : "?";
+    return `${path}${joiner}apikey=${encodeURIComponent(LDR_CONFIG.key)}`;
+  }
+
   async function ldrFetch(path) {
     const candidates = [];
     if (LDR_CONFIG.activeUrl) candidates.push(LDR_CONFIG.activeUrl);
@@ -93,8 +98,7 @@
     let lastErr = null;
     for (const base of candidates) {
       try {
-        const res = await fetch(`${base}${path}`, {
-          headers: { "X-Api-Key": LDR_CONFIG.key },
+        const res = await fetch(`${base}${withApiKey(path)}`, {
           signal: (() => { const c = new AbortController(); setTimeout(() => c.abort(), 8000); return c.signal; })(),
         });
         if (!res.ok) throw new Error(`Lidarr ${res.status}: ${path}`);

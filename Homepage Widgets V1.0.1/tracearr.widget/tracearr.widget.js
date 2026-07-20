@@ -537,18 +537,9 @@
         <div class="trr-header">
           <div class="trr-header-left">
             <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/tracearr.webp" alt="Tracearr" class="trr-icon">
-            <div>
-              <div class="trr-title">Tracearr</div>
-            </div>
+            <div><div class="trr-title">Tracearr</div></div>
           </div>
           <div class="trr-header-right">
-            <div class="trr-tabs">
-              ${TABS.map(tab => `
-                <button class="trr-tab ${_activeTab === tab.id ? "trr-tab--active" : ""}" data-tab="${tab.id}">
-                  ${escH(tab.label)}
-                </button>
-              `).join("")}
-            </div>
             <span class="trr-status ${statusCls}">${escH(statusTxt)}</span>
             <a class="trr-open-link" href="${escH(TRACEARR_CONFIG.url)}" target="_blank" rel="noopener">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
@@ -558,6 +549,15 @@
               </svg>
               Open
             </a>
+          </div>
+        </div>
+        <div class="trr-controls">
+          <div class="trr-tabs">
+            ${TABS.map(tab => `
+              <button class="trr-tab ${_activeTab === tab.id ? "trr-tab--active" : ""}" data-tab="${tab.id}" type="button">
+                ${escH(tab.label)}
+              </button>
+            `).join("")}
           </div>
         </div>
 

@@ -285,7 +285,9 @@
     const data = await apiFetch("/api/libraries");
     _libraries = data?.libraries || [];
     if (!_currentLibraryId && _libraries.length) {
-      const preferred = _libraries.find(lib => /audio/i.test(lib.name || "")) || _libraries[0];
+      const preferred = _libraries.find(lib => /ebook/i.test(lib.name || ""))
+        || _libraries.find(lib => !/audio/i.test(lib.name || ""))
+        || _libraries[0];
       _currentLibraryId = preferred.id;
     }
     return _libraries;
@@ -449,7 +451,6 @@
             <span class="abs-title">Audiobookshelf</span>
           </div>
           <div class="abs-header-right">
-            <div class="abs-tabs" role="tablist">${tabs}</div>
             <a class="abs-open-btn" href="${escH(webBase())}" target="_blank" rel="noopener noreferrer">
               Open
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -458,6 +459,9 @@
               </svg>
             </a>
           </div>
+        </div>
+        <div class="abs-controls">
+          <div class="abs-tabs" role="tablist">${tabs}</div>
         </div>
         <div class="abs-lib-switcher"></div>
         <div class="abs-panel">

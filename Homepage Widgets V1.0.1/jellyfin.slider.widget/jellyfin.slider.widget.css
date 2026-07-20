@@ -46,6 +46,7 @@ body.light .jellyfin-host,
 }
 
 /* ── Header ──────────────────────────── */
+
 .jf-shelf {
   display: flex;
   flex-direction: column;
@@ -133,38 +134,70 @@ body.light .jf-open-btn:hover,
   border-color: rgba(0, 0, 0, 0.20);
 }
 
-/* ── Search bar row (tabs + search on same line) ──────────────────────── */
-.jf-tabs-row {
+/* ── Header + controls ───────────────────────────────────────────────── */
+.jf-header {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 0 12px;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 0 10px;
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
-  overflow: hidden;
+}
+
+.jf-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  width: 100%;
+}
+
+.jf-controls {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 0 0 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   margin-bottom: 12px;
 }
 
-/* Remove bottom padding from tabs since the row now owns it */
 .jf-tabs {
   padding: 0;
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.jf-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/* Legacy class kept for older CSS locks */
+.jf-tabs-row {
+  display: none;
 }
 
 .jf-search-wrap {
-  flex-shrink: 0;
   position: relative;
   display: flex;
   align-items: center;
+  min-width: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
 }
 
 .jf-search-input {
-  width: 28px;
-  height: 30px;
-  padding: 0 28px 0 10px;
+  width: 100%;
+  height: 34px;
+  padding: 0 34px 0 34px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.06);
@@ -172,13 +205,11 @@ body.light .jf-open-btn:hover,
   font-size: 0.76rem;
   font-weight: 500;
   outline: none;
-  cursor: pointer;
-  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-    background 0.18s ease,
-    border-color 0.18s ease,
-    padding 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: text;
+  transition: background 0.18s ease, border-color 0.18s ease;
   white-space: nowrap;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .jf-search-input::placeholder {
@@ -187,26 +218,23 @@ body.light .jf-open-btn:hover,
 
 .jf-search-input:focus,
 .jf-search-input.is-open {
-  width: 160px;
-  padding: 0 28px 0 10px;
   background: rgba(255, 255, 255, 0.10);
   border-color: rgba(79, 152, 163, 0.50);
-  cursor: text;
 }
 
 .jf-search-icon {
   position: absolute;
-  right: 8px;
+  left: 11px;
   pointer-events: none;
   color: rgba(255, 255, 255, 0.45);
   display: flex;
   align-items: center;
-  transition: color 0.18s ease;
+  z-index: 1;
 }
 
 .jf-search-clear {
   position: absolute;
-  right: 6px;
+  right: 8px;
   display: none;
   align-items: center;
   justify-content: center;
@@ -220,15 +248,12 @@ body.light .jf-open-btn:hover,
   font-size: 0.65rem;
   line-height: 1;
   transition: background 0.15s, color 0.15s;
+  z-index: 1;
 }
 
 .jf-search-clear:hover {
   background: rgba(255, 255, 255, 0.20);
   color: rgba(255, 255, 255, 0.90);
-}
-
-.jf-search-input.has-value~.jf-search-icon {
-  display: none;
 }
 
 .jf-search-input.has-value~.jf-search-clear {
@@ -842,11 +867,11 @@ body.light .jf-slider__thumb,
   font-size: 0.69rem;
   line-height: 1.55;
   color: rgba(255, 255, 255, 0.55);
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-clamp: 4;
+  max-height: 120px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  white-space: pre-wrap;
+  scrollbar-width: thin;
 }
 
 body.light .jf-popup__overview,
@@ -859,7 +884,6 @@ body.light .jf-popup__overview,
   cursor: pointer;
 }
 
-/* ── Add these to your existing Jellyfin CSS (new rules only) ── */
 
 /* Overview text inside popup */
 .jf-popup__overview {
@@ -882,6 +906,280 @@ body.light .jf-popup__overview,
 /* Cards are now role=button divs — cursor */
 .jf-card {
   cursor: pointer;
+}
+
+/* Collections Custom Popup */
+.jf-popup--collection {
+  max-height: min(560px, calc(100vh - 24px));
+}
+
+.jf-popup--collection .jf-popup__body {
+  max-height: inherit;
+  overflow: hidden;
+}
+
+.jf-popup__section-label {
+  padding: 0;
+  margin: 2px 0 4px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.jf-popup__track-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 auto;
+  margin-top: 4px;
+}
+
+.jf-popup__track-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: min(280px, 36vh);
+  overflow: auto;
+  padding: 0 2px 4px 0;
+  scrollbar-width: thin;
+}
+
+.jf-popup__track {
+  display: grid;
+  grid-template-columns: 28px 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  background: transparent;
+  transition: background 0.12s;
+}
+
+.jf-popup__track:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.jf-popup__track-num {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.35);
+  text-align: center;
+}
+
+.jf-popup__track-meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.jf-popup__track-name {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.90);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.jf-popup__track-artist {
+  font-size: 0.60rem;
+  color: rgba(255, 255, 255, 0.40);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.jf-popup__track-dur {
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.jf-popup__track-dl {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.jf-popup__track-dl:hover {
+  background: rgba(79, 152, 163, 0.20);
+  color: rgba(120, 220, 230, 0.95);
+}
+
+.jf-popup__track-dl.is-done {
+  color: rgba(120, 220, 170, 0.95);
+}
+
+.jf-popup__collection-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  padding-bottom: 12px;
+}
+
+.jf-collection-list {
+  display: grid;
+  gap: 8px;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.jf-collection-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  cursor: pointer;
+}
+
+.jf-collection-item__title {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.jf-collection-item__meta {
+  font-size: 0.72rem;
+  opacity: 0.7;
+}
+
+.jf-popup__items-grid,
+.jf-collection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+  padding: 0 14px 4px;
+  max-height: 280px;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
+.jf-popup .jf-popup__items-grid,
+.jf-popup .jf-collection-grid {
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.jf-collection-card-wrap {
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.jf-collection-card-wrap:focus-visible {
+  outline: 2px solid rgba(79, 152, 163, 0.7);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+.jf-popup__items-grid .jf-card,
+.jf-collection-grid .jf-card {
+  width: 100%;
+  max-width: 100%;
+}
+
+.jf-popup__items-grid .jf-card__meta,
+.jf-collection-grid .jf-card__meta {
+  display: none;
+}
+
+.jf-popup__title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.jf-popup__download-all-btn {
+  flex-shrink: 0;
+  margin-top: 1px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(79, 152, 163, 0.45);
+  background: rgba(79, 152, 163, 0.18);
+  color: rgba(120, 220, 230, 0.95);
+  font-size: 0.64rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.jf-popup__download-all-btn:hover:not(:disabled) {
+  background: rgba(79, 152, 163, 0.30);
+  color: rgba(160, 240, 248, 1);
+}
+
+.jf-popup__download-all-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.jf-popup__collection-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.jf-popup__open-collection-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.jf-popup__open-collection-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.94);
+}
+
+/* Jellyfin Compact Cards */
+.jf-card--compact {
+  width: 100%;
+  min-width: 0;
+}
+
+.jf-card--compact .jf-card__meta {
+  display: none;
+}
+
+.jf-card--compact .jf-card__overlay-title {
+  font-size: 0.8rem;
+}
+
+.jf-card--compact .jf-card__overlay-sub {
+  font-size: 0.65rem;
 }
 
 /* ── Download button (sibling to play-btn / details-btn) ── */
@@ -1281,20 +1579,25 @@ body.light .jf-dl-empty,
   appearance: none;
 }
 
-/* Both icon and clear use opacity fade instead of display swap */
+/* Both icon and clear sit inside the always-visible search field */
 .jf-search-icon,
 .jf-search-clear {
   position: absolute;
-  right: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  pointer-events: none;
-  opacity: 1;
   transition: opacity 0.15s ease, background 0.15s, color 0.15s;
 }
 
+.jf-search-icon {
+  left: 11px;
+  right: auto;
+  pointer-events: none;
+  color: rgba(255, 255, 255, 0.45);
+}
+
 .jf-search-clear {
+  right: 8px;
   width: 18px;
   height: 18px;
   border-radius: 999px;
@@ -1305,14 +1608,7 @@ body.light .jf-dl-empty,
   font-size: 0.62rem;
   line-height: 1;
   pointer-events: none;
-  /* disabled until has-value */
   opacity: 0;
-}
-
-/* Icon fades out, clear fades in when value is present */
-.jf-search-input.has-value~.jf-search-icon {
-  opacity: 0;
-  pointer-events: none;
 }
 
 .jf-search-input.has-value~.jf-search-clear {
@@ -1342,6 +1638,945 @@ body.light .jf-search-clear:hover,
 .jf-search-input:not(.is-open):not(.has-value)~.jf-search-clear {
   opacity: 0;
   pointer-events: none;
+}
+
+/* =====================================================
+8b) JELLYFIN OVERFLOW FIX
+===================================================== */
+
+/* Allow the injected homepage group/card to actually shrink */
+.jellyfin-host,
+.jellyfin-host .jf-shelf,
+.jellyfin-host .jf-panels,
+.jellyfin-host .jf-panel,
+.jellyfin-host .jf-track,
+.jellyfin-host .jf-slider-wrap,
+.jellyfin-host .jf-slider {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* If Homepage wraps the injected group in list/grid items, force those to shrink too */
+.jellyfin-host,
+.jellyfin-host * {
+  box-sizing: border-box;
+}
+
+/* Common parent wrappers in Homepage layouts */
+.services-group,
+.services-group>div,
+.services-group ul,
+.services-group li,
+ul.services-list,
+ul.services-list>li {
+  min-width: 0 !important;
+}
+
+/* Prevent the Jellyfin panel from creating page-level horizontal overflow */
+.jellyfin-host {
+  overflow-x: hidden !important;
+}
+
+.jellyfin-host .jf-track {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+
+/* Slider row should never exceed card width */
+.jellyfin-host .jf-slider-wrap {
+  grid-template-columns: 30px minmax(0, 1fr) 30px !important;
+}
+
+/* Mobile hard clamp */
+@media (max-width: 768px) {
+  .jellyfin-host {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-inline: 0 !important;
+  }
+
+  .jellyfin-host .jf-shelf,
+  .jellyfin-host .jf-panels,
+  .jellyfin-host .jf-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .jellyfin-host .jf-tabs,
+  .jellyfin-host .jf-track,
+  .jellyfin-host .jf-slider-wrap {
+    max-width: 100% !important;
+  }
+}
+
+/* ── Jellyfin Detail Popup ──────────────────────────── */
+.jf-popup-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+}
+
+.jf-popup-backdrop--dim {
+  background: rgba(0, 0, 0, 0.56);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.jf-popup {
+  position: fixed;
+  z-index: 9999;
+  width: 560px;
+  max-width: calc(100vw - 24px);
+  border-radius: 14px;
+  background: rgba(12, 16, 22, 0.30);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65);
+  overflow: hidden;
+  animation: jf-popup-in 0.16s ease;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* Plex-style general media popup */
+.jf-popup--media,
+.jf-popup--music {
+  top: 50%;
+  left: 50%;
+  width: min(860px, calc(100vw - 28px));
+  max-height: min(720px, calc(100vh - 28px));
+  transform: translate(-50%, -50%);
+  border-radius: 18px;
+  background: rgba(13, 16, 22, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  overflow: hidden;
+  animation: none;
+}
+
+.jf-popup--music {
+  width: min(900px, calc(100vw - 28px));
+}
+
+.jf-popup__close {
+  position: absolute;
+  z-index: 3;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.32);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.jf-popup__bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.22;
+  filter: blur(16px);
+  transform: scale(1.08);
+  pointer-events: none;
+}
+
+.jf-popup__body--media,
+.jf-popup__body--music {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(150px, 220px) minmax(0, 1fr);
+  gap: 22px;
+  padding: 28px;
+  max-height: min(720px, calc(100vh - 28px));
+  overflow: auto;
+}
+
+.jf-popup__body--music {
+  grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
+  align-items: start;
+}
+
+.jf-popup__poster-wrap {
+  aspect-ratio: 2 / 3;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.jf-popup__cover-wrap {
+  aspect-ratio: 1 / 1;
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  align-self: start;
+}
+
+.jf-popup__poster-lg,
+.jf-popup__cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.jf-popup__poster-placeholder--lg,
+.jf-popup__cover-placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.4rem;
+  color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.jf-popup__info--media,
+.jf-popup__info--music {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  justify-content: center;
+}
+
+.jf-popup__info--music {
+  justify-content: flex-start;
+  min-height: 0;
+}
+
+.jf-popup__kicker,
+.jf-popup__meta {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.jf-popup__title--media {
+  font-size: clamp(1.35rem, 3vw, 2.3rem);
+  font-weight: 850;
+  line-height: 1.05;
+  color: rgba(255, 255, 255, 0.96);
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+}
+
+.jf-popup__summary {
+  max-width: 560px;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.jf-popup__actions--media {
+  margin-top: 6px;
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.jf-popup--media .jf-popup__open-btn,
+.jf-popup--music .jf-popup__open-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 13px;
+  border-radius: 999px;
+  background: rgba(229, 160, 13, 0.18);
+  border: 1px solid rgba(229, 160, 13, 0.42);
+  color: rgba(250, 204, 21, 0.96);
+  text-decoration: none;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.jf-popup--media .jf-popup__open-btn:hover,
+.jf-popup--music .jf-popup__open-btn:hover {
+  background: rgba(229, 160, 13, 0.28);
+  border-color: rgba(229, 160, 13, 0.58);
+  color: rgba(253, 224, 71, 1);
+}
+
+.jf-popup--media .jf-popup__download-btn,
+.jf-popup--music .jf-popup__download-btn {
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.74rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.jf-popup--media .jf-popup__download-btn:hover,
+.jf-popup--music .jf-popup__download-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.jf-popup--media .jf-popup__actions--media:has(.jf-dl-header),
+.jf-popup--music .jf-popup__actions--media:has(.jf-dl-header) {
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  max-width: 560px;
+}
+
+.jf-popup--music .jf-popup__track-list {
+  max-height: min(320px, 42vh);
+  padding: 0;
+  margin-top: 2px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 6px;
+}
+
+.jf-popup--music .jf-popup__track {
+  grid-template-columns: 28px minmax(0, 1fr) auto auto;
+}
+
+@media (max-width: 720px) {
+  .jf-popup__body--media,
+  .jf-popup__body--music {
+    grid-template-columns: 1fr;
+    padding: 22px;
+  }
+
+  .jf-popup__poster-wrap,
+  .jf-popup__cover-wrap {
+    width: min(200px, 58vw);
+    justify-self: center;
+  }
+}
+
+@keyframes jf-popup-in {
+  from {
+    opacity: 0;
+    transform: scale(0.93) translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.jf-popup__backdrop-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.12;
+  filter: blur(8px);
+  pointer-events: none;
+  transform: scale(1.08);
+}
+
+.jf-popup__body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.jf-popup__poster-row {
+  display: flex;
+  gap: 12px;
+  padding: 14px 14px 10px;
+  align-items: flex-start;
+}
+
+.jf-popup__poster {
+  width: 64px;
+  height: 96px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.jf-popup__poster--square {
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.jf-popup__poster-placeholder {
+  width: 64px;
+  height: 96px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  color: rgba(255, 255, 255, 0.20);
+}
+
+.jf-popup__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 2px;
+}
+
+.jf-popup__title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.96);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-clamp: 3;
+}
+
+.jf-popup__subtitle {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.42);
+  line-height: 1.3;
+}
+
+.jf-popup__type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.60rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: rgba(79, 152, 163, 0.14);
+  border: 1px solid rgba(79, 152, 163, 0.30);
+  color: rgba(79, 200, 210, 0.90);
+  width: fit-content;
+  margin-top: 2px;
+}
+
+.jf-popup__divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.07);
+  margin: 0 14px;
+}
+
+.jf-popup__actions {
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.jf-popup__play-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  padding: 9px 14px;
+  border-radius: 9px;
+  background: rgba(79, 152, 163, 0.22);
+  border: 1px solid rgba(79, 152, 163, 0.45);
+  color: rgba(120, 220, 230, 0.95);
+  font-size: 0.73rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.12s;
+  letter-spacing: 0.02em;
+}
+
+.jf-popup__play-btn:hover {
+  background: rgba(79, 152, 163, 0.36);
+  color: rgba(160, 240, 248, 1.0);
+  border-color: rgba(79, 152, 163, 0.70);
+  transform: translateY(-1px);
+}
+
+.jf-popup__play-btn svg {
+  flex-shrink: 0;
+}
+
+.jf-popup__details-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 7px 14px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.jf-popup__details-btn:hover {
+  background: rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ── Jellyfin server switcher ── */
+.jf-server-switch {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.jf-server-btn {
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.jf-server-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.jf-server-btn--active {
+  background: rgba(79, 152, 163, 0.28) !important;
+  border-color: rgba(79, 152, 163, 0.55) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+body.light .jf-server-btn,
+[data-theme="light"] .jf-server-btn {
+  border-color: rgba(0, 0, 0, 0.14);
+  background: rgba(0, 0, 0, 0.05);
+  color: rgba(8, 12, 18, 0.50);
+}
+
+body.light .jf-server-btn--active,
+[data-theme="light"] .jf-server-btn--active {
+  background: rgba(1, 105, 111, 0.12) !important;
+  border-color: rgba(1, 105, 111, 0.40) !important;
+  color: rgba(1, 69, 74, 0.96) !important;
+}
+
+/* =====================================================
+   Jellyfin Slider Header — top tools, then search, then tabs
+   DOM: .jf-header > .jf-header-top(.jf-logo-title + .jf-header-tools) + .jf-search-wrap
+        .jf-controls > .jf-tabs
+===================================================== */
+
+.jellyfin-host .jf-header,
+.jf-header {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 10px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  padding: 0 0 10px !important;
+  margin: 0 !important;
+}
+
+.jellyfin-host .jf-header-top,
+.jf-header-top {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  flex-wrap: nowrap !important;
+}
+
+.jellyfin-host .jf-header .jf-logo-title,
+.jf-header .jf-logo-title,
+.jellyfin-host .jf-header-top .jf-logo-title {
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+  max-width: min(100%, 180px) !important;
+  overflow: hidden !important;
+}
+
+.jellyfin-host .jf-title,
+.jf-title {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.jellyfin-host .jf-controls,
+.jf-controls {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: 0 0 12px !important;
+  margin-bottom: 12px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+.jellyfin-host .jf-controls .jf-tabs,
+.jf-controls .jf-tabs,
+.jellyfin-host .jf-tabs {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none !important;
+  padding: 2px 0 !important;
+}
+
+.jellyfin-host .jf-tabs::-webkit-scrollbar,
+.jf-controls .jf-tabs::-webkit-scrollbar {
+  display: none !important;
+}
+
+.jellyfin-host .jf-header-tools,
+.jf-header-tools {
+  display: flex !important;
+  flex: 0 0 auto !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 6px !important;
+  margin-left: auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.jellyfin-host .jf-header-tools .jf-server-switch,
+.jf-header-tools .jf-server-switch {
+  display: flex !important;
+  flex: 0 1 auto !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+  max-width: min(200px, 46vw) !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none !important;
+}
+
+.jellyfin-host .jf-header-tools .jf-server-switch::-webkit-scrollbar,
+.jf-header-tools .jf-server-switch::-webkit-scrollbar {
+  display: none !important;
+}
+
+.jellyfin-host .jf-header .jf-search-wrap,
+.jf-header .jf-search-wrap,
+.jellyfin-host .jf-search-wrap {
+  display: flex !important;
+  align-items: center !important;
+  order: unset !important;
+  flex: 0 0 auto !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  position: relative !important;
+  justify-self: stretch !important;
+}
+
+.jellyfin-host .jf-header .jf-search-input,
+.jf-header .jf-search-input,
+.jellyfin-host .jf-search-input,
+.jellyfin-host .jf-search-input:focus,
+.jellyfin-host .jf-search-input.is-open,
+.jellyfin-host .jf-search-input.has-value,
+.jf-header .jf-search-input:focus,
+.jf-header .jf-search-input.is-open,
+.jf-header .jf-search-input.has-value {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: 34px !important;
+  padding: 0 34px !important;
+  cursor: text !important;
+}
+
+.jellyfin-host .jf-search-icon,
+.jf-header .jf-search-icon {
+  left: 11px !important;
+  right: auto !important;
+  opacity: 1 !important;
+  display: flex !important;
+}
+
+.jellyfin-host .jf-tab,
+.jellyfin-host .jf-server-btn,
+.jellyfin-host .jf-open-btn,
+.jf-header-tools .jf-server-btn,
+.jf-header-tools .jf-open-btn {
+  flex: 0 0 auto !important;
+  flex-shrink: 0 !important;
+  min-width: max-content !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 560px) {
+  .jellyfin-host .jf-header-tools .jf-open-btn,
+  .jf-header-tools .jf-open-btn {
+    width: 34px !important;
+    min-width: 34px !important;
+    height: 30px !important;
+    padding: 0 !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    font-size: 0 !important;
+  }
+
+  .jellyfin-host .jf-header-tools .jf-open-btn svg,
+  .jf-header-tools .jf-open-btn svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+}
+
+/* Open button purple theme */
+.jellyfin-host .jf-header-tools .jf-open-btn {
+  border-color: rgba(170, 92, 195, 0.30) !important;
+  background: linear-gradient(135deg, rgba(170, 92, 195, 0.12), rgba(139, 62, 165, 0.12)) !important;
+  color: rgba(170, 92, 195, 0.80) !important;
+}
+
+.jellyfin-host .jf-header-tools .jf-open-btn:hover {
+  border-color: rgba(170, 92, 195, 0.50) !important;
+  background: linear-gradient(135deg, rgba(170, 92, 195, 0.22), rgba(139, 62, 165, 0.22)) !important;
+  color: rgba(170, 92, 195, 1.0) !important;
+}
+
+body.light .jellyfin-host .jf-header-tools .jf-open-btn,
+[data-theme="light"] .jellyfin-host .jf-header-tools .jf-open-btn {
+  border-color: rgba(22, 163, 74, 0.28) !important;
+  background: rgba(22, 163, 74, 0.07) !important;
+  color: rgba(22, 163, 74, 0.80) !important;
+}
+
+body.light .jellyfin-host .jf-header-tools .jf-open-btn:hover,
+[data-theme="light"] .jellyfin-host .jf-header-tools .jf-open-btn:hover {
+  border-color: rgba(22, 163, 74, 0.45) !important;
+  background: rgba(22, 163, 74, 0.14) !important;
+  color: rgba(22, 163, 74, 1) !important;
+}
+
+/* Shelf / scrubber containment on smaller widths */
+@media (max-width: 900px) {
+  .jellyfin-flex-row,
+  .jellyfin-flex-row .jellyfin-host,
+  .jellyfin-host,
+  .jellyfin-host .jf-shelf,
+  .jellyfin-host .jf-panels,
+  .jellyfin-host .jf-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .jellyfin-host {
+    overflow: hidden !important;
+  }
+
+  .jellyfin-host .jf-track {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+  }
+
+  .jellyfin-host .jf-card {
+    width: clamp(112px, 22vw, 136px) !important;
+    max-width: clamp(112px, 22vw, 136px) !important;
+  }
+
+  .jellyfin-host .jf-card--music {
+    width: clamp(104px, 20vw, 126px) !important;
+    max-width: clamp(104px, 20vw, 126px) !important;
+  }
+
+  .jellyfin-host .jf-slider-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    grid-template-columns: 30px minmax(0, 1fr) 30px !important;
+    gap: 8px !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .jellyfin-host {
+    padding-inline: 12px !important;
+  }
+
+  .jellyfin-host .jf-card {
+    width: clamp(104px, 34vw, 124px) !important;
+    max-width: clamp(104px, 34vw, 124px) !important;
+  }
+
+  .jellyfin-host .jf-card--music {
+    width: clamp(98px, 32vw, 116px) !important;
+    max-width: clamp(98px, 32vw, 116px) !important;
+  }
+
+  .jellyfin-host .jf-slider-wrap {
+    grid-template-columns: 28px minmax(0, 1fr) 28px !important;
+    gap: 6px !important;
+  }
+
+  .jellyfin-host .jf-slider__btn {
+    width: 28px !important;
+    min-width: 28px !important;
+    height: 28px !important;
+  }
+}
+
+/* Jellyfin slider popup: mobile sheet sizing and compact internals. */
+@media (max-width: 640px) {
+  .jf-popup-backdrop {
+    background: rgba(0, 0, 0, 0.22);
+  }
+
+  .jf-popup {
+    left: 50% !important;
+    top: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) !important;
+    width: min(420px, calc(100vw - 20px)) !important;
+    max-width: min(420px, calc(100vw - 20px)) !important;
+    max-height: calc(100dvh - 20px) !important;
+    border-radius: 14px !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+  }
+
+  .jf-popup,
+  .jf-popup * {
+    box-sizing: border-box !important;
+  }
+
+  .jf-popup__backdrop-img {
+    opacity: 0.10 !important;
+    filter: blur(7px) !important;
+  }
+
+  .jf-popup__poster-row {
+    gap: 10px !important;
+    padding: 12px 12px 9px !important;
+  }
+
+  .jf-popup__poster,
+  .jf-popup__poster-placeholder {
+    width: 52px !important;
+    height: 78px !important;
+    border-radius: 7px !important;
+  }
+
+  .jf-popup__poster--square {
+    width: 58px !important;
+    height: 58px !important;
+    border-radius: 7px !important;
+  }
+
+  .jf-popup__title {
+    font-size: 0.80rem !important;
+    -webkit-line-clamp: 2 !important;
+    line-clamp: 2 !important;
+  }
+
+  .jf-popup__subtitle {
+    font-size: 0.65rem !important;
+  }
+
+  .jf-popup__type-badge {
+    font-size: 0.56rem !important;
+    padding: 2px 7px !important;
+  }
+
+  .jf-popup__divider {
+    margin-inline: 12px !important;
+  }
+
+  .jf-popup__overview {
+    padding: 9px 12px !important;
+    font-size: 0.66rem !important;
+    line-height: 1.45 !important;
+    -webkit-line-clamp: 4 !important;
+    line-clamp: 4 !important;
+  }
+
+  .jf-popup__actions {
+    padding: 10px 12px 12px !important;
+    gap: 7px !important;
+  }
+
+  .jf-popup__play-btn,
+  .jf-popup__download-btn,
+  .jf-popup__details-btn {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 34px !important;
+    padding: 8px 12px !important;
+    font-size: 0.68rem !important;
+  }
 }
 
 /* =====================================================
@@ -1662,403 +2897,4 @@ body.light .jf-server-btn--active,
   background: rgba(1, 105, 111, 0.12) !important;
   border-color: rgba(1, 105, 111, 0.40) !important;
   color: rgba(1, 69, 74, 0.96) !important;
-}
-
-
-/* =====================================================
-   Widget Source Autosize Patch
-   Lets this widget CSS stand alone on phone, tablet, and desktop.
-===================================================== */
-
-:root {
-  --hp-widget-source-gap: clamp(8px, 2vw, 16px);
-  --hp-widget-source-pad: clamp(10px, 2vw, 18px);
-  --hp-widget-source-radius: clamp(14px, 2vw, 20px);
-  --hp-widget-source-min-card: min(100%, 140px);
-}
-
-.service-card,
-.widget-card,
-[class$="-host"],
-[class*="-host "] {
-  box-sizing: border-box !important;
-  max-width: 100% !important;
-}
-
-.service-card *,
-.widget-card *,
-[class$="-host"] *,
-[class*="-host "] * {
-  box-sizing: border-box;
-  min-width: 0;
-}
-
-.hp-widget-row,
-[class$="-flex-row"],
-[class*="-flex-row "],
-.arr-js-flex-row,
-.arr-lt-flex-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--hp-widget-source-gap) !important;
-  width: 100%;
-  align-items: stretch;
-}
-
-.hp-widget-row > *,
-[class$="-flex-row"] > *,
-[class*="-flex-row "] > *,
-.arr-js-flex-row > *,
-.arr-lt-flex-row > * {
-  flex: 1 1 min(100%, 360px) !important;
-  min-width: 0 !important;
-  max-width: 100% !important;
-}
-
-[class$="-grid"],
-[class*="-grid "],
-[class$="-stats-row"],
-[class*="-stats-row "] {
-  max-width: 100%;
-}
-
-[class$="-stat-grid"],
-[class*="-stat-grid "],
-[class$="-cards-grid"],
-[class*="-cards-grid "],
-[class$="-card-grid"],
-[class*="-card-grid "] {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(var(--hp-widget-source-min-card), 1fr)) !important;
-  gap: var(--hp-widget-source-gap) !important;
-  width: 100%;
-}
-
-[class$="-header"],
-[class*="-header "],
-[class$="-toolbar"],
-[class*="-toolbar "],
-[class$="-actions"],
-[class*="-actions "],
-[class$="-controls"],
-[class*="-controls "] {
-  flex-wrap: wrap;
-  min-width: 0;
-  max-width: 100%;
-}
-
-[class$="-list"],
-[class*="-list "],
-[class$="-body"],
-[class*="-body "],
-[class$="-guide"],
-[class*="-guide "] {
-  max-width: 100%;
-  scrollbar-width: thin;
-}
-
-.apexcharts-canvas,
-.apexcharts-svg,
-.recharts-wrapper,
-.recharts-surface,
-canvas,
-svg,
-img {
-  max-width: 100% !important;
-}
-
-@media (max-width: 768px) {
-  :root {
-    --hp-widget-source-gap: 10px;
-    --hp-widget-source-pad: 12px;
-    --hp-widget-source-radius: 14px;
-    --hp-widget-source-min-card: min(100%, 112px);
-  }
-
-  .service-card,
-  .widget-card,
-  [class$="-host"],
-  [class*="-host "] {
-    width: 100% !important;
-    padding: var(--hp-widget-source-pad) !important;
-    border-radius: var(--hp-widget-source-radius) !important;
-    overflow: hidden !important;
-  }
-
-  [class$="-flex-row"],
-  [class*="-flex-row "],
-  .arr-js-flex-row,
-  .arr-lt-flex-row {
-    flex-direction: column !important;
-  }
-
-  [class$="-flex-row"] > *,
-  [class*="-flex-row "] > *,
-  .arr-js-flex-row > *,
-  .arr-lt-flex-row > * {
-    flex: 1 1 auto !important;
-    width: 100% !important;
-  }
-
-  [class$="-toolbar"],
-  [class*="-toolbar "],
-  [class$="-controls"],
-  [class*="-controls "],
-  [class$="-tabs-row"],
-  [class*="-tabs-row "] {
-    overflow-x: auto;
-    max-width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  :root {
-    --hp-widget-source-gap: 8px;
-    --hp-widget-source-pad: 10px;
-    --hp-widget-source-min-card: min(100%, 96px);
-  }
-
-  [class$="-stat-grid"],
-  [class*="-stat-grid "],
-  [class$="-cards-grid"],
-  [class*="-cards-grid "],
-  [class$="-card-grid"],
-  [class*="-card-grid "] {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-}
-
-/* =====================================================
-   Jellyfin Slider Header Responsive Fix
-   Keeps tabs, server switch, Open, and search from crowding.
-===================================================== */
-
-.jf-tabs-row {
-  display: grid !important;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  overflow: visible !important;
-  padding-bottom: 12px;
-}
-
-.jf-tabs-row .jf-logo-title {
-  min-width: max-content;
-}
-
-.jf-tabs-row .jf-tabs {
-  min-width: 0;
-  max-width: 100%;
-  overflow-x: auto;
-  overscroll-behavior-inline: contain;
-  padding: 2px 2px 4px;
-  scroll-snap-type: x proximity;
-}
-
-.jf-tabs-row .jf-tab {
-  scroll-snap-align: start;
-}
-
-.jf-header-tools {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  min-width: max-content;
-  max-width: 100%;
-}
-
-.jf-header-tools .jf-server-switch,
-.jf-header-tools .jf-open-btn,
-.jf-header-tools .jf-search-wrap {
-  flex: 0 0 auto;
-}
-
-.jf-header-tools .jf-search-wrap {
-  min-width: 32px;
-}
-
-.jf-header-tools .jf-search-input {
-  width: 34px;
-  min-width: 34px;
-  max-width: min(240px, 42vw);
-}
-
-.jf-header-tools .jf-search-input:focus,
-.jf-header-tools .jf-search-input.is-open,
-.jf-header-tools .jf-search-input.has-value {
-  width: min(240px, 42vw);
-}
-
-@media (max-width: 900px) {
-  .jf-tabs-row {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .jf-header-tools {
-    grid-column: 1 / -1;
-    justify-content: flex-end;
-    width: 100%;
-    min-width: 0;
-  }
-}
-
-@media (max-width: 640px) {
-  .jf-tabs-row {
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 8px;
-  }
-
-  .jf-tabs-row .jf-logo-title {
-    grid-column: 1;
-  }
-
-  .jf-header-tools {
-    grid-column: 2;
-    grid-row: 1;
-    width: auto;
-  }
-
-  .jf-tabs-row .jf-tabs {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    width: 100%;
-  }
-
-  .jf-header-tools .jf-open-btn {
-    width: 32px;
-    min-width: 32px;
-    height: 30px;
-    justify-content: center;
-    gap: 0;
-    padding: 0;
-    font-size: 0;
-  }
-
-  .jf-header-tools .jf-open-btn svg {
-    width: 14px;
-    height: 14px;
-  }
-
-  .jf-header-tools .jf-search-input:focus,
-  .jf-header-tools .jf-search-input.is-open,
-  .jf-header-tools .jf-search-input.has-value {
-    width: min(210px, 58vw);
-  }
-}
-
-@media (max-width: 440px) {
-  .jf-tabs-row {
-    grid-template-columns: 1fr;
-  }
-
-  .jf-header-tools {
-    grid-column: 1;
-    grid-row: 2;
-    justify-content: flex-start;
-    overflow-x: auto;
-    padding-bottom: 2px;
-  }
-
-  .jf-tabs-row .jf-tabs {
-    grid-row: 3;
-  }
-
-  .jf-header-tools .jf-search-wrap {
-    flex: 1 1 120px;
-  }
-
-  .jf-header-tools .jf-search-input,
-  .jf-header-tools .jf-search-input:focus,
-  .jf-header-tools .jf-search-input.is-open,
-  .jf-header-tools .jf-search-input.has-value {
-    width: 100%;
-    min-width: 120px;
-  }
-}
-
-
-/* =====================================================
-   Multi-Widget Group Layout
-   Supports 2, 3, and 4 injected widgets in the same group.
-===================================================== */
-
-:root {
-  --hp-widget-source-column-min: clamp(220px, 20vw, 320px);
-  --hp-widget-source-tablet-column-min: 240px;
-}
-
-ul.services-list {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--hp-widget-source-column-min)), 1fr)) !important;
-}
-
-.hp-widget-row,
-[class$="-flex-row"],
-[class*="-flex-row "],
-.arr-js-flex-row,
-.arr-lt-flex-row {
-  display: grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--hp-widget-source-column-min)), 1fr)) !important;
-  gap: var(--hp-widget-source-gap, 16px) !important;
-  align-items: stretch !important;
-  width: 100% !important;
-}
-
-.hp-widget-row > *,
-[class$="-flex-row"] > *,
-[class*="-flex-row "] > *,
-.arr-js-flex-row > *,
-.arr-lt-flex-row > * {
-  width: 100% !important;
-  min-width: 0 !important;
-  max-width: 100% !important;
-  height: 100%;
-}
-
-@media (max-width: 900px) {
-  ul.services-list,
-  [class$="-flex-row"],
-  [class*="-flex-row "],
-  .arr-js-flex-row,
-  .arr-lt-flex-row {
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--hp-widget-source-tablet-column-min)), 1fr)) !important;
-  }
-}
-
-@media (max-width: 560px) {
-  ul.services-list,
-  [class$="-flex-row"],
-  [class*="-flex-row "],
-  .arr-js-flex-row,
-  .arr-lt-flex-row {
-    grid-template-columns: 1fr !important;
-  }
-}
-
-/* Mobile/tablet: force native service grids and custom widget rows to one column. */
-@media (max-width: 1024px) {
-  ul.services-list {
-    grid-template-columns: 1fr !important;
-  }
-
-  .hp-widget-row,
-  [class$="-flex-row"],
-  [class*="-flex-row "] {
-    display: flex !important;
-    flex-direction: column !important;
-    flex-wrap: nowrap !important;
-    align-items: stretch !important;
-    width: 100% !important;
-    gap: var(--hp-widget-gap, 10px) !important;
-    grid-template-columns: 1fr !important;
-  }
-
-  .hp-widget-row > *,
-  [class$="-flex-row"] > *,
-  [class*="-flex-row "] > * {
-    flex: 1 1 auto !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-  }
 }

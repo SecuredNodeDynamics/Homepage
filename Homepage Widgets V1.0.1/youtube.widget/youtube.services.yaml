@@ -1,0 +1,5 @@
+- YOUTUBE-WIDGET:
+
+    - YouTube Anchor:
+        icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/youtube.webp
+        description: Latest channel uploads (injected widget)

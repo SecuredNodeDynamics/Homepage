@@ -15,7 +15,7 @@ GLANCES THROUGHPUT HISTORY WIDGET
 
     nodes: [
       {
-        name: "LNV1",
+        name: "Node 1",
         glancesPrimaryUrl: "https://YOUR_LOCAL_PROXOMX_GLANCES_IP:PORT",
         glancesFallbackUrl: "https://YOUR_TUNNEL_PROXOMX_GLANCES_TUNNEL_URL", // or null if not using a tunnel or glances
         netdataPrimaryUrl: "https://YOUR_LOCAL_PROXOMX_NETDATA_IP:PORT", // or null if not using a netdata

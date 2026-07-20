@@ -172,7 +172,7 @@
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     const end = new Date(now.getFullYear(), now.getMonth() + 2, 0).toISOString();
-    const data = await calFetch(src, `/api/v1/calendar?start=${start}&end=${end}&unmonitored=true`, { "X-Api-Key": src.key });
+    const data = await calFetch(src, `/api/v1/calendar?apikey=${src.key}&start=${start}&end=${end}&unmonitored=true`);
     return (Array.isArray(data) ? data : []).map(a => ({
       date: toLocalDate(a.releaseDate),
       title: a.artist?.artistName || a.artistName || "Unknown",

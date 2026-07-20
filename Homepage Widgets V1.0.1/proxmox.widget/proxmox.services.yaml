@@ -2,4 +2,4 @@
 
     - PVE Node Card:
         icon: https://img.icons8.com/color/600/proxmox.png
-        description: LNV1 · Proxmox + Glances combined (injected widget)
+        description: Proxmox + Glances combined (injected widget)

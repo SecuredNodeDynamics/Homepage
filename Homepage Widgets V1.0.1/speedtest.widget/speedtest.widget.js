@@ -10,7 +10,7 @@
     pollMs: 5 * 60 * 1000,
     nodes: [
       {
-        name: "LNV1 - PVE1",
+        name: "Speedtest Node 1",
         url: "http://YOUR_LOCAL_IP:PORT",
         fallbackUrl: "https://YOUR_TUNNEL_URL", // or null if not using a tunnel
         activeUrl: null,
@@ -25,6 +25,7 @@
   const _nodeHist = {};
   const _nodeState = {};
   const _errTimers = {};   // FIX: track error-reset timers to avoid corrupting "running" state
+  const _nodeBackoffUntil = {};
   let _rendering = false;
   let _obsDelay = null;
   let _lastUpdated = null;
@@ -58,6 +59,10 @@
       try {
         const res = await fetch(`${base}${path}`, { ...options, signal });
         clear();
+        if (res.status === 429) {
+          _nodeBackoffUntil[node.name] = Date.now() + 15 * 60 * 1000;
+          throw new Error(`${node.name} HTTP 429 rate limited`);
+        }
         if (!res.ok) throw new Error(`${node.name} HTTP ${res.status}`);
         node.activeUrl = base;
         return res;
@@ -437,6 +442,11 @@
 
     await Promise.allSettled(SPT_CONFIG.nodes.map(async node => {
       try {
+        const backoffUntil = _nodeBackoffUntil[node.name] || 0;
+        if (backoffUntil > Date.now()) {
+          const mins = Math.ceil((backoffUntil - Date.now()) / 60000);
+          throw new Error(`rate-limit cooldown ${mins}m`);
+        }
         const [raw, hist] = await Promise.all([
           fetchLatestResult(node),
           fetchHistory(node)

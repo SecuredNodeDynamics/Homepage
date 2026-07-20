@@ -121,8 +121,9 @@ NAVIDROME MUSIC WIDGET
   }
 
   // ── Card builders ─────────────────────────────────
-  function albumCard(item, index) {
-    const cover = coverUrl(item.coverArt);
+  function albumCard(item, index, opts = {}) {
+    const coverSize = opts.coverSize || 200;
+    const cover = coverUrl(item.coverArt, coverSize);
     const name = escapeHtml(item.name || item.album || item.title || "Unknown");
     const artist = escapeHtml(item.artist || item.albumArtist || "");
     const year = item.year ? `${item.year}` : "";
@@ -359,7 +360,7 @@ NAVIDROME MUSIC WIDGET
       </div>
       ${recentAlbums.length ? `
         <div class="nd-section-label" style="margin-top:16px;">Recently Added</div>
-        <div class="nd-card-grid">${recentAlbums.map(albumCard).join("")}</div>
+        <div class="nd-card-grid nd-card-grid--compact">${recentAlbums.map((a, i) => albumCard(a, i, { coverSize: 96 })).join("")}</div>
       ` : ""}`;
   }
 

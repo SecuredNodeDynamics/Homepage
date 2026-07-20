@@ -54,26 +54,42 @@ body.light .abs-widget-host,
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-bottom: 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-}
-
-body.light .abs-header,
-[data-theme="light"] .abs-header {
-    border-bottom-color: rgba(0, 0, 0, 0.08);
+    gap: 10px;
+    padding-bottom: 10px;
+    flex-wrap: nowrap;
+    min-width: 0;
 }
 
 .abs-header-left {
     display: flex;
     align-items: center;
     gap: 8px;
+    flex: 0 0 auto;
+    min-width: 0;
 }
 
 .abs-header-right {
     display: flex;
     align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+    flex: 0 1 auto;
+    flex-wrap: nowrap;
+    min-width: 0;
+    margin-left: auto;
+}
+
+.abs-controls {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    padding: 0 0 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+body.light .abs-controls,
+[data-theme="light"] .abs-controls {
+    border-bottom-color: rgba(0, 0, 0, 0.08);
 }
 
 .abs-icon {
@@ -89,6 +105,9 @@ body.light .abs-header,
     font-weight: 800;
     color: rgba(255, 255, 255, 0.96);
     letter-spacing: 0.01em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 body.light .abs-title,
@@ -100,22 +119,24 @@ body.light .abs-title,
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    padding: 6px 13px;
-    border-radius: 999px;
-    background: rgba(249, 115, 22, 0.12);
-    border: 1px solid rgba(249, 115, 22, 0.28);
-    color: rgba(249, 115, 22, 0.90);
-    font-size: 0.74rem;
-    font-weight: 500;
+    padding: 4px 9px;
+    border-radius: 7px;
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.12), rgba(234, 88, 12, 0.12));
+    border: 1px solid rgba(249, 115, 22, 0.30);
+    color: rgba(249, 115, 22, 0.85);
+    font-size: 0.68rem;
+    font-weight: 600;
     text-decoration: none;
     transition: background 0.15s, border-color 0.15s, color 0.15s;
     white-space: nowrap;
-    flex-shrink: 0;
+    flex: 0 0 auto;
+    width: auto;
+    max-width: max-content;
 }
 
 .abs-open-btn:hover {
-    background: rgba(249, 115, 22, 0.20);
-    border-color: rgba(249, 115, 22, 0.45);
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.22), rgba(234, 88, 12, 0.22));
+    border-color: rgba(249, 115, 22, 0.50);
     color: rgba(249, 115, 22, 1.0);
 }
 
@@ -133,35 +154,19 @@ body.light .abs-open-btn:hover,
     color: rgba(194, 65, 12, 1.0);
 }
 
-.abs-open-btn:hover {
-    background: rgba(110, 231, 183, 0.15);
-    border-color: rgba(110, 231, 183, 0.38);
-    color: rgba(110, 231, 183, 0.96);
-}
-
-body.light .abs-open-btn,
-[data-theme="light"] .abs-open-btn {
-    background: rgba(0, 0, 0, 0.04);
-    border-color: rgba(0, 0, 0, 0.10);
-    color: rgba(8, 12, 18, 0.45);
-}
-
-body.light .abs-open-btn:hover,
-[data-theme="light"] .abs-open-btn:hover {
-    background: rgba(16, 130, 80, 0.10);
-    border-color: rgba(16, 130, 80, 0.32);
-    color: rgba(10, 100, 60, 0.95);
-}
-
 /* ── Tabs ────────────────────────────────────────── */
 .abs-tabs {
     display: flex;
+    flex-wrap: nowrap;
     gap: 5px;
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
     overflow-x: auto;
+    overflow-y: hidden;
     scrollbar-width: none;
     -ms-overflow-style: none;
     padding-bottom: 2px;
-    flex-wrap: nowrap;
 }
 
 .abs-tabs::-webkit-scrollbar {
@@ -880,3 +885,152 @@ body.light .abs-footer,
 }
 body.light .abs-setup,
 [data-theme="light"] .abs-setup { color: rgba(8, 12, 18, 0.72); }
+
+/* Audiobookshelf: final mobile layout lock. */
+@media (max-width: 900px) {
+  .abs-flex-row,
+  .abs-flex-row .abs-widget-host,
+  .abs-widget-host,
+  .abs-shell,
+  .abs-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .abs-widget-host {
+    overflow: hidden !important;
+  }
+
+  .abs-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding-bottom: 10px !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .abs-header-left {
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .abs-title {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .abs-header-right {
+    display: flex !important;
+    align-items: center !important;
+    margin-left: auto !important;
+    flex: 0 0 auto !important;
+  }
+
+  .abs-open-btn {
+    min-height: 30px !important;
+    padding: 4px 9px !important;
+    font-size: 0.68rem !important;
+    line-height: 1 !important;
+    width: auto !important;
+    max-width: max-content !important;
+    flex: 0 0 auto !important;
+  }
+
+  .abs-controls {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 0 0 12px !important;
+  }
+
+  .abs-tabs {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    padding: 0 0 2px !important;
+    scrollbar-width: none !important;
+  }
+
+  .abs-tabs::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .abs-tab {
+    flex: 0 0 auto !important;
+    min-height: 32px !important;
+    padding: 7px 10px !important;
+    font-size: 0.72rem !important;
+    line-height: 1 !important;
+  }
+
+  .abs-tab span {
+    display: inline !important;
+  }
+
+  .abs-lib-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .abs-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .abs-card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .abs-song-row {
+    grid-template-columns: 46px minmax(0, 1fr) auto !important;
+    gap: 9px !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .abs-widget-host {
+    padding-inline: 12px !important;
+  }
+
+  .abs-icon {
+    width: 30px !important;
+    height: 30px !important;
+  }
+
+  .abs-title {
+    font-size: 0.90rem !important;
+  }
+
+  .abs-lib-grid,
+  .abs-stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .abs-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .abs-card-title,
+  .abs-card-sub {
+    font-size: 0.70rem !important;
+  }
+
+  .abs-song-row {
+    grid-template-columns: 42px minmax(0, 1fr) !important;
+  }
+
+  .abs-song-right {
+    grid-column: 2 !important;
+    justify-content: flex-start !important;
+  }
+}

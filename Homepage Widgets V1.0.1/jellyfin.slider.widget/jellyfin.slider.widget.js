@@ -5,7 +5,7 @@ JELLYFIN SLIDER
   const JF_CONFIG = {
     servers: [
       {
-        label: "JMG",
+        label: "Jellyfin",
         baseUrl: "http://YOUR_LOCAL_IP:PORT",
         fallbackUrl: "https://YOUR_TUNNEL_URL", // or null if not using a tunnel
         activeUrl: null,
@@ -15,6 +15,7 @@ JELLYFIN SLIDER
           { key: "movies", title: "Movies", itemTypes: "Movie", limit: 15, parentId: "YOUR_PARENT_ID", fields: "ProductionYear,ImageTags,BackdropImageTags,Overview,Genres,RunTimeTicks,OfficialRating" },
           { key: "tvShows", title: "TV", itemTypes: "Series", limit: 15, parentId: "YOUR_PARENT_ID", fields: "ProductionYear,ImageTags,BackdropImageTags,Overview,Genres,RunTimeTicks,OfficialRating" },
           { key: "music", title: "Music", itemTypes: "MusicAlbum", limit: 15, parentId: "YOUR_PARENT_ID", fields: "AlbumArtist,Artists,ImageTags,AlbumPrimaryImageTag,ProductionYear,Overview,Genres" },
+          { key: "collections", title: "Collections", itemTypes: "BoxSet", limit: 45, parentId: "YOUR_PARENT_ID", fields: "ProductionYear,ImageTags,BackdropImageTags,Overview,Genres,RunTimeTicks,OfficialRating,ChildCount" },
         ],
       },
     ],
@@ -54,10 +55,25 @@ JELLYFIN SLIDER
 
   async function fetchJson(url) {
     const srv = getServer();
-    const safeUrl = String(url)
-      .replace(/^http:\/\//i, "https://")
-      .replace("https://YOUR_LOCAL_IP:PORT", srv.baseUrl)
-      .replace("http://YOUR_LOCAL_IP:PORT", srv.baseUrl);
+    const preferred = (srv.activeUrl || srv.baseUrl || "").replace(/\/$/, "");
+    let safeUrl = String(url);
+    try {
+      const abs = new URL(safeUrl, `${preferred}/`);
+      const knownHosts = new Set();
+      for (const candidate of [srv.baseUrl, srv.fallbackUrl, srv.activeUrl]) {
+        if (!candidate) continue;
+        try { knownHosts.add(new URL(candidate).host); } catch (_) { /* ignore */ }
+      }
+      if (!preferred) {
+        safeUrl = abs.href;
+      } else if (knownHosts.has(abs.host) || !/^https?:\/\//i.test(String(url))) {
+        safeUrl = `${preferred}${abs.pathname}${abs.search}`;
+      } else {
+        safeUrl = abs.href;
+      }
+    } catch (_) {
+      /* keep original */
+    }
     const res = await fetch(safeUrl, { method: "GET", headers: jellyfinHeaders(), mode: "cors", credentials: "omit" });
     if (!res.ok) throw new Error(`Jellyfin API error ${res.status}`);
     return await res.json();
@@ -96,7 +112,7 @@ JELLYFIN SLIDER
   }
 
   function buildBackdropUrl(item) {
-    const base = _activeBaseUrls[_activeServerIdx] || getServer().baseUrl;
+  const base = getServer().baseUrl;
     if (!item?.Id) return "";
     if (item?.BackdropImageTags?.length) return `${base}/Items/${item.Id}/Images/Backdrop/0?maxHeight=400&tag=${item.BackdropImageTags[0]}&quality=80`;
     return "";
@@ -138,6 +154,71 @@ JELLYFIN SLIDER
     return data.Items || [];
   }
 
+  function isCollectionType(itemType, item) {
+    return itemType === "Collections" || itemType === "BoxSet" || item?.Type === "BoxSet";
+  }
+
+  function formatTrackDuration(ticks) {
+    if (!ticks) return "";
+    const secs = Math.max(0, Math.round(ticks / 10000000));
+    return `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
+  }
+
+  async function fetchCollectionItems(collectionId) {
+    const srv = getServer();
+    const params = new URLSearchParams({
+      ParentId: collectionId,
+      Fields: "ProductionYear,ImageTags,BackdropImageTags,Overview,Genres,RunTimeTicks,OfficialRating,Type",
+      SortBy: "SortName",
+      SortOrder: "Ascending",
+      Limit: "100",
+    });
+    const data = await fetchJson(`${srv.baseUrl}/Users/${srv.userId}/Items?${params}`);
+    return data.Items || [];
+  }
+
+  async function fetchAlbumTracks(albumId) {
+    const srv = getServer();
+    const params = new URLSearchParams({
+      ParentId: albumId,
+      IncludeItemTypes: "Audio",
+      Fields: "IndexNumber,Name,RunTimeTicks,Artists,AlbumArtist",
+      SortBy: "IndexNumber,SortName",
+      SortOrder: "Ascending",
+      Limit: "200",
+    });
+    const data = await fetchJson(`${srv.baseUrl}/Users/${srv.userId}/Items?${params}`);
+    return data.Items || [];
+  }
+
+  async function queueSeriesDownloads(seriesItem, startOffset = 0) {
+    const seasons = await fetchSeasons(seriesItem.Id);
+    let offset = startOffset;
+    for (const season of seasons) {
+      const episodes = await fetchEpisodes(seriesItem.Id, season.Id);
+      episodes.forEach(ep => {
+        const n = String(ep.IndexNumber || "?").padStart(2, "0");
+        setTimeout(
+          () => triggerDownload(ep.Id, `${seriesItem.Name} - ${season.Name} - E${n} ${ep.Name || "Episode"}`),
+          offset++ * 150
+        );
+      });
+    }
+    return offset;
+  }
+
+  async function downloadCollectionAll(children) {
+    let offset = 0;
+    for (const child of children) {
+      if (child.Type === "Series") {
+        offset = await queueSeriesDownloads(child, offset);
+      } else {
+        setTimeout(() => triggerDownload(child.Id, child.Name), offset++ * 150);
+      }
+    }
+    return offset;
+  }
+
   function renderOriginalActions(popup, item) {
     const srv = getServer();
     const itemType = popup.__jfItemType;
@@ -145,20 +226,30 @@ JELLYFIN SLIDER
     if (!actionsEl) return;
     const isSeries = itemType === "Series";
     const isMusic = itemType === "MusicAlbum";
+    const isMediaLayout = popup.classList.contains("jf-popup--media") || popup.classList.contains("jf-popup--music");
 
     const detailsHref = `${srv.baseUrl}/web/index.html#!/details?id=${encodeURIComponent(item.Id)}`;
     const playHref = `${srv.baseUrl}/web/index.html#!/details?id=${encodeURIComponent(item.Id)}`;
 
-    actionsEl.innerHTML = `
-    ${!isMusic ? `<a class="jf-popup__play-btn" href="${escapeHtml(playHref)}" target="_blank" rel="noopener noreferrer">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-      Play</a>` : ""}
-    ${isSeries ? `<button class="jf-popup__download-btn" type="button">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download Episodes</button>`
-        : !isMusic ? `<button class="jf-popup__download-btn" type="button">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download</button>` : ""}
-    <a class="jf-popup__details-btn" href="${escapeHtml(detailsHref)}" target="_blank" rel="noopener noreferrer">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>View Details in Jellyfin</a>`;
+    if (isMediaLayout) {
+      actionsEl.innerHTML = `
+        <a class="jf-popup__open-btn" href="${escapeHtml(detailsHref)}" target="_blank" rel="noopener noreferrer">Open in Jellyfin</a>
+        <button class="jf-popup__download-btn" type="button">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          ${isSeries ? "Download Episodes" : (isMusic ? "Download Album" : "Download")}
+        </button>`;
+    } else {
+      actionsEl.innerHTML = `
+      <a class="jf-popup__play-btn" href="${escapeHtml(playHref)}" target="_blank" rel="noopener noreferrer">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        Play</a>
+      ${isSeries ? `<button class="jf-popup__download-btn" type="button">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download Episodes</button>`
+          : `<button class="jf-popup__download-btn" type="button">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>${isMusic ? "Download Album" : "Download"}</button>`}
+      <a class="jf-popup__details-btn" href="${escapeHtml(detailsHref)}" target="_blank" rel="noopener noreferrer">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>View Details in Jellyfin</a>`;
+    }
 
     const dlBtn = actionsEl.querySelector(".jf-popup__download-btn");
     if (dlBtn) dlBtn.addEventListener("click", () =>
@@ -281,73 +372,25 @@ JELLYFIN SLIDER
     if (_activeBackdrop) { _activeBackdrop.remove(); _activeBackdrop = null; }
   }
 
-  function positionPopup(popup, anchorEl) {
-    const W = 260, H = 380, M = 12;
+  function positionPopup(popup, anchorEl, size = {}) {
+    const W = size.width || 260;
+    const H = size.height || 380;
+    const M = 12;
     const a = anchorEl.getBoundingClientRect();
     const vw = window.innerWidth, vh = window.innerHeight;
     let left = a.left + a.width / 2 - W / 2;
     let top = a.bottom + M;
     if (top + H > vh - M) top = a.top - H - M;
     popup.style.left = `${clamp(left, M, vw - W - M)}px`;
-    popup.style.top = `${clamp(top, M, vh - H - M)}px`;
-    popup.style.width = `${W}px`;
+    popup.style.top = `${clamp(top, M, Math.max(M, vh - Math.min(H, vh - M * 2) - M))}px`;
+    popup.style.width = `${Math.min(W, vw - M * 2)}px`;
   }
 
-  function openPopup(item, itemType, anchorEl) {
-    closePopup();
-    const isMusic = itemType === "MusicAlbum";
-    const isSeries = itemType === "Series";
-    const title = item?.Name || "Untitled";
-    const year = item?.ProductionYear ? String(item.ProductionYear) : null;
-    const rating = item?.OfficialRating || null;
-    const runtime = formatRuntime(item?.RunTimeTicks);
-    const overview = item?.Overview || null;
-    const genres = (item?.Genres || []).slice(0, 3).join(" · ") || null;
-    const artist = isMusic ? (item?.AlbumArtist || item?.Artists?.[0] || null) : null;
-    const imageUrl = buildImageUrl(item);
-    const backdropUrl = buildBackdropUrl(item);
-    let typeLabel = "Movie";
-    if (isSeries) typeLabel = "TV Series";
-    if (isMusic) typeLabel = "Album";
-    const subtitle = [year, rating, runtime].filter(Boolean).join(" · ");
-
-    const backdrop = document.createElement("div");
-    backdrop.className = "jf-popup-backdrop";
-    backdrop.addEventListener("click", closePopup);
-    document.body.appendChild(backdrop);
-    _activeBackdrop = backdrop;
-
-    const popup = document.createElement("div");
-    popup.className = "jf-popup";
-    popup.__jfItemType = itemType;
-    popup.addEventListener("click", e => e.stopPropagation());
-    popup.innerHTML = `
-      ${backdropUrl ? `<img class="jf-popup__backdrop-img" src="${escapeHtml(backdropUrl)}" alt="" aria-hidden="true"/>` : ""}
-      <div class="jf-popup__body">
-        <div class="jf-popup__poster-row">
-          ${imageUrl
-        ? `<img class="${isMusic ? "jf-popup__poster--square" : "jf-popup__poster"}" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}"/>`
-        : `<div class="jf-popup__poster-placeholder">${escapeHtml(title.charAt(0))}</div>`}
-          <div class="jf-popup__info">
-            <div class="jf-popup__title">${escapeHtml(title)}</div>
-            ${subtitle ? `<div class="jf-popup__subtitle">${escapeHtml(subtitle)}</div>` : ""}
-            ${artist ? `<div class="jf-popup__subtitle">${escapeHtml(artist)}</div>` : ""}
-            ${genres ? `<div class="jf-popup__subtitle" style="margin-top:2px;font-size:0.62rem;opacity:0.7">${escapeHtml(genres)}</div>` : ""}
-            <div class="jf-popup__type-badge">
-              <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>${escapeHtml(typeLabel)}
-            </div>
-          </div>
-        </div>
-        ${overview ? `<div class="jf-popup__divider"></div><div class="jf-popup__overview">${escapeHtml(overview)}</div>` : ""}
-        <div class="jf-popup__divider"></div>
-        <div class="jf-popup__actions"></div>
-      </div>`;
-    renderOriginalActions(popup, item);
+  function attachPopupChrome(popup, backdrop, anchorEl, size) {
     document.body.appendChild(popup);
     _activePopup = popup;
-    positionPopup(popup, anchorEl);
-
-    const reposition = () => { if (_activePopup === popup) positionPopup(popup, anchorEl); };
+    positionPopup(popup, anchorEl, size);
+    const reposition = () => { if (_activePopup === popup) positionPopup(popup, anchorEl, size); };
     window.addEventListener("resize", reposition, { passive: true });
     window.addEventListener("scroll", reposition, { passive: true, capture: true });
     backdrop.addEventListener("click", () => {
@@ -356,12 +399,281 @@ JELLYFIN SLIDER
     }, { once: true });
   }
 
+  function createPopupShell(extraClass = "") {
+    closePopup();
+    const backdrop = document.createElement("div");
+    backdrop.className = "jf-popup-backdrop";
+    backdrop.addEventListener("click", closePopup);
+    document.body.appendChild(backdrop);
+    _activeBackdrop = backdrop;
+
+    const popup = document.createElement("div");
+    popup.className = `jf-popup${extraClass ? ` ${extraClass}` : ""}`;
+    popup.addEventListener("click", e => e.stopPropagation());
+    return { popup, backdrop };
+  }
+
+  function openPopup(item, itemType, anchorEl) {
+    if (isCollectionType(itemType, item)) return openCollectionPopup(item, itemType, anchorEl);
+    if (itemType === "MusicAlbum" || item?.Type === "MusicAlbum") return openMusicPopup(item, itemType, anchorEl);
+    return openMediaPopup(item, itemType, anchorEl);
+  }
+
+  function resolveSectionTitle(item) {
+    const parentId = item?.ParentId || item?.LibraryId || item?.ParentLibraryItemId;
+    if (parentId) {
+      const section = getSections().find(s => s.parentId === parentId);
+      if (section?.title) return section.title;
+    }
+    return null;
+  }
+
+  function attachCenteredPopup(popup, backdrop) {
+    document.body.appendChild(popup);
+    _activePopup = popup;
+    backdrop.classList.add("jf-popup-backdrop--dim");
+    popup.querySelector(".jf-popup__close")?.addEventListener("click", closePopup);
+  }
+
+  function openMediaPopup(item, itemType, anchorEl) {
+    const isSeries = itemType === "Series" || item?.Type === "Series";
+    const resolvedType = isSeries ? "Series" : (itemType === "Movie" || item?.Type === "Movie" ? "Movie" : itemType);
+    const title = item?.Name || "Untitled";
+    const year = item?.ProductionYear ? String(item.ProductionYear) : null;
+    const rating = item?.OfficialRating || null;
+    const runtime = formatRuntime(item?.RunTimeTicks);
+    const overview = item?.Overview || "No summary available.";
+    const imageUrl = buildImageUrl(item);
+    const backdropUrl = buildBackdropUrl(item);
+    const typeLabel = isSeries ? "Series" : (resolvedType === "Movie" ? "Movie" : (resolvedType || "Media"));
+    const sectionTitle = resolveSectionTitle(item) || (isSeries ? "TV" : "Movies");
+    const kicker = [sectionTitle, typeLabel, year].filter(Boolean).join(" · ");
+    const meta = [runtime, rating, year].filter(Boolean).join(" · ");
+
+    const { popup, backdrop } = createPopupShell("jf-popup--media");
+    popup.__jfItemType = resolvedType;
+    popup.innerHTML = `
+      <button class="jf-popup__close" type="button" aria-label="Close">×</button>
+      ${backdropUrl ? `<div class="jf-popup__bg" style="background-image:url('${escapeHtml(backdropUrl)}')"></div>` : ""}
+      <div class="jf-popup__body jf-popup__body--media">
+        <div class="jf-popup__poster-wrap">
+          ${imageUrl
+        ? `<img class="jf-popup__poster-lg" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}"/>`
+        : `<div class="jf-popup__poster-placeholder jf-popup__poster-placeholder--lg">${escapeHtml(title.charAt(0))}</div>`}
+        </div>
+        <div class="jf-popup__info jf-popup__info--media">
+          <div class="jf-popup__kicker">${escapeHtml(kicker)}</div>
+          <div class="jf-popup__title jf-popup__title--media">${escapeHtml(title)}</div>
+          ${meta ? `<div class="jf-popup__meta">${escapeHtml(meta)}</div>` : ""}
+          <div class="jf-popup__summary">${escapeHtml(overview)}</div>
+          <div class="jf-popup__actions jf-popup__actions--media"></div>
+        </div>
+      </div>`;
+    renderOriginalActions(popup, item);
+    attachCenteredPopup(popup, backdrop);
+  }
+
+  function openMusicPopup(item, itemType, anchorEl) {
+    const title = item?.Name || "Untitled";
+    const artist = item?.AlbumArtist || item?.Artists?.[0] || "Unknown Artist";
+    const year = item?.ProductionYear ? String(item.ProductionYear) : null;
+    const genres = (item?.Genres || []).slice(0, 3).join(" · ") || null;
+    const overview = item?.Overview || "";
+    const imageUrl = buildImageUrl(item);
+    const backdropUrl = buildBackdropUrl(item) || imageUrl;
+    const sectionTitle = resolveSectionTitle(item) || "Music";
+    const kicker = [sectionTitle, "Album", year].filter(Boolean).join(" · ");
+    const meta = [artist, year, genres].filter(Boolean).join(" · ");
+
+    const { popup, backdrop } = createPopupShell("jf-popup--music");
+    popup.__jfItemType = "MusicAlbum";
+    popup.innerHTML = `
+      <button class="jf-popup__close" type="button" aria-label="Close">×</button>
+      ${backdropUrl ? `<div class="jf-popup__bg" style="background-image:url('${escapeHtml(backdropUrl)}')"></div>` : ""}
+      <div class="jf-popup__body jf-popup__body--music">
+        <div class="jf-popup__cover-wrap">
+          ${imageUrl
+        ? `<img class="jf-popup__cover" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}"/>`
+        : `<div class="jf-popup__cover-placeholder">${escapeHtml(title.charAt(0))}</div>`}
+        </div>
+        <div class="jf-popup__info jf-popup__info--music">
+          <div class="jf-popup__kicker">${escapeHtml(kicker)}</div>
+          <div class="jf-popup__title jf-popup__title--media">${escapeHtml(title)}</div>
+          <div class="jf-popup__meta">${escapeHtml(meta)}</div>
+          ${overview ? `<div class="jf-popup__summary">${escapeHtml(overview)}</div>` : ""}
+          <div class="jf-popup__actions jf-popup__actions--media"></div>
+          <div class="jf-popup__track-section">
+            <div class="jf-popup__section-label">Tracks</div>
+            <div class="jf-popup__track-list"><div class="jf-dl-loading"><svg class="jf-dl-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>Loading tracks…</div></div>
+          </div>
+        </div>
+      </div>`;
+    renderOriginalActions(popup, item);
+    attachCenteredPopup(popup, backdrop);
+
+    const trackList = popup.querySelector(".jf-popup__track-list");
+    fetchAlbumTracks(item.Id).then(tracks => {
+      if (_activePopup !== popup || !trackList) return;
+      if (!tracks.length) {
+        trackList.innerHTML = `<div class="jf-dl-empty">No tracks found</div>`;
+        return;
+      }
+      const sectionLabel = popup.querySelector(".jf-popup__section-label");
+      if (sectionLabel) sectionLabel.textContent = `${tracks.length} Track${tracks.length !== 1 ? "s" : ""}`;
+      trackList.innerHTML = tracks.map(track => {
+        const num = track.IndexNumber != null ? String(track.IndexNumber) : "–";
+        const dur = formatTrackDuration(track.RunTimeTicks);
+        const trackArtist = (track.Artists && track.Artists[0]) || artist;
+        return `<div class="jf-popup__track" data-id="${escapeHtml(track.Id)}" data-name="${escapeHtml(track.Name || "Track")}">
+          <span class="jf-popup__track-num">${escapeHtml(num)}</span>
+          <span class="jf-popup__track-meta">
+            <span class="jf-popup__track-name">${escapeHtml(track.Name || "Track")}</span>
+            <span class="jf-popup__track-artist">${escapeHtml(trackArtist)}</span>
+          </span>
+          <span class="jf-popup__track-dur">${escapeHtml(dur)}</span>
+          <button class="jf-popup__track-dl" type="button" aria-label="Download track" title="Download">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </button>
+        </div>`;
+      }).join("");
+      trackList.querySelectorAll(".jf-popup__track-dl").forEach(btn => {
+        btn.addEventListener("click", e => {
+          e.stopPropagation();
+          const row = btn.closest(".jf-popup__track");
+          if (!row) return;
+          triggerDownload(row.dataset.id, row.dataset.name);
+          btn.classList.add("is-done");
+          setTimeout(() => btn.classList.remove("is-done"), 1600);
+        });
+      });
+    }).catch(err => {
+      console.error("[Homepage Jellyfin] Album tracks fetch failed:", err);
+      if (trackList) trackList.innerHTML = `<div class="jf-dl-empty">Failed to load tracks</div>`;
+    });
+  }
+
+  function openCollectionPopup(item, itemType, anchorEl) {
+    const srv = getServer();
+    const title = item?.Name || "Untitled";
+    const year = item?.ProductionYear ? String(item.ProductionYear) : null;
+    const overview = item?.Overview || null;
+    const imageUrl = buildImageUrl(item);
+    const backdropUrl = buildBackdropUrl(item);
+    const detailsHref = `${srv.baseUrl}/web/index.html#!/details?id=${encodeURIComponent(item.Id)}`;
+    const childCount = item?.ChildCount != null ? `${item.ChildCount} item${item.ChildCount !== 1 ? "s" : ""}` : null;
+    const subtitle = [year, childCount].filter(Boolean).join(" · ");
+
+    const { popup, backdrop } = createPopupShell("jf-popup--collection");
+    popup.__jfItemType = "BoxSet";
+    popup.__jfCollectionChildren = [];
+    popup.innerHTML = `
+      ${backdropUrl ? `<img class="jf-popup__backdrop-img" src="${escapeHtml(backdropUrl)}" alt="" aria-hidden="true"/>` : ""}
+      <div class="jf-popup__body">
+        <div class="jf-popup__poster-row">
+          ${imageUrl
+        ? `<img class="jf-popup__poster" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}"/>`
+        : `<div class="jf-popup__poster-placeholder">${escapeHtml(title.charAt(0))}</div>`}
+          <div class="jf-popup__info">
+            <div class="jf-popup__title-row">
+              <div class="jf-popup__title">${escapeHtml(title)}</div>
+              <div class="jf-popup__collection-actions">
+                <button class="jf-popup__download-all-btn" type="button" disabled>Download All</button>
+                <a class="jf-popup__open-collection-btn" href="${escapeHtml(detailsHref)}" target="_blank" rel="noopener noreferrer">Open</a>
+              </div>
+            </div>
+            ${subtitle ? `<div class="jf-popup__subtitle">${escapeHtml(subtitle)}</div>` : ""}
+            <div class="jf-popup__type-badge">
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>Collection
+            </div>
+          </div>
+        </div>
+        ${overview ? `<div class="jf-popup__divider"></div><div class="jf-popup__overview">${escapeHtml(overview)}</div>` : ""}
+        <div class="jf-popup__divider"></div>
+        <div class="jf-popup__collection-body">
+          <div class="jf-popup__section-label">In this collection</div>
+          <div class="jf-popup__items-grid"><div class="jf-dl-loading"><svg class="jf-dl-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>Loading items…</div></div>
+        </div>
+      </div>`;
+    attachPopupChrome(popup, backdrop, anchorEl, { width: 440, height: 560 });
+
+    const grid = popup.querySelector(".jf-popup__items-grid");
+    const dlAllBtn = popup.querySelector(".jf-popup__download-all-btn");
+
+    fetchCollectionItems(item.Id).then(children => {
+      if (_activePopup !== popup || !grid) return;
+      popup.__jfCollectionChildren = children;
+      if (!children.length) {
+        grid.innerHTML = `<div class="jf-dl-empty">No items in this collection</div>`;
+        return;
+      }
+      const sectionLabel = popup.querySelector(".jf-popup__section-label");
+      if (sectionLabel) sectionLabel.textContent = `${children.length} Item${children.length !== 1 ? "s" : ""}`;
+      if (dlAllBtn) dlAllBtn.disabled = false;
+
+      grid.innerHTML = children.map((child, index) => {
+        const childType = child.Type || "Movie";
+        const childTitle = escapeHtml(child.Name || "Untitled");
+        const childYear = child.ProductionYear ? escapeHtml(String(child.ProductionYear)) : (childType === "Series" ? "TV Show" : "Movie");
+        const childImage = buildImageUrl(child);
+        return `<button class="jf-collection-card-wrap" type="button" data-index="${index}" aria-label="${childTitle}">
+          <div class="jf-card jf-card--compact">
+            <div class="jf-card__art">
+              ${childImage
+            ? `<img src="${escapeHtml(childImage)}" alt="${childTitle}" loading="lazy" decoding="async"/>`
+            : `<div class="jf-card__art-placeholder"><span>${childTitle.charAt(0)}</span></div>`}
+              <div class="jf-card__overlay">
+                <div class="jf-card__overlay-title">${childTitle}</div>
+                <div class="jf-card__overlay-sub">${childYear}</div>
+              </div>
+            </div>
+          </div>
+        </button>`;
+      }).join("");
+
+      grid.querySelectorAll(".jf-collection-card-wrap").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const child = children[Number(btn.dataset.index)];
+          if (!child) return;
+          openPopup(child, child.Type || "Movie", anchorEl);
+        });
+      });
+
+      if (dlAllBtn) {
+        dlAllBtn.addEventListener("click", async () => {
+          if (dlAllBtn.disabled) return;
+          dlAllBtn.disabled = true;
+          const orig = dlAllBtn.textContent;
+          dlAllBtn.textContent = "Preparing…";
+          try {
+            const total = await downloadCollectionAll(children);
+            dlAllBtn.textContent = total ? `✓ ${total} downloading` : "Nothing to download";
+            setTimeout(() => { dlAllBtn.textContent = orig; dlAllBtn.disabled = false; }, 2200);
+          } catch (err) {
+            console.error("[Homepage Jellyfin] Collection download failed:", err);
+            dlAllBtn.textContent = "Error — try again";
+            dlAllBtn.disabled = false;
+          }
+        });
+      }
+
+      positionPopup(popup, anchorEl, { width: 440, height: 560 });
+    }).catch(err => {
+      console.error("[Homepage Jellyfin] Collection items fetch failed:", err);
+      if (grid) grid.innerHTML = `<div class="jf-dl-empty">Failed to load collection</div>`;
+    });
+  }
+
   // ── Cards ─────────────────────────────────────────────────────────────────
   function buildCardElement(item, itemType, index) {
     const isMusic = itemType === "MusicAlbum";
+    const isCollection = isCollectionType(itemType, item);
     const title = escapeHtml(item?.Name || "Untitled");
     let subtitle = "Recently added";
     if (isMusic) subtitle = escapeHtml(item?.AlbumArtist || item?.Artists?.[0] || "Album");
+    else if (isCollection) {
+      const count = item?.ChildCount != null ? `${item.ChildCount} item${item.ChildCount !== 1 ? "s" : ""}` : "Collection";
+      subtitle = item?.ProductionYear ? escapeHtml(`${item.ProductionYear} · ${count}`) : escapeHtml(count);
+    }
     else if (item?.ProductionYear) subtitle = escapeHtml(String(item.ProductionYear));
     else if (itemType === "Series") subtitle = "TV Show";
     else if (itemType === "Movie") subtitle = "Movie";
@@ -683,19 +995,18 @@ JELLYFIN SLIDER
     const shell = document.createElement("div");
     shell.className = "jf-shelf";
 
-    const tabsRow = document.createElement("div");
-    tabsRow.className = "jf-tabs-row";
+    const header = document.createElement("div");
+    header.className = "jf-header";
+
+    const headerTop = document.createElement("div");
+    headerTop.className = "jf-header-top";
 
     const logoTitle = document.createElement("div");
     logoTitle.className = "jf-logo-title";
     logoTitle.innerHTML = `
       <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/jellyfin.webp" alt="Jellyfin" class="jf-icon">
       <span class="jf-title">Jellyfin</span>`;
-    tabsRow.appendChild(logoTitle);
-
-    const tabs = document.createElement("div");
-    tabs.className = "jf-tabs";
-    tabs.setAttribute("role", "tablist");
+    headerTop.appendChild(logoTitle);
 
     const serverSwitch = document.createElement("div");
     serverSwitch.className = "jf-server-switch";
@@ -705,15 +1016,6 @@ JELLYFIN SLIDER
        ${escapeHtml(srv.label)}
      </button>`
     ).join("");
-
-    const searchWrap = document.createElement("div");
-    searchWrap.className = "jf-search-wrap";
-    searchWrap.innerHTML = `
-    <input class="jf-search-input" type="search" placeholder="Search…" autocomplete="off" autocorrect="off" spellcheck="false" aria-label="Search all media"/>
-    <span class="jf-search-icon" aria-hidden="true">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-    </span>
-    <button class="jf-search-clear" type="button" aria-label="Clear search">✕</button>`;
 
     const openBtn = document.createElement("a");
     openBtn.className = "jf-open-btn";
@@ -728,10 +1030,25 @@ JELLYFIN SLIDER
     headerTools.className = "jf-header-tools";
     headerTools.appendChild(serverSwitch);
     headerTools.appendChild(openBtn);
-    headerTools.appendChild(searchWrap);
+    headerTop.appendChild(headerTools);
+    header.appendChild(headerTop);
 
-    tabsRow.appendChild(tabs);
-    tabsRow.appendChild(headerTools);
+    const searchWrap = document.createElement("div");
+    searchWrap.className = "jf-search-wrap";
+    searchWrap.innerHTML = `
+    <span class="jf-search-icon" aria-hidden="true">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    </span>
+    <input class="jf-search-input" type="search" placeholder="Search…" autocomplete="off" autocorrect="off" spellcheck="false" aria-label="Search all media"/>
+    <button class="jf-search-clear" type="button" aria-label="Clear search">✕</button>`;
+    header.appendChild(searchWrap);
+
+    const controls = document.createElement("div");
+    controls.className = "jf-controls";
+    const tabs = document.createElement("div");
+    tabs.className = "jf-tabs";
+    tabs.setAttribute("role", "tablist");
+    controls.appendChild(tabs);
 
     const panels = document.createElement("div");
     panels.className = "jf-panels";
@@ -766,7 +1083,8 @@ JELLYFIN SLIDER
     searchPanel.insertAdjacentHTML("beforeend", buildSliderMarkup());
     panels.appendChild(searchPanel);
 
-    shell.appendChild(tabsRow);
+    shell.appendChild(header);
+    shell.appendChild(controls);
     shell.appendChild(panels);
 
     requestAnimationFrame(() => {

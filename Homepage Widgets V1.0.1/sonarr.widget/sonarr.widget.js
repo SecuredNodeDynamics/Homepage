@@ -123,25 +123,27 @@
             <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/sonarr.webp" class="arr-icon-img" alt="Sonarr">
             <span class="arr-title">Sonarr</span>
           </div>
-          <div class="arr-tabs">${tabs}</div>
-          <a class="arr-link sonarr" href="${escH(activeServer.href)}" target="_blank" rel="noopener">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-              <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-            </svg>
-            Open
-          </a>
+          <div class="arr-hdr-right">
+            <div class="arr-tabs">${tabs}</div>
+            <a class="arr-link sonarr" href="${escH(activeServer.href)}" target="_blank" rel="noopener">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+              Open
+            </a>
+          </div>
         </div>
         <div class="arr-stats">
           ${loading
-            ? `<div class="arr-loading">
+        ? `<div class="arr-loading">
                 <svg class="arr-spin" width="16" height="16" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="2">
                   <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83
                            M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
                 </svg> Loading…</div>`
-            : statsHtml}
+        : statsHtml}
         </div>
         <div class="arr-footer">${escH(activeServer.label)} · ${new Date().toLocaleTimeString()}</div>
       </div>`;

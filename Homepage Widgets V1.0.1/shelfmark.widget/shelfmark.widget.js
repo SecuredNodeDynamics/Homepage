@@ -12,6 +12,13 @@
     pollMs: 30 * 1000,
     listSize: 16,
     debug: false,
+    // Deep-link completed books into Audiobookshelf when possible.
+    library: {
+      absBaseUrl: "https://YOUR_AUDIOBOOKSHELF_HOSTNAME",
+      absFallbackUrl: "http://YOUR_LOCAL_IP:13378",
+      absPathPrefix: "/audiobookshelf",
+      absToken: "PASTE_YOUR_AUDIOBOOKSHELF_API_TOKEN_HERE",
+    },
   };
 
   const ACTIVE_BUCKETS = new Set(["queued", "resolving", "locating", "downloading"]);
@@ -21,6 +28,9 @@
   let _currentTab = "overview";
   let _tabCache = {};
   let _sessionReady = false;
+  let _absLibs = null;
+  let _absActiveUrl = null;
+  const _bookHrefCache = new Map();
 
   function log(...args) {
     if (SM_CONFIG.debug) console.log("[Homepage Shelfmark]", ...args);
@@ -41,6 +51,159 @@
   function hasCredentials() {
     return !!(SM_CONFIG.username && SM_CONFIG.password
       && !SM_CONFIG.password.includes("PASTE_YOUR"));
+  }
+
+  function hasAbsLibraryLink() {
+    const lib = SM_CONFIG.library || {};
+    return !!(lib.absBaseUrl && lib.absToken
+      && !String(lib.absToken).includes("PASTE_YOUR"));
+  }
+
+  function absWebBase() {
+    const lib = SM_CONFIG.library || {};
+    const base = (_absActiveUrl || lib.absBaseUrl || "").replace(/\/$/, "");
+    const prefix = (lib.absPathPrefix || "").replace(/\/$/, "");
+    if (!base) return "";
+    return prefix ? `${base}${prefix.startsWith("/") ? prefix : `/${prefix}`}` : base;
+  }
+
+  function absUrlCandidates() {
+    const lib = SM_CONFIG.library || {};
+    const out = [];
+    if (_absActiveUrl) out.push(_absActiveUrl);
+    if (lib.absBaseUrl && !out.includes(lib.absBaseUrl)) out.push(lib.absBaseUrl);
+    if (lib.absFallbackUrl && !out.includes(lib.absFallbackUrl)) out.push(lib.absFallbackUrl);
+    return out;
+  }
+
+  async function absFetch(path) {
+    const token = SM_CONFIG.library?.absToken;
+    if (!token) throw new Error("ABS library token missing");
+    let lastErr = null;
+    for (const base of absUrlCandidates()) {
+      try {
+        const url = `${base}${path.startsWith("/") ? path : `/${path}`}`;
+        const res = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+          signal: abortSignal(10000),
+        });
+        if (!res.ok) throw new Error(`Audiobookshelf ${res.status}`);
+        _absActiveUrl = base;
+        if (res.status === 204) return null;
+        return res.json();
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    throw lastErr || new Error("Audiobookshelf lookup failed");
+  }
+
+  function normalizeMatch(value) {
+    return String(value || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function titlesMatch(a, b) {
+    const na = normalizeMatch(a);
+    const nb = normalizeMatch(b);
+    if (!na || !nb) return false;
+    return na === nb || na.includes(nb) || nb.includes(na);
+  }
+
+  function authorSoftMatch(expected, actual) {
+    const a = normalizeMatch(expected);
+    const b = normalizeMatch(actual);
+    if (!a || !b) return true;
+    const aFirst = a.split(" ")[0];
+    const bFirst = b.split(" ")[0];
+    return a.includes(bFirst) || b.includes(aFirst) || a.includes(b) || b.includes(a);
+  }
+
+  async function findAbsItemId(title, author) {
+    if (!hasAbsLibraryLink() || !normText(title)) return null;
+
+    if (!_absLibs) {
+      const data = await absFetch("/api/libraries");
+      _absLibs = Array.isArray(data?.libraries)
+        ? data.libraries
+        : (Array.isArray(data) ? data : []);
+    }
+
+    const bookLibs = _absLibs.filter((lib) => (lib.mediaType || "book") === "book");
+    const libs = bookLibs.length ? bookLibs : _absLibs;
+    let fuzzyId = null;
+
+    for (const lib of libs) {
+      if (!lib?.id) continue;
+      const results = await absFetch(
+        `/api/libraries/${encodeURIComponent(lib.id)}/search?q=${encodeURIComponent(title)}&limit=12`
+      );
+      const books = results?.book || results?.books || [];
+      for (const entry of books) {
+        const item = entry?.libraryItem || entry;
+        const meta = item?.media?.metadata || entry?.match?.metadata || {};
+        const itemTitle = meta.title || item?.title || entry?.title || "";
+        const itemAuthor = meta.authorName || meta.author || item?.author || "";
+        if (!titlesMatch(itemTitle, title)) continue;
+        if (!authorSoftMatch(author, itemAuthor)) continue;
+        const id = item?.id || item?.libraryItemId || entry?.id;
+        if (!id) continue;
+        if (normalizeMatch(itemTitle) === normalizeMatch(title)) return id;
+        if (!fuzzyId) fuzzyId = id;
+      }
+    }
+
+    return fuzzyId;
+  }
+
+  async function itemHref(task) {
+    const title = task?.title || "";
+    const author = task?.author || "";
+    const key = `${normalizeMatch(title)}|${normalizeMatch(author)}`;
+    if (_bookHrefCache.has(key)) return _bookHrefCache.get(key);
+
+    let href = openUrl();
+    try {
+      const id = await findAbsItemId(title, author);
+      if (id) {
+        const base = absWebBase();
+        if (base) href = `${base}/item/${id}`;
+      }
+    } catch (err) {
+      log("ABS item resolve failed", err);
+    }
+
+    _bookHrefCache.set(key, href);
+    return href;
+  }
+
+  async function resolveHrefs(tasks) {
+    const list = Array.isArray(tasks) ? tasks : [];
+    const uniq = [];
+    const seen = new Set();
+    for (const task of list) {
+      const key = `${normalizeMatch(task?.title)}|${normalizeMatch(task?.author)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      uniq.push(task);
+    }
+
+    const concurrency = 3;
+    for (let i = 0; i < uniq.length; i += concurrency) {
+      await Promise.all(uniq.slice(i, i + concurrency).map((task) => itemHref(task)));
+    }
+
+    for (const task of list) {
+      const key = `${normalizeMatch(task?.title)}|${normalizeMatch(task?.author)}`;
+      task._href = _bookHrefCache.get(key) || openUrl();
+    }
+    return list;
   }
 
   function abortSignal(ms) {
@@ -269,9 +432,10 @@
     const type = escH((task.content_type || task.format || "").replace(/_/g, " "));
     const sub = [author, type, extra.sub].filter(Boolean).join(" · ");
     const pct = extra.progress != null ? fmtPct(extra.progress) : null;
+    const href = task._href || openUrl();
 
     return `
-      <a class="sm-card" href="${escH(openUrl())}" target="_blank" rel="noopener noreferrer"
+      <a class="sm-card" href="${escH(href)}" target="_blank" rel="noopener noreferrer"
          style="animation-delay:${index * 35}ms" title="${title}">
         <div class="sm-card-art">
           ${cover
@@ -293,9 +457,10 @@
     const author = escH(task.author || "");
     const pct = fmtPct(task.progress);
     const status = escH(task.status_message || task.bucket || task.status || "active");
+    const href = task._href || openUrl();
 
     return `
-      <a class="sm-song-row sm-active-row" href="${escH(openUrl())}" target="_blank" rel="noopener noreferrer"
+      <a class="sm-song-row sm-active-row" href="${escH(href)}" target="_blank" rel="noopener noreferrer"
          style="animation-delay:${index * 25}ms">
         <div class="sm-song-art">
           ${cover
@@ -322,9 +487,10 @@
     const status = escH(req.status || "pending");
     const delivery = escH(req.delivery_state || "");
     const when = fmtTime(req.created_at);
+    const href = req._href || openUrl();
 
     return `
-      <a class="sm-song-row" href="${escH(openUrl())}" target="_blank" rel="noopener noreferrer"
+      <a class="sm-song-row" href="${escH(href)}" target="_blank" rel="noopener noreferrer"
          style="animation-delay:${index * 25}ms">
         <div class="sm-song-art">
           <div class="sm-song-placeholder"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
@@ -351,7 +517,7 @@
     const failed = tasks.filter(t => FAIL_BUCKETS.has(t.bucket)).length;
     const pendingRequests = requests.filter(r => (r.status || "").toLowerCase() === "pending").length;
 
-    const recent = tasks.filter(t => DONE_BUCKETS.has(t.bucket)).slice(0, 6);
+    const recent = await resolveHrefs(tasks.filter(t => DONE_BUCKETS.has(t.bucket)).slice(0, 6));
 
     return `
       <div class="sm-stats-grid">
@@ -380,9 +546,9 @@
 
   async function renderActive() {
     const snap = await loadSnapshot();
-    const tasks = sortTasks(flattenTasks(snap?.status))
+    const tasks = await resolveHrefs(sortTasks(flattenTasks(snap?.status))
       .filter(t => ACTIVE_BUCKETS.has(t.bucket))
-      .slice(0, SM_CONFIG.listSize);
+      .slice(0, SM_CONFIG.listSize));
 
     if (!tasks.length) {
       return `<div class="sm-empty">
@@ -396,9 +562,9 @@
 
   async function renderRecent() {
     const snap = await loadSnapshot();
-    const tasks = sortTasks(flattenTasks(snap?.status))
+    const tasks = await resolveHrefs(sortTasks(flattenTasks(snap?.status))
       .filter(t => DONE_BUCKETS.has(t.bucket))
-      .slice(0, SM_CONFIG.listSize);
+      .slice(0, SM_CONFIG.listSize));
 
     if (!tasks.length) return `<div class="sm-empty">No completed downloads</div>`;
     return `<div class="sm-card-grid">${tasks.map((item, i) => bookCard(item, i)).join("")}</div>`;
@@ -407,7 +573,14 @@
   async function renderRequests() {
     const snap = await loadSnapshot();
     const requests = (Array.isArray(snap?.requests) ? snap.requests : [])
-      .slice(0, SM_CONFIG.listSize);
+      .slice(0, SM_CONFIG.listSize)
+      .map((req) => ({
+        ...req,
+        title: requestTitle(req),
+        author: requestAuthor(req),
+      }));
+
+    await resolveHrefs(requests);
 
     if (!requests.length) return `<div class="sm-empty">No book requests</div>`;
     return `<div class="sm-song-list">${requests.map(requestRow).join("")}</div>`;
@@ -436,7 +609,6 @@
             <span class="sm-title">Shelfmark</span>
           </div>
           <div class="sm-header-right">
-            <div class="sm-tabs" role="tablist">${tabs}</div>
             <a class="sm-open-btn" href="${escH(openUrl())}" target="_blank" rel="noopener noreferrer">
               Open
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -445,6 +617,9 @@
               </svg>
             </a>
           </div>
+        </div>
+        <div class="sm-controls">
+          <div class="sm-tabs" role="tablist">${tabs}</div>
         </div>
         <div class="sm-panel">
           <div class="sm-skeleton-wrap">${Array.from({ length: 5 }, () => `<div class="sm-skeleton-row"></div>`).join("")}</div>

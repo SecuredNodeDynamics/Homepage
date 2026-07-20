@@ -12,10 +12,10 @@
       {
         id: "pihole1",
         label: "Pi-hole",
-        primaryUrl: "http://YOUR_PIHOLE_IP",
+        primaryUrl: "http://YOUR_LOCAL_IP:PORT",
         fallbackUrl: null, // or "https://YOUR_TUNNEL_URL" if using a tunnel
-        password: "YOUR_PIHOLE_WEB_OR_APP_PASSWORD",
-        hrefPrimary: "http://YOUR_PIHOLE_IP/admin",
+        password: "PASTE_YOUR_PIHOLE_PASSWORD_HERE",
+        hrefPrimary: "http://YOUR_LOCAL_IP:PORT/admin",
         hrefFallback: null,
         activeUrl: null,
         activeHref: null
@@ -35,7 +35,6 @@
   const _pauseTimers = {};
   const _pauseEndsAt = {};
   const _sessions = {};
-  const _authBackoffUntil = {};
   const _authInFlight = {};
 
   function log(...a) { if (PH_CONFIG.debug) console.log("[PiHole]", ...a); }
@@ -51,23 +50,6 @@
   function normText(v) { return (v || "").replace(/\s+/g, " ").trim(); }
   function getInstKey(inst) { return inst.id || inst.label; }
   function getInstHref(inst) { return inst.activeHref || inst.hrefPrimary || inst.hrefFallback || "#"; }
-  function backoffKey(instKey) { return `ph-auth-backoff:${instKey}`; }
-
-  function getAuthBackoff(instKey) {
-    const mem = _authBackoffUntil[instKey] || 0;
-    const stored = Number(localStorage.getItem(backoffKey(instKey)) || 0);
-    return Math.max(mem, Number.isFinite(stored) ? stored : 0);
-  }
-
-  function setAuthBackoff(instKey, until) {
-    _authBackoffUntil[instKey] = until;
-    localStorage.setItem(backoffKey(instKey), String(until));
-  }
-
-  function clearAuthBackoff(instKey) {
-    delete _authBackoffUntil[instKey];
-    localStorage.removeItem(backoffKey(instKey));
-  }
 
   function apiBase(url) {
     return String(url || "").replace(/\/admin\/?$/, "").replace(/\/$/, "") + "/api";
@@ -82,14 +64,10 @@
   }
 
   async function phAuth(inst, timeout = 8000) {
+    if (!inst.password) return null;
     const instKey = getInstKey(inst);
     const current = _sessions[instKey];
     if (current?.sid && current.expiresAt > Date.now() + 30 * 1000) return current;
-    const backoffUntil = getAuthBackoff(instKey);
-    if (backoffUntil > Date.now()) {
-      const mins = Math.ceil((backoffUntil - Date.now()) / 60000);
-      throw new Error(`Pi-hole auth rate limited; retrying in ${mins}m`);
-    }
     if (_authInFlight[instKey]) return _authInFlight[instKey];
 
     _authInFlight[instKey] = phAuthFresh(inst, timeout).finally(() => {
@@ -112,8 +90,7 @@
           signal: AbortSignal.timeout(timeout)
         });
         if (res.status === 429) {
-          setAuthBackoff(instKey, Date.now() + 15 * 60 * 1000);
-          throw new Error("Pi-hole auth rate limited; retrying in 15m");
+          throw new Error("Pi-hole auth rate limited");
         }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
@@ -122,7 +99,6 @@
 
         inst.activeUrl = target.url;
         inst.activeHref = target.href;
-        clearAuthBackoff(instKey);
         _sessions[instKey] = {
           sid: session.sid,
           csrf: session.csrf || "",
@@ -131,8 +107,7 @@
         return _sessions[instKey];
       } catch (err) {
         if (err?.name === "TypeError" || /NetworkError|Failed to fetch|Load failed/i.test(err?.message || "")) {
-          setAuthBackoff(instKey, Date.now() + 15 * 60 * 1000);
-          err = new Error("Pi-hole auth blocked by CORS or rate limited; retrying in 15m");
+          err = new Error("Pi-hole auth blocked by CORS or rate limited");
         }
         lastErr = err;
       }
@@ -143,17 +118,28 @@
 
   async function phRequest(inst, path, options = {}, timeout = 8000, retry = true) {
     const session = await phAuth(inst, timeout);
-    const res = await fetch(`${apiBase(inst.activeUrl || inst.primaryUrl)}${path}`, {
-      ...options,
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        "X-FTL-SID": session.sid,
-        ...(session.csrf ? { "X-FTL-CSRF": session.csrf } : {}),
-        ...(options.headers || {})
-      },
-      signal: AbortSignal.timeout(timeout)
-    });
+    const method = (options.method || "GET").toUpperCase();
+    const headers = {
+      Accept: "application/json",
+      ...(method !== "GET" ? { "Content-Type": "application/json" } : {}),
+      ...(session?.sid ? { "X-FTL-SID": session.sid } : {}),
+      ...(session?.csrf ? { "X-FTL-CSRF": session.csrf } : {}),
+      ...(options.headers || {})
+    };
+
+    let res;
+    try {
+      res = await fetch(`${apiBase(inst.activeUrl || inst.primaryUrl)}${path}`, {
+        ...options,
+        headers,
+        signal: AbortSignal.timeout(timeout)
+      });
+    } catch (err) {
+      if (err?.name === "TypeError" || /NetworkError|Failed to fetch|Load failed/i.test(err?.message || "")) {
+        throw new Error(`Network/CORS failure for ${path}`);
+      }
+      throw err;
+    }
 
     if ((res.status === 401 || res.status === 403) && retry) {
       delete _sessions[getInstKey(inst)];
