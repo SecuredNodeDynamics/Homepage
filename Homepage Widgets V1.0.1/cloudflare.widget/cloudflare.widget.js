@@ -1,22 +1,23 @@
 /* =====================================================
 CLOUDFLARE TUNNEL WIDGET  v4
-— Proxied through cf-proxy.YOUR_DOMAIN.com worker
+— Proxied through YOUR_CF_PROXY_WORKER.workers.dev worker
 — Group name: CLOUDFLARE - WIDGET
 ===================================================== */
 (function () {
 
   const CF_CONFIG = {
     groupName: "CLOUDFLARE - WIDGET",
-    proxyBase: "https://YOUR_TUNNEL_URL",
-    accountId: "CLOUDFLARE_ACCOUNT_ID",
-    tunnelId: "CLOUDFLARE_TUNNEL_ID",
-    dashboardUrl: "https://dash.cloudflare.com/YOUR_TUNNEL_ID/home/overview",
+    proxyBase: "https://YOUR_CF_PROXY_WORKER.workers.dev",
+    accountId: "YOUR_CLOUDFLARE_ACCOUNT_ID",
+    tunnelId: "YOUR_TUNNEL_ID",
+    dashboardUrl: "https://dash.cloudflare.com/YOUR_CLOUDFLARE_ACCOUNT_ID/home/overview",
     pollMs: 120 * 1000,
     debug: false
   };
 
   const TUNNEL_ORIGIN_MAP = {
-    "CLOUDFLARE_TUNNEL_ID": "YOUR_PROXMOX_SERVER_ID", // You can find your Cloudflare Tunnel ID in your CLoudflare Dashboard
+    // Optional: map connector client_id to a friendly label
+    // "YOUR_CONNECTOR_CLIENT_ID": "edge-1",
   };
 
   function log(...a) { if (CF_CONFIG.debug) console.log("[CF Widget]", ...a); }
@@ -74,7 +75,7 @@ CLOUDFLARE TUNNEL WIDGET  v4
   function ensureHost(group) {
     let host = group.querySelector(".cf-host");
     if (host) return host;
-    let row = group.querySelector(".hp-widget-row, .cf-flex-row");
+    let row = group.querySelector(".hp-widget-row, .cf-flex-row, .ts-flex-row");
     if (!row) {
       const list = group.querySelector("ul.services-list, ul");
       if (list) list.style.display = "none";
@@ -163,18 +164,166 @@ CLOUDFLARE TUNNEL WIDGET  v4
     return [];
   }
 
+  const THREAT_SOURCE_LABELS = {
+    bic: "Bot Fight Mode",
+    botnet: "Botnet Protection",
+    firewallrules: "Custom Firewall Rules",
+    l7ddos: "L7 DDoS",
+    ratelimit: "Rate Limiting",
+    securitylevel: "Security Level",
+    managedrules: "WAF Managed Rules",
+    uniques: "Unique Rules",
+    uaBlock: "UA Block",
+    country: "Country Blocking",
+    ip: "IP Access Rules",
+    waf: "WAF",
+    asp: "ASP",
+    hot: "Hotlink Protection",
+    sanitize: "Sanitization",
+  };
+
+  const THREAT_ACTION_LABELS = {
+    block: "Blocked",
+    challenge: "Challenged",
+    jschallenge: "JS Challenge",
+    managed_challenge: "Managed Challenge",
+    log: "Logged",
+    allow: "Allowed",
+    bypass: "Bypassed",
+    connectionClose: "Connection Closed",
+    forceConnectionClose: "Force Close",
+  };
+
+  function humanizeThreatLabel(source, action) {
+    const src = THREAT_SOURCE_LABELS[source] || (source
+      ? source.replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+      : "");
+    const act = THREAT_ACTION_LABELS[action] || (action
+      ? action.replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+      : "");
+    return [src, act].filter(Boolean).join(" · ") || "Blocked / mitigated";
+  }
+
+  function securityEventsHref(zoneName) {
+    if (!CF_CONFIG.accountId || !zoneName) return CF_CONFIG.dashboardUrl || "#";
+    return `https://dash.cloudflare.com/${encodeURIComponent(CF_CONFIG.accountId)}/${encodeURIComponent(zoneName)}/security/events`;
+  }
+
+  async function cfGraphql(query) {
+    const url = `${CF_CONFIG.proxyBase}/?path=/client/v4/graphql`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query }),
+      signal: AbortSignal.timeout(12000)
+    });
+    if (!res.ok) throw new Error(`GraphQL HTTP ${res.status}`);
+    const data = await res.json();
+    if (data?.errors?.length) {
+      const msg = data.errors.map((e) => e.message || "GraphQL error").join("; ");
+      throw new Error(msg);
+    }
+    return data;
+  }
+
   // ── Zone analytics via GraphQL ───────────────────────────────────
+  async function fetchThreatDetails(zoneId) {
+    const until = new Date().toISOString();
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const details = { bySource: {}, byCountry: {} };
+
+    // Primary: firewall events (source / action / country)
+    try {
+      const data = await cfGraphql(`{
+  viewer {
+    zones(filter: { zoneTag: "${zoneId}" }) {
+      firewallEventsAdaptiveGroups(
+        limit: 20,
+        orderBy: [count_DESC],
+        filter: { datetime_geq: "${since}", datetime_leq: "${until}" }
+      ) {
+        count
+        dimensions {
+          source
+          action
+          clientCountryName
+        }
+      }
+    }
+  }
+}`);
+      const groups = data?.data?.viewer?.zones?.[0]?.firewallEventsAdaptiveGroups || [];
+      groups.forEach((g) => {
+        const count = Number(g?.count) || 0;
+        if (count <= 0) return;
+        const source = String(g?.dimensions?.source || "").trim();
+        const action = String(g?.dimensions?.action || "").trim();
+        const country = String(g?.dimensions?.clientCountryName || "").trim();
+        const label = humanizeThreatLabel(source, action);
+        details.bySource[label] = (details.bySource[label] || 0) + count;
+        if (country) details.byCountry[country] = (details.byCountry[country] || 0) + count;
+      });
+    } catch (e) {
+      log(`Zone ${zoneId} firewall threat details failed:`, e.message);
+    }
+
+    // Fallback: HTTP adaptive security actions (often available when firewall events are not)
+    if (!Object.keys(details.bySource).length) {
+      try {
+        const data = await cfGraphql(`{
+  viewer {
+    zones(filter: { zoneTag: "${zoneId}" }) {
+      httpRequestsAdaptiveGroups(
+        limit: 15,
+        orderBy: [count_DESC],
+        filter: {
+          datetime_geq: "${since}",
+          datetime_leq: "${until}",
+          AND: [
+            { securityAction_neq: "unknown" },
+            { securityAction_neq: "allow" }
+          ]
+        }
+      ) {
+        count
+        dimensions {
+          securityAction
+          clientCountryName
+        }
+      }
+    }
+  }
+}`);
+        const groups = data?.data?.viewer?.zones?.[0]?.httpRequestsAdaptiveGroups || [];
+        groups.forEach((g) => {
+          const count = Number(g?.count) || 0;
+          if (count <= 0) return;
+          const action = String(g?.dimensions?.securityAction || "").trim();
+          const country = String(g?.dimensions?.clientCountryName || "").trim();
+          if (!action || action === "allow" || action === "unknown") return;
+          const label = humanizeThreatLabel("", action);
+          details.bySource[label] = (details.bySource[label] || 0) + count;
+          if (country) details.byCountry[country] = (details.byCountry[country] || 0) + count;
+        });
+      } catch (e) {
+        log(`Zone ${zoneId} adaptive security details failed:`, e.message);
+      }
+    }
+
+    return details;
+  }
+
   async function fetchZoneAnalytics(zoneId, zoneName) {
     const today = new Date().toISOString().split("T")[0];
-    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    const dayAgo = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
     const query = `{
   viewer {
     zones(filter: { zoneTag: "${zoneId}" }) {
       httpRequests1dGroups(
-        limit: 7,
+        limit: 1,
         orderBy: [sum_requests_DESC],
-        filter: { date_geq: "${weekAgo}", date_leq: "${today}" }
+        filter: { date_geq: "${dayAgo}", date_leq: "${today}" }
       ) {
         sum {
           requests
@@ -192,16 +341,7 @@ CLOUDFLARE TUNNEL WIDGET  v4
 }`;
 
     try {
-      const url = `${CF_CONFIG.proxyBase}/?path=/client/v4/graphql`;
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query }),
-        signal: AbortSignal.timeout(12000)
-      });
-
-      if (!res.ok) throw new Error(`GraphQL HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await cfGraphql(query);
       log(`Zone ${zoneName} GraphQL raw response:`, JSON.stringify(data));
 
       const groups = data?.data?.viewer?.zones?.[0]?.httpRequests1dGroups;
@@ -221,11 +361,19 @@ CLOUDFLARE TUNNEL WIDGET  v4
 
       log(`Zone ${zoneName} totals:`, totals);
 
+      const threatDetails = totals.threats > 0
+        ? await fetchThreatDetails(zoneId)
+        : { bySource: {}, byCountry: {} };
+
       return {
         requests: { all: totals.requests, cached: totals.cachedRequests },
         bandwidth: { all: totals.bytes },
         uniques: { all: totals.uniques },
-        threats: { all: totals.threats },
+        threats: {
+          all: totals.threats,
+          type: threatDetails.bySource,
+          countries: threatDetails.byCountry,
+        },
       };
     } catch (e) {
       log(`Zone ${zoneName} GraphQL failed:`, e.message);
@@ -360,13 +508,13 @@ CLOUDFLARE TUNNEL WIDGET  v4
         </div>
         <div class="cf-threat-list">
           ${zones.map(z => {
-            const a = analyticsMap[z.id];
-            const reqs = a?.requests?.all;
-            const cached = a?.requests?.cached;
-            const cacheRate = reqs > 0 ? ((cached / reqs) * 100).toFixed(1) + "% cached" : null;
-            const color = z.status === "active" ? "rgba(251,146,60,0.90)" : "rgba(248,113,113,0.90)";
-            const reqDisplay = reqs != null ? fmtBig(reqs) + " req/7d" : z.status;
-            return `
+      const a = analyticsMap[z.id];
+      const reqs = a?.requests?.all;
+      const cached = a?.requests?.cached;
+      const cacheRate = reqs > 0 ? ((cached / reqs) * 100).toFixed(1) + "% cached" : null;
+      const color = z.status === "active" ? "rgba(251,146,60,0.90)" : "rgba(248,113,113,0.90)";
+      const reqDisplay = reqs != null ? fmtBig(reqs) + " req/24h" : z.status;
+      return `
               <div class="cf-threat-row">
                 <span class="cf-threat-row__name" style="display:flex;align-items:center;gap:6px;">
                   <span style="width:6px;height:6px;border-radius:50%;background:${escH(color)};flex-shrink:0;display:inline-block;"></span>
@@ -376,7 +524,7 @@ CLOUDFLARE TUNNEL WIDGET  v4
                   ${escH(reqDisplay)}${cacheRate ? ` · ${escH(cacheRate)}` : ""}
                 </span>
               </div>`;
-          }).join("")}
+    }).join("")}
         </div>
       </div>`;
   }
@@ -384,6 +532,7 @@ CLOUDFLARE TUNNEL WIDGET  v4
   function buildThreats(zones, analyticsMap) {
     let totalThreats = 0;
     const typeMap = {};
+    const countryMap = {};
     zones.forEach(zone => {
       const a = analyticsMap[zone.id];
       if (!a) return;
@@ -393,10 +542,25 @@ CLOUDFLARE TUNNEL WIDGET  v4
           typeMap[type] = (typeMap[type] || 0) + count;
         });
       }
+      if (a.threats?.countries) {
+        Object.entries(a.threats.countries).forEach(([country, count]) => {
+          countryMap[country] = (countryMap[country] || 0) + count;
+        });
+      }
     });
 
     const hasThreats = totalThreats > 0;
-    const typeEntries = Object.entries(typeMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    let typeEntries = Object.entries(typeMap).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    const countryEntries = Object.entries(countryMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+    // GraphQL often returns a total without a typed breakdown — never show
+    // "No threats detected" when the badge already has a non-zero count.
+    if (hasThreats && !typeEntries.length) {
+      typeEntries = [["Blocked / mitigated", totalThreats]];
+    }
+
+    const primaryZone = zones.find((z) => analyticsMap[z.id]?.threats?.all > 0) || zones[0];
+    const eventsHref = securityEventsHref(primaryZone?.name);
 
     return `
       <div class="cf-threats${hasThreats ? " cf-threats--has-threats" : ""}">
@@ -405,21 +569,37 @@ CLOUDFLARE TUNNEL WIDGET  v4
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>
-            Security Threats (7d)
+            Security Threats (24h)
           </div>
           <span class="cf-threats__count${hasThreats ? " cf-threats__count--has-threats" : ""}">
             ${totalThreats.toLocaleString()}
           </span>
         </div>
-        ${typeEntries.length
-          ? `<div class="cf-threat-list">
+        ${hasThreats
+        ? `<div class="cf-threat-list">
                ${typeEntries.map(([type, count]) => `
                  <div class="cf-threat-row">
                    <span class="cf-threat-row__name">${escH(type)}</span>
                    <span class="cf-threat-row__count">${count.toLocaleString()}</span>
                  </div>`).join("")}
-             </div>`
-          : `<div style="font-size:0.68rem;color:rgba(255,255,255,0.30);margin-top:4px;">
+             </div>
+             ${countryEntries.length ? `
+             <div class="cf-threats__subtitle">Top countries</div>
+             <div class="cf-threat-list">
+               ${countryEntries.map(([country, count]) => `
+                 <div class="cf-threat-row">
+                   <span class="cf-threat-row__name">${escH(country)}</span>
+                   <span class="cf-threat-row__count">${count.toLocaleString()}</span>
+                 </div>`).join("")}
+             </div>` : ""}
+             <a class="cf-threats__link" href="${escH(eventsHref)}" target="_blank" rel="noopener noreferrer">
+               View security events
+               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                 <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+               </svg>
+             </a>`
+        : `<div style="font-size:0.68rem;color:rgba(255,255,255,0.30);margin-top:4px;">
                No threats detected
              </div>`}
       </div>`;
@@ -488,10 +668,10 @@ CLOUDFLARE TUNNEL WIDGET  v4
 
         <div class="cf-grid">
           ${buildStatCard("Zones", zones.length || "0", "managed", zones.length > 0 ? "cf-stat__value--good" : "")}
-          ${buildStatCard("Requests 7d", hasAnyAnalytics ? fmtBig(totalRequests) : noData, "all zones", totalRequests > 0 ? "cf-stat__value--good" : "")}
-          ${buildStatCard("Bandwidth 7d", hasAnyAnalytics ? fmtBytes(totalBandwidth) : noData, "all zones", "")}
+          ${buildStatCard("Requests 24h", hasAnyAnalytics ? fmtBig(totalRequests) : noData, "all zones", totalRequests > 0 ? "cf-stat__value--good" : "")}
+          ${buildStatCard("Bandwidth 24h", hasAnyAnalytics ? fmtBytes(totalBandwidth) : noData, "all zones", "")}
           ${buildStatCard("Cache Rate", hasAnyAnalytics ? cacheRate : noData, "of requests", totalCached > 0 ? "cf-stat__value--good" : "")}
-          ${buildStatCard("Unique IPs 7d", hasAnyAnalytics ? fmtBig(totalUnique) : noData, "visitors", "")}
+          ${buildStatCard("Unique IPs 24h", hasAnyAnalytics ? fmtBig(totalUnique) : noData, "visitors", "")}
           ${buildStatCard("Connections", uniqueConnectors, `${totalConns} total edges`, uniqueConnectors > 0 ? "cf-stat__value--good" : "")}
           ${buildStatCard("Tunnel Created", fmtDate(tunnel?.created_at), "", "")}
           ${buildStatCard("Last Updated", _lastSyncTime ? _lastSyncTime.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true }) : "—", "last sync", "")}

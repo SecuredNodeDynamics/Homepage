@@ -7,12 +7,13 @@
 
   const TS_CONFIG = {
     groupName: "TAILSCALE-WIDGET",
-    apiKey: "YOUR_TAILSCALE_API_KEY",
+    apiKey: "PASTE_YOUR_TAILSCALE_API_KEY_HERE",
     tailnet: "_",
-    proxyUrl: "https://tailscale.YOURTAILSCALEID.workers.dev/tailscale-proxy",
+    proxyUrl: "https://YOUR_TAILSCALE_PROXY.workers.dev/tailscale-proxy",
     publicUrl: "https://login.tailscale.com/admin/machines",
     pollMs: 60 * 1000,
     color: "#3b82f6",
+    overviewLimit: 0, // 0 = show all devices on Overview
   };
 
   /* ── Utilities ─────────────────────────────────── */
@@ -35,7 +36,10 @@
   }
 
   function isOnline(device) {
-    // Tailscale marks online via LastSeen within ~2 minutes
+    // Prefer Tailscale control-plane connectivity when the API provides it.
+    if (typeof device.connectedToControl === "boolean") {
+      return device.connectedToControl;
+    }
     if (!device.lastSeen) return false;
     const diff = (Date.now() - new Date(device.lastSeen)) / 1000;
     return diff < 180;
@@ -64,6 +68,23 @@
     return tags.map(t => t.replace("tag:", ""));
   }
 
+  function isExitNode(device) {
+    const routes = [...(device.advertisedRoutes || []), ...(device.enabledRoutes || [])];
+    return routes.some((r) => r === "0.0.0.0/0" || r === "::/0");
+  }
+
+  function sortDevicesForOverview(devices) {
+    return devices.slice().sort((a, b) => {
+      if (a.online !== b.online) return a.online ? -1 : 1;
+      if (a.isExitNode !== b.isExitNode) return a.isExitNode ? -1 : 1;
+      if (a.updateAvailable !== b.updateAvailable) return a.updateAvailable ? -1 : 1;
+      const at = a.lastSeen ? new Date(a.lastSeen).getTime() : 0;
+      const bt = b.lastSeen ? new Date(b.lastSeen).getTime() : 0;
+      if (bt !== at) return bt - at;
+      return String(a.name || "").localeCompare(String(b.name || ""));
+    });
+  }
+
   /* ── DOM helpers ───────────────────────────────── */
   function findGroup(name) {
     const hd = Array.from(document.querySelectorAll(
@@ -77,15 +98,12 @@
   }
 
   function ensureHost(group) {
-    // ── SHARED ROW IDENTIFIER ─────────────────────
-    // Change to match another widget's row class if sharing a group.
+    // Share the same autosize row as Cloudflare when both live in one group.
     const SHARED_ROW_CLASS = "hp-widget-row";
     const LEGACY_ROW_CLASS = "ts-flex-row";
-    // ── HOST IDENTIFIER ───────────────────────────
     const HOST_CLASS = "ts-host";
-    // ─────────────────────────────────────────────
 
-    let row = group.querySelector("." + SHARED_ROW_CLASS + ", ." + LEGACY_ROW_CLASS);
+    let row = group.querySelector("." + SHARED_ROW_CLASS + ", ." + LEGACY_ROW_CLASS + ", .cf-flex-row");
     if (!row) {
       const list = group.querySelector("ul.services-list, ul");
       if (list) list.style.display = "none";
@@ -119,25 +137,28 @@
 
   async function fetchDevices() {
     const data = await tsFetch(`/api/v2/tailnet/${TS_CONFIG.tailnet}/devices`);
-    return (data.devices || []).map(d => ({
-      id: d.id,
-      nodeId: d.nodeId || "",
-      name: d.name?.split(".")[0] || d.hostname || "Unknown",
-      fqdn: d.name || "",
-      hostname: d.hostname || "",
-      os: d.os || "",
-      addresses: d.addresses || [],
-      tags: d.tags || [],
-      lastSeen: d.lastSeen || null,
-      isExitNode: !!(d.advertisedRoutes?.some(r => r === "0.0.0.0/0" || r === "::/0") ||
-        d.enabledRoutes?.some(r => r === "0.0.0.0/0" || r === "::/0")),
-      advertisedRoutes: d.advertisedRoutes || [],
-      enabledRoutes: d.enabledRoutes || [],
-      authorized: d.authorized ?? true,
-      online: false, // will be computed below
-      clientVersion: d.clientVersion || "",
-      updateAvailable: d.updateAvailable || false,
-    })).map(d => ({ ...d, online: isOnline(d) }));
+    return (data.devices || []).map((d) => {
+      const mapped = {
+        id: d.id,
+        nodeId: d.nodeId || "",
+        name: d.name?.split(".")[0] || d.hostname || "Unknown",
+        fqdn: d.name || "",
+        hostname: d.hostname || "",
+        os: d.os || "",
+        addresses: d.addresses || [],
+        tags: d.tags || [],
+        lastSeen: d.lastSeen || null,
+        connectedToControl: typeof d.connectedToControl === "boolean" ? d.connectedToControl : null,
+        advertisedRoutes: d.advertisedRoutes || [],
+        enabledRoutes: d.enabledRoutes || [],
+        authorized: d.authorized ?? true,
+        clientVersion: d.clientVersion || "",
+        updateAvailable: d.updateAvailable || false,
+      };
+      mapped.isExitNode = isExitNode(mapped);
+      mapped.online = isOnline(mapped);
+      return mapped;
+    });
   }
 
   /* ── State ─────────────────────────────────────── */
@@ -192,13 +213,14 @@
     </div>
 
     <div class="ts-scroll">
-      <div class="ts-section-label">Recently Seen</div>
-      ${devices
-        .filter(d => d.lastSeen)
-        .sort((a, b) => new Date(b.lastSeen) - new Date(a.lastSeen))
-        .slice(0, 5)
-        .map(d => buildDeviceRow(d))
-        .join("") || `<div class="ts-empty">No devices found</div>`}
+      <div class="ts-section-label">Devices</div>
+      ${(() => {
+        const limit = Number(TS_CONFIG.overviewLimit);
+        let list = sortDevicesForOverview(devices);
+        if (Number.isFinite(limit) && limit > 0) list = list.slice(0, limit);
+        if (!list.length) return `<div class="ts-empty">No devices found</div>`;
+        return list.map((d) => buildDeviceRow(d)).join("");
+      })()}
     </div>`;
   }
 
@@ -339,11 +361,11 @@
     <div class="ts-shell">
       <div class="ts-hdr">
         <div class="ts-hdr-left">
-          <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/tailscale.webp" alt="Tailscale" class="ts-icon">
+          <img src="/icons/tailscale.png" alt="Tailscale" class="ts-icon"
+               onerror="this.src='https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/tailscale.webp'">
           <span class="ts-title">Tailscale</span>
         </div>
         <div class="ts-hdr-right">
-          <div class="ts-tabs">${tabsHtml}</div>
           <a class="ts-open-link" href="${escH(TS_CONFIG.publicUrl)}" target="_blank" rel="noopener">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
                  stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -353,6 +375,9 @@
             Open
           </a>
         </div>
+      </div>
+      <div class="ts-controls">
+        <div class="ts-tabs" role="tablist">${tabsHtml}</div>
       </div>
 
       <div class="ts-body">
