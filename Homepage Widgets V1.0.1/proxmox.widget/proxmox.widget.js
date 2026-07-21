@@ -10,13 +10,13 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
       groupName: "PVE-NODE-LNV1",
       label: "LNV1",
       color: "#6ee7b7",
-      pveUrl: "https://YOUR_PVE_HOST",
-      prxUrl: "https://YOUR_PROXMENUX_URL",
-      prxToken: "YOUR_PRX_TOKEN",
-      pveUser: "user@pam!tokenid",
-      pveToken: "YOUR_PVE_TOKEN",
-      pveNode: "YOUR_NODE_NAME",
-      glancesUrl: "https://YOUR_GLANCES_URL",
+      pveUrl: "https://YOUR-PVE-HOST:8006",
+      prxUrl: "https://YOUR-PROXMENUX-MONITOR",
+      prxToken: "",
+      pveUser: "USER@pam!TOKENID",
+      pveToken: "PVE_TOKEN",
+      pveNode: "proxmox-primary",
+      glancesUrl: "https://YOUR-GLANCES-HOST:61208",
       iface: "vmbr0",
       cpuSensor: "k10temp 0",
       backupMount: "/mnt/BUP_SL",
@@ -25,13 +25,13 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
       groupName: "PVE-NODE-LNV2",
       label: "LNV2",
       color: "#60a5fa",
-      pveUrl: "https://YOUR_PVE_HOST",
-      prxUrl: "https://YOUR_PROXMENUX_URL",
-      prxToken: "YOUR_PRX_TOKEN",
-      pveUser: "user@pam!tokenid",
-      pveToken: "YOUR_PVE_TOKEN",
-      pveNode: "YOUR_NODE_NAME",
-      glancesUrl: "https://YOUR_GLANCES_URL",
+      pveUrl: "https://YOUR-PVE-HOST:8006",
+      prxUrl: "https://YOUR-PROXMENUX-MONITOR",
+      prxToken: "",
+      pveUser: "USER@pam!TOKENID",
+      pveToken: "PVE_TOKEN",
+      pveNode: "proxmox2",
+      glancesUrl: "https://YOUR-GLANCES-HOST:61208",
       iface: "vmbr0",
       cpuSensor: "Package id 0",
       backupMount: "/mnt/BUP_PVE2",
@@ -40,13 +40,13 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
       groupName: "PVE-NODE-HP",
       label: "HP",
       color: "#a78bfa",
-      pveUrl: "https://YOUR_PVE_HOST",
-      prxUrl: "https://YOUR_PROXMENUX_URL",
-      prxToken: "YOUR_PRX_TOKEN",
-      pveUser: "user@pam!tokenid",
-      pveToken: "YOUR_PVE_TOKEN",
-      pveNode: "YOUR_NODE_NAME",
-      glancesUrl: "https://YOUR_GLANCES_URL",
+      pveUrl: "https://YOUR-PVE-HOST:8006",
+      prxUrl: "https://YOUR-PROXMENUX-MONITOR",
+      prxToken: "",
+      pveUser: "USER@pam!TOKENID",
+      pveToken: "PVE_TOKEN",
+      pveNode: "proxmox3",
+      glancesUrl: "https://YOUR-GLANCES-HOST:61208",
       iface: "vmbr0",
       cpuSensor: "Package id 0",
       backupMount: "/mnt/photos",
@@ -59,6 +59,12 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
   const _tabs = {};
   const _storageSubTabs = {}; // groupName -> pve|remote|physical|external
   const _networkSubTabs = {}; // groupName -> flow|ifaces
+  const _hardwareSubTabs = {}; // groupName -> thermal|graphics|pci
+  const _prxHwCache = {}; // groupName -> { at, data }
+  const _gpuSwitchUi = {}; // groupName -> { editingSlot, pending: { [slot]: "lxc"|"vm" } }
+  let _gpuModal = null;
+  let _pciModal = null;
+  let _gpuSwitchModal = null;
   const _guestNetPrev = {};  // last cumulative netin/netout sample per guest
   const _guestNetRates = {}; // last computed {rx,tx,rate,ready} — only updated on fresh PVE polls
   const GUEST_NET_LS_KEY = "hp-pve-guest-net-rates-v1";
@@ -162,6 +168,8 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     _tabs[n.groupName] = "overview";
     _storageSubTabs[n.groupName] = "pve";
     _networkSubTabs[n.groupName] = "flow";
+    _hardwareSubTabs[n.groupName] = "thermal";
+    _gpuSwitchUi[n.groupName] = { editingSlot: null, pending: {} };
     if (!_guestNetPrev[n.groupName]) _guestNetPrev[n.groupName] = {};
     if (!_guestNetRates[n.groupName]) _guestNetRates[n.groupName] = {};
   });
@@ -1826,6 +1834,16 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     if (!res.ok) throw new Error(`Network API HTTP ${res.status}`);
     const data = await res.json();
     _prxNetCache[key] = { data, at: Date.now() };
+    return data;
+  }
+
+  async function fetchPrxHardware(nodeCfg, { force = false, silent = true } = {}) {
+    const key = nodeCfg.groupName;
+    const cached = _prxHwCache[key];
+    const age = cached ? Date.now() - (cached.at || 0) : Infinity;
+    if (!force && cached?.data && age < 30_000) return cached.data;
+    const data = await prxApiFetch(nodeCfg, "/api/hardware", { silent });
+    _prxHwCache[key] = { data, at: Date.now() };
     return data;
   }
 
@@ -5301,6 +5319,714 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
   }
 
 
+
+  // ── Hardware tab ────────────────────────────────────────────────────
+  function fmtMemModuleSize(raw) {
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n <= 0) return "—";
+    // ProxMenux reports KiB for DIMM size (e.g. 33554432 → 32.0 GB)
+    const gb = n / (1024 * 1024);
+    if (gb >= 1) return `${gb.toFixed(1)} GB`;
+    const mb = n / 1024;
+    if (mb >= 1) return `${mb.toFixed(0)} MB`;
+    return `${Math.round(n)} KiB`;
+  }
+
+  function thermalCategory(t) {
+    const name = String(t?.name || "");
+    const low = name.toLowerCase();
+    if (/\bgpu\b|amdgpu|radeon|nvidia|edge/i.test(name) || low.includes("gpu")) return "GPU";
+    if (/nvme|ssd/i.test(name) && /nvme|ssd/i.test(name)) {
+      if (/nvme/i.test(name)) return "NVME";
+    }
+    if (/nvme/i.test(name)) return "NVME";
+    if (/pci\s*device|^sensor\s*\d/i.test(name) || low.startsWith("pci")) return "PCI";
+    return "OTHER";
+  }
+
+  function thermalBarPct(t) {
+    const cur = Number(t?.current);
+    if (!Number.isFinite(cur) || cur < 0) return 0;
+    let ceil = Number(t?.high);
+    if (!Number.isFinite(ceil) || ceil <= 0 || ceil > 200) ceil = Number(t?.critical);
+    if (!Number.isFinite(ceil) || ceil <= 0 || ceil > 200) ceil = 100;
+    return Math.max(0, Math.min(100, Math.round((cur / ceil) * 100)));
+  }
+
+  function pciTypeBadgeClass(type) {
+    const t = String(type || "").toLowerCase();
+    if (t.includes("graphics") || t.includes("vga") || t.includes("display")) return "pve-hw-pci-badge--gfx";
+    if (t.includes("audio")) return "pve-hw-pci-badge--audio";
+    if (t.includes("usb")) return "pve-hw-pci-badge--usb";
+    if (t.includes("storage") || t.includes("sata") || t.includes("nvme") || t.includes("raid")) return "pve-hw-pci-badge--storage";
+    if (t.includes("network") || t.includes("ethernet") || t.includes("wireless")) return "pve-hw-pci-badge--net";
+    return "pve-hw-pci-badge--other";
+  }
+
+  function hwChipIco() {
+    return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2M9 2v2M15 20v2M9 20v2M2 15h2M2 9h2M20 15h2M20 9h2"/></svg>`;
+  }
+  function hwMemIco() {
+    return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10v4M10 10v4M14 10v4M18 10v4"/></svg>`;
+  }
+  function hwThermIco() {
+    return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/></svg>`;
+  }
+  function hwCpuMiniIco() {
+    return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2M9 2v2M15 20v2M9 20v2M2 15h2M2 9h2M20 15h2M20 9h2"/></svg>`;
+  }
+
+  function buildSystemInfoCard(hw) {
+    const cpu = hw?.cpu || {};
+    const mb = hw?.motherboard || {};
+    const bios = mb.bios || hw?.bios || {};
+    const sockets = Number(cpu.sockets) || 1;
+    const cps = Number(cpu.cores_per_socket) || 0;
+    const totalCores = sockets * cps;
+    const coresLabel = cps
+      ? `${sockets} × ${cps} = ${totalCores} core${totalCores === 1 ? "" : "s"}`
+      : "—";
+    const kv = (label, value) => `
+      <div class="pve-hw-kv">
+        <span class="pve-hw-k">${escH(label)}</span>
+        <span class="pve-hw-v">${value}</span>
+      </div>`;
+
+    return `
+      <section class="pve-hw-card">
+        <div class="pve-hw-card-hdr">
+          <div class="pve-hw-card-title">${hwChipIco()}<span>System Information</span></div>
+        </div>
+        <div class="pve-hw-sys-grid">
+          <div class="pve-hw-sys-col">
+            <div class="pve-hw-sys-col-title">${hwCpuMiniIco()}<span>CPU</span></div>
+            ${kv("Model", escH(cpu.model || "—"))}
+            ${kv("Cores", escH(coresLabel))}
+            ${kv("Threads", escH(cpu.total_threads != null ? String(cpu.total_threads) : "—"))}
+            ${kv("Virtualization", escH(cpu.virtualization || "—"))}
+          </div>
+          <div class="pve-hw-sys-col">
+            <div class="pve-hw-sys-col-title">${hwCpuMiniIco()}<span>Motherboard</span></div>
+            ${kv("Manufacturer", escH(mb.manufacturer || "—"))}
+            ${kv("Model", escH(mb.model || "—"))}
+            ${kv("BIOS", escH(bios.vendor || mb.manufacturer || "—"))}
+            ${kv("Version", escH(bios.version || "—"))}
+            ${kv("Date", escH(bios.date || "—"))}
+          </div>
+        </div>
+      </section>`;
+  }
+
+  function buildMemoryModulesCard(hw) {
+    const mods = Array.isArray(hw?.memory_modules) ? hw.memory_modules : [];
+    const cards = mods.length
+      ? mods.map((m, i) => `
+          <div class="pve-hw-dimm">
+            <div class="pve-hw-dimm-slot">${escH(m.slot || `DIMM ${i + 1}`)}</div>
+            <div class="pve-hw-dimm-size">${escH(fmtMemModuleSize(m.size))}</div>
+            <div class="pve-hw-dimm-meta">
+              <div><span class="pve-hw-k">Type</span><span class="pve-hw-v">${escH(m.type || "—")}</span></div>
+              <div><span class="pve-hw-k">Speed</span><span class="pve-hw-v">${escH(m.configured_speed || m.max_speed || "—")}</span></div>
+              <div><span class="pve-hw-k">Manufacturer</span><span class="pve-hw-v">${escH(m.manufacturer || "—")}</span></div>
+            </div>
+          </div>`).join("")
+      : `<div class="pve-hw-empty">No memory modules reported.</div>`;
+
+    return `
+      <section class="pve-hw-card">
+        <div class="pve-hw-card-hdr">
+          <div class="pve-hw-card-title">${hwMemIco()}<span>Memory Modules</span></div>
+          <span class="pve-hw-count-badge">${mods.length} installed</span>
+        </div>
+        <div class="pve-hw-dimm-grid">${cards}</div>
+      </section>`;
+  }
+
+  function buildThermalPane(hw) {
+    const temps = Array.isArray(hw?.temperatures) ? hw.temperatures : [];
+    const order = ["GPU", "NVME", "PCI", "OTHER"];
+    const groups = {};
+    order.forEach((k) => { groups[k] = []; });
+    temps.forEach((t) => {
+      const cat = thermalCategory(t);
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(t);
+    });
+    const sections = order.filter((k) => groups[k]?.length).map((cat) => {
+      const items = groups[cat].map((t) => {
+        const pct = thermalBarPct(t);
+        const cur = Number(t.current);
+        const tempStr = Number.isFinite(cur) ? `${cur.toFixed(1)}°C` : "—";
+        return `
+          <div class="pve-hw-therm-item">
+            <div class="pve-hw-therm-top">
+              <span class="pve-hw-therm-name">${escH(t.name || "Sensor")}</span>
+              <span class="pve-hw-therm-temp">${escH(tempStr)}</span>
+            </div>
+            <div class="pve-hw-therm-bar"><i style="width:${pct}%"></i></div>
+            <div class="pve-hw-therm-adapter">${escH(t.adapter || "")}</div>
+          </div>`;
+      }).join("");
+      return `
+        <div class="pve-hw-therm-group">
+          <div class="pve-hw-therm-group-hdr">
+            <span class="pve-hw-therm-group-title">${escH(cat)}</span>
+            <span class="pve-hw-therm-group-count">${groups[cat].length}</span>
+          </div>
+          <div class="pve-hw-therm-list">${items}</div>
+        </div>`;
+    }).join("");
+
+    return `
+      <section class="pve-hw-card">
+        <div class="pve-hw-card-hdr">
+          <div class="pve-hw-card-title">${hwThermIco()}<span>Thermal Monitoring</span></div>
+          <span class="pve-hw-count-badge">${temps.length} sensor${temps.length === 1 ? "" : "s"}</span>
+        </div>
+        <div class="pve-hw-therm-grid">
+          ${sections || `<div class="pve-hw-empty">No temperature sensors found.</div>`}
+        </div>
+      </section>`;
+  }
+
+  function gpuActualMode(gpu) {
+    const role = String(gpu?.sriov_role || "");
+    if (role === "vf" || role === "pf-active") return "sriov";
+    const driver = String(gpu?.pci_driver || "").toLowerCase();
+    const mod = String(gpu?.pci_kernel_module || "").toLowerCase();
+    if (driver === "vfio-pci" || driver.includes("vfio")) return "vm";
+    const native = /^(nvidia|amdgpu|radeon|i915|xe|nouveau|mgag200)$/;
+    if (native.test(driver) || (driver && driver !== "none")) return "lxc";
+    if (mod.includes("vfio")) return "vm";
+    if (/nvidia|amdgpu|radeon|i915|xe|nouveau|mgag200/.test(mod) || (mod && mod !== "none")) return "lxc";
+    return "unknown";
+  }
+
+  function gpuSwitchUi(groupName) {
+    if (!_gpuSwitchUi[groupName]) _gpuSwitchUi[groupName] = { editingSlot: null, pending: {} };
+    return _gpuSwitchUi[groupName];
+  }
+
+  function gpuModeStatus(mode) {
+    if (mode === "sriov") return { primary: "SR-IOV active", secondary: "Virtual Functions managed externally", accent: "teal" };
+    if (mode === "vm") return { primary: "Ready for VM passthrough", secondary: "VFIO-PCI driver active", accent: "purple" };
+    if (mode === "lxc") return { primary: "Ready for LXC containers", secondary: "Native driver active", accent: "blue" };
+    return { primary: "Mode unknown", secondary: "No driver detected", accent: "muted" };
+  }
+
+  /** ProxMenux-style GPU ↔ LXC/VM switch diagram (viewBox 220×100). */
+  function gpuSwitchDiagramSvg(display, editing, slot) {
+    const isLxc = display === "lxc";
+    const isVm = display === "vm";
+    const isSriov = display === "sriov";
+    const active = isSriov ? "#14b8a6" : isLxc ? "#3b82f6" : isVm ? "#a855f7" : "#6b7280";
+    const inactive = "#374151";
+    const hub = editing ? "#f59e0b" : active;
+    const hubFill = editing ? "#f59e0b20" : `${active}20`;
+    const lxcC = isLxc ? "#3b82f6" : inactive;
+    const vmC = isVm ? "#a855f7" : inactive;
+    const lxcFill = isLxc ? "#3b82f625" : "transparent";
+    const vmStroke = isVm ? "#a855f7" : inactive;
+    const vmFill = isVm ? "#a855f710" : "#37415110";
+    const lxcW = isLxc ? "3.5" : "2";
+    const vmW = isVm ? "3.5" : "2";
+    const lxcLabelSize = isLxc ? "14" : "12";
+    const vmLabelSize = isVm ? "14" : "12";
+    const lxcWeight = isLxc ? "bold" : "500";
+    const vmWeight = isVm ? "bold" : "500";
+    const hubCursor = editing ? "pointer" : "default";
+
+    return `
+      <svg viewBox="0 0 220 100" class="pve-hw-gpu-svg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <g transform="translate(0, 22)">
+          <rect x="4" y="8" width="44" height="36" rx="6" fill="${active}20" stroke="${active}" stroke-width="2.5"></rect>
+          <line x1="14" y1="2" x2="14" y2="8" stroke="${active}" stroke-width="2.5" stroke-linecap="round"></line>
+          <line x1="26" y1="2" x2="26" y2="8" stroke="${active}" stroke-width="2.5" stroke-linecap="round"></line>
+          <line x1="38" y1="2" x2="38" y2="8" stroke="${active}" stroke-width="2.5" stroke-linecap="round"></line>
+          <line x1="14" y1="44" x2="14" y2="50" stroke="${active}" stroke-width="2.5" stroke-linecap="round"></line>
+          <line x1="26" y1="44" x2="26" y2="50" stroke="${active}" stroke-width="2.5" stroke-linecap="round"></line>
+          <line x1="38" y1="44" x2="38" y2="50" stroke="${active}" stroke-width="2.5" stroke-linecap="round"></line>
+          <text x="26" y="32" text-anchor="middle" fill="${active}" style="font:700 14px system-ui,sans-serif">GPU</text>
+        </g>
+        <line x1="52" y1="50" x2="78" y2="50" stroke="${active}" stroke-width="3" stroke-linecap="round"></line>
+        <g class="pve-hw-gpu-hub-hit" data-gpu-sw-hub="${escH(slot)}" style="cursor:${hubCursor}">
+          <circle cx="95" cy="50" r="18" fill="transparent"></circle>
+          <circle cx="95" cy="50" r="14" fill="${hubFill}" stroke="${hub}" stroke-width="3"></circle>
+          <circle cx="95" cy="50" r="6" fill="${hub}"></circle>
+        </g>
+        <path d="M 109 42 L 135 20" fill="none" stroke="${lxcC}" stroke-width="${lxcW}" stroke-linecap="round"></path>
+        <path d="M 109 58 L 135 80" fill="none" stroke="${vmC}" stroke-width="${vmW}" stroke-linecap="round"></path>
+        <g transform="translate(138, 2)">
+          <rect x="0" y="0" width="32" height="28" rx="4" fill="${lxcFill}" stroke="${lxcC}" stroke-width="${isLxc ? "2.5" : "1.5"}"></rect>
+          <line x1="0" y1="10" x2="32" y2="10" stroke="${lxcC}" stroke-width="1.5"></line>
+          <line x1="0" y1="19" x2="32" y2="19" stroke="${lxcC}" stroke-width="1.5"></line>
+          <circle cx="7" cy="5" r="2" fill="${lxcC}"></circle>
+          <circle cx="7" cy="14.5" r="2" fill="${lxcC}"></circle>
+          <circle cx="7" cy="23.5" r="2" fill="${lxcC}"></circle>
+        </g>
+        <text x="188" y="22" text-anchor="start" fill="${lxcC}" style="font:${lxcWeight} ${lxcLabelSize}px system-ui,sans-serif">LXC</text>
+        <g transform="translate(138, 65)">
+          <rect x="2" y="0" width="28" height="18" rx="3" fill="transparent" stroke="${vmStroke}" stroke-width="${isVm ? "2.5" : "1.5"}"></rect>
+          <rect x="5" y="3" width="22" height="12" rx="1" fill="${vmFill}"></rect>
+          <line x1="16" y1="18" x2="16" y2="24" stroke="${vmStroke}" stroke-width="1.5" stroke-linecap="round"></line>
+          <line x1="8" y1="24" x2="24" y2="24" stroke="${vmStroke}" stroke-width="1.5" stroke-linecap="round"></line>
+        </g>
+        <text x="188" y="84" text-anchor="start" fill="${vmC}" style="font:${vmWeight} ${vmLabelSize}px system-ui,sans-serif">VM</text>
+      </svg>`;
+  }
+
+  function gpuSwitchModeHtml(nodeCfg, gpu) {
+    const slot = String(gpu?.slot || "");
+    const actual = gpuActualMode(gpu);
+    const ui = gpuSwitchUi(nodeCfg.groupName);
+    const editing = ui.editingSlot === slot && actual !== "sriov";
+    const pending = ui.pending[slot] || null;
+    const display = pending || actual;
+    const status = gpuModeStatus(display);
+    const pendingChange = editing && pending && pending !== actual;
+    const accentCls = status.accent === "purple" ? "is-vm"
+      : status.accent === "blue" ? "is-lxc"
+      : status.accent === "teal" ? "is-sriov"
+      : "is-unknown";
+
+    const settingsIco = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>`;
+    const checkIco = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`;
+
+    const actions = actual === "sriov" ? "" : (editing
+      ? `<div class="pve-hw-gpu-switch-actions">
+           <button type="button" class="pve-hw-gpu-sw-btn pve-hw-gpu-sw-btn--ghost" data-gpu-sw-cancel="${escH(slot)}">Cancel</button>
+           <button type="button" class="pve-hw-gpu-sw-btn pve-hw-gpu-sw-btn--save" data-gpu-sw-save="${escH(slot)}">${checkIco}Save</button>
+         </div>`
+      : `<div class="pve-hw-gpu-switch-actions">
+           <button type="button" class="pve-hw-gpu-sw-btn pve-hw-gpu-sw-btn--ghost" data-gpu-sw-edit="${escH(slot)}">${settingsIco}Edit</button>
+         </div>`);
+
+    return `
+      <div class="pve-hw-gpu-switch ${editing ? "is-editing" : ""} ${accentCls}" data-gpu-switch="${escH(slot)}">
+        <div class="pve-hw-gpu-switch-hdr">
+          <span class="pve-hw-gpu-switch-label">Switch Mode</span>
+          ${actions}
+        </div>
+        <div class="pve-hw-gpu-switch-body">
+          ${gpuSwitchDiagramSvg(display, editing, slot)}
+          <div class="pve-hw-gpu-switch-status">
+            <div class="pve-hw-gpu-switch-primary">${escH(status.primary)}</div>
+            <div class="pve-hw-gpu-switch-secondary">${escH(status.secondary)}</div>
+            ${pendingChange ? `<div class="pve-hw-gpu-switch-pending">Change pending...</div>` : ""}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function buildGraphicsPane(nodeCfg, hw) {
+    const gpus = Array.isArray(hw?.gpus) ? hw.gpus : [];
+    const cards = gpus.length
+      ? gpus.map((g) => {
+          const vendor = String(g.vendor || "").toUpperCase() || "GPU";
+          const slot = String(g.slot || "");
+          return `
+            <div class="pve-hw-gpu-card" data-gpu-card="${escH(slot)}">
+              <button type="button" class="pve-hw-gpu-card-main" data-gpu-slot="${escH(slot)}" data-gpu-name="${escH(g.name || "")}">
+                <div class="pve-hw-gpu-name-row">
+                  <span class="pve-hw-gpu-name">${escH(g.name || "Graphics device")}</span>
+                  <span class="pve-hw-vendor-pill">${escH(vendor)}</span>
+                </div>
+                <div class="pve-hw-gpu-props">
+                  <div class="pve-hw-gpu-prop"><span class="pve-hw-k">Type</span><span class="pve-hw-v">${escH(g.type || "PCI")}</span></div>
+                  <div class="pve-hw-gpu-prop"><span class="pve-hw-k">PCI Slot</span><span class="pve-hw-v pve-hw-mono">${escH(slot || "—")}</span></div>
+                  <div class="pve-hw-gpu-prop"><span class="pve-hw-k">Driver</span><span class="pve-hw-v pve-hw-mono pve-hw-v--ok">${escH(g.pci_driver || "—")}</span></div>
+                  <div class="pve-hw-gpu-prop"><span class="pve-hw-k">Kernel Module</span><span class="pve-hw-v pve-hw-mono">${escH(g.pci_kernel_module || "—")}</span></div>
+                </div>
+              </button>
+              ${gpuSwitchModeHtml(nodeCfg, g)}
+            </div>`;
+        }).join("")
+      : `<div class="pve-hw-empty">No graphics cards detected.</div>`;
+
+    return `
+      <section class="pve-hw-card pve-hw-card--graphics">
+        <div class="pve-hw-card-hdr">
+          <div class="pve-hw-card-title">${hwChipIco()}<span>Graphics Cards</span></div>
+          <span class="pve-hw-count-badge">${gpus.length} GPU${gpus.length === 1 ? "" : "s"}</span>
+        </div>
+        <div class="pve-hw-gpu-list">${cards}</div>
+      </section>`;
+  }
+
+  function buildPciPane(hw) {
+    const devices = Array.isArray(hw?.pci_devices) ? hw.pci_devices : [];
+    const cards = devices.length
+      ? devices.map((d) => `
+          <button type="button" class="pve-hw-pci-card" data-pci-slot="${escH(d.slot || "")}">
+            <div class="pve-hw-pci-top">
+              <span class="pve-hw-pci-badge ${pciTypeBadgeClass(d.type)}">${escH(d.type || "PCI")}</span>
+              <span class="pve-hw-pci-slot">${escH(d.slot || "")}</span>
+            </div>
+            <div class="pve-hw-pci-name">${escH(d.device || d.sdevice || "PCI Device")}</div>
+            <div class="pve-hw-pci-vendor">${escH(d.vendor || "")}</div>
+            <div class="pve-hw-pci-driver">Driver: <span>${escH(d.driver || "—")}</span></div>
+          </button>`).join("")
+      : `<div class="pve-hw-empty">No PCI devices found.</div>`;
+
+    return `
+      <section class="pve-hw-card">
+        <div class="pve-hw-card-hdr">
+          <div class="pve-hw-card-title">${hwChipIco()}<span>PCI Devices</span></div>
+          <span class="pve-hw-count-badge">${devices.length} device${devices.length === 1 ? "" : "s"}</span>
+        </div>
+        <div class="pve-hw-pci-grid">${cards}</div>
+      </section>`;
+  }
+
+  function buildHardwareTab(nodeCfg) {
+    const hw = _prxHwCache[nodeCfg.groupName]?.data || null;
+    const sub = _hardwareSubTabs[nodeCfg.groupName] || "thermal";
+    if (!hw) {
+      return `
+        <div class="pve-hw-tab">
+          <div class="pve-hw-empty pve-hw-empty--block">
+            Hardware inventory unavailable — check ProxMenux MONITOR connectivity.
+          </div>
+        </div>`;
+    }
+
+    const pane = sub === "graphics" ? buildGraphicsPane(nodeCfg, hw)
+      : sub === "pci" ? buildPciPane(hw)
+      : buildThermalPane(hw);
+
+    return `
+      <div class="pve-hw-tab">
+        ${buildSystemInfoCard(hw)}
+        ${buildMemoryModulesCard(hw)}
+        <div class="pve-hw-subtabs" role="tablist" aria-label="Hardware details">
+          <button type="button" class="pve-hw-subtab ${sub === "thermal" ? "pve-hw-subtab--active" : ""}" data-hw-sub="thermal" role="tab" aria-selected="${sub === "thermal"}">Thermal</button>
+          <button type="button" class="pve-hw-subtab ${sub === "graphics" ? "pve-hw-subtab--active" : ""}" data-hw-sub="graphics" role="tab" aria-selected="${sub === "graphics"}">Graphics</button>
+          <button type="button" class="pve-hw-subtab ${sub === "pci" ? "pve-hw-subtab--active" : ""}" data-hw-sub="pci" role="tab" aria-selected="${sub === "pci"}">PCI Devices</button>
+        </div>
+        <div class="pve-hw-subpane">${pane}</div>
+      </div>`;
+  }
+
+  function closePciDetails() {
+    if (_pciModal) {
+      _pciModal.remove();
+      _pciModal = null;
+    }
+  }
+
+  function openPciDetails(nodeCfg, slot) {
+    const hw = _prxHwCache[nodeCfg.groupName]?.data;
+    const device = (hw?.pci_devices || []).find((d) => String(d.slot) === String(slot));
+    if (!device) return;
+    closePciDetails();
+
+    const title = device.device || device.sdevice || "PCI Device";
+    const backdrop = document.createElement("div");
+    backdrop.className = "pve-hw-pci-backdrop";
+    backdrop.innerHTML = `
+      <div class="pve-hw-pci-modal" role="dialog" aria-modal="true">
+        <button type="button" class="pve-hw-gpu-close" data-pci-close aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+        <div class="pve-hw-pci-modal-hdr">
+          <div class="pve-hw-pci-modal-title">${escH(title)}</div>
+          <div class="pve-hw-pci-modal-sub">PCI Device Information</div>
+        </div>
+        <div class="pve-hw-pci-modal-body">
+          <div class="pve-hw-gpu-prop">
+            <span class="pve-hw-k">Device Type</span>
+            <span class="pve-hw-pci-badge ${pciTypeBadgeClass(device.type)}">${escH(device.type || "PCI")}</span>
+          </div>
+          <div class="pve-hw-gpu-prop">
+            <span class="pve-hw-k">PCI Slot</span>
+            <span class="pve-hw-v pve-hw-mono">${escH(device.slot || "—")}</span>
+          </div>
+          <div class="pve-hw-gpu-prop">
+            <span class="pve-hw-k">Device Name</span>
+            <span class="pve-hw-v pve-hw-pci-val-right">${escH(device.device || "—")}</span>
+          </div>
+          <div class="pve-hw-gpu-prop">
+            <span class="pve-hw-k">Product Name</span>
+            <span class="pve-hw-v pve-hw-pci-product">${escH(device.sdevice || "—")}</span>
+          </div>
+          <div class="pve-hw-gpu-prop">
+            <span class="pve-hw-k">Vendor</span>
+            <span class="pve-hw-v pve-hw-pci-val-right">${escH(device.vendor || "—")}</span>
+          </div>
+          <div class="pve-hw-gpu-prop">
+            <span class="pve-hw-k">Class</span>
+            <span class="pve-hw-v pve-hw-mono">${escH(device.class || "—")}</span>
+          </div>
+          <div class="pve-hw-gpu-prop">
+            <span class="pve-hw-k">Driver</span>
+            <span class="pve-hw-v pve-hw-mono pve-hw-v--ok">${escH(device.driver || "—")}</span>
+          </div>
+          <div class="pve-hw-gpu-prop">
+            <span class="pve-hw-k">Kernel Module</span>
+            <span class="pve-hw-v pve-hw-mono">${escH(device.kernel_module || "—")}</span>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(backdrop);
+    _pciModal = backdrop;
+    backdrop.addEventListener("click", (e) => { if (e.target === backdrop) closePciDetails(); });
+    backdrop.querySelector("[data-pci-close]")?.addEventListener("click", closePciDetails);
+  }
+
+  function closeGpuDetails() {
+    if (_gpuModal?.__pveGpuPoll) {
+      clearInterval(_gpuModal.__pveGpuPoll);
+      _gpuModal.__pveGpuPoll = null;
+    }
+    if (_gpuModal) {
+      _gpuModal.remove();
+      _gpuModal = null;
+    }
+  }
+
+  function parseGpuPct(val) {
+    if (val == null || val === "") return null;
+    if (typeof val === "number" && Number.isFinite(val)) return val;
+    const m = String(val).match(/-?\d+(?:\.\d+)?/);
+    return m ? Number(m[0]) : null;
+  }
+
+  function formatGpuEngineLabel(val) {
+    if (val == null || val === "") return "";
+    if (typeof val === "number" && Number.isFinite(val)) return `${val.toFixed(1)}%`;
+    return String(val);
+  }
+
+  /** ProxMenux L(): value in KB → MB/GB label. */
+  function formatGpuKiB(kb) {
+    const s = typeof kb === "string" ? Number.parseFloat(kb) : Number(kb);
+    if (!Number.isFinite(s) || isNaN(s)) return "N/A";
+    const mb = s / 1024;
+    if (mb >= 1048576) return `${(mb / 1048576).toFixed(1)} TB`;
+    if (mb >= 1024) {
+      const gb = mb / 1024;
+      return gb > 999 ? `${(gb / 1024).toFixed(2)} TB` : `${gb.toFixed(1)} GB`;
+    }
+    return `${mb.toFixed(0)} MB`;
+  }
+
+  function gpuProgressBar(pct) {
+    const n = Math.max(0, Math.min(100, Number(pct) || 0));
+    return `<div class="pve-hw-therm-bar pve-hw-therm-bar--gpu"><i style="width:${n}%"></i></div>`;
+  }
+
+  function renderGpuRealtimeExtras(rt) {
+    if (!rt) return "";
+    const rows = [];
+    if (rt.clock_graphics) {
+      rows.push(`<div class="pve-hw-gpu-prop"><span class="pve-hw-k">Graphics Clock</span><span class="pve-hw-v">${escH(String(rt.clock_graphics))}</span></div>`);
+    }
+    if (rt.clock_memory) {
+      rows.push(`<div class="pve-hw-gpu-prop"><span class="pve-hw-k">Memory Clock</span><span class="pve-hw-v">${escH(String(rt.clock_memory))}</span></div>`);
+    }
+    if (rt.power_draw && String(rt.power_draw) !== "0.00 W") {
+      rows.push(`<div class="pve-hw-gpu-prop"><span class="pve-hw-k">Power Draw</span><span class="pve-hw-v" style="color:#3b82f6">${escH(String(rt.power_draw))}</span></div>`);
+    }
+    if (rt.temperature != null && rt.temperature !== "") {
+      rows.push(`<div class="pve-hw-gpu-prop"><span class="pve-hw-k">Temperature</span><span class="pve-hw-v" style="color:#22c55e">${escH(String(rt.temperature))}°C</span></div>`);
+    }
+    if (rt.fan_speed != null && rt.fan_speed !== "") {
+      rows.push(`<div class="pve-hw-gpu-prop"><span class="pve-hw-k">Fan</span><span class="pve-hw-v">${escH(String(rt.fan_speed))}${rt.fan_unit ? ` ${escH(String(rt.fan_unit))}` : ""}</span></div>`);
+    }
+    if (!rows.length) return "";
+    return `
+      <div class="pve-hw-modal-sec">
+        <div class="pve-hw-modal-sec-title">Real-Time Metrics</div>
+        <div class="pve-hw-gpu-rt-grid">${rows.join("")}</div>
+      </div>`;
+  }
+
+  function renderGpuEngineBars(rt) {
+    if (!rt || rt.has_monitoring_tool === false) {
+      return `<div class="pve-hw-empty">No GPU monitoring tool available.</div>`;
+    }
+    const defs = [
+      { key: "engine_render", label: "Render/3D" },
+      { key: "engine_video", label: "Video" },
+      { key: "engine_blitter", label: "Blitter" },
+      { key: "engine_video_enhance", label: "VideoEnhance" },
+    ];
+    // Match ProxMenux: show a row when the key is present (even if null)
+    const present = defs.filter((d) => Object.prototype.hasOwnProperty.call(rt, d.key) || rt[d.key] !== undefined);
+    const list = present.length ? present : defs;
+    return `
+      <div class="pve-hw-modal-sec">
+        <div class="pve-hw-modal-sec-title">Engine Utilization (Total)</div>
+        <div class="pve-hw-gpu-eng-list">
+          ${list.map((d) => {
+            const raw = rt[d.key];
+            const label = formatGpuEngineLabel(raw);
+            const pct = parseGpuPct(raw) ?? 0;
+            return `
+              <div class="pve-hw-gpu-eng">
+                <div class="pve-hw-gpu-eng-top">
+                  <span class="pve-hw-k">${escH(d.label)}</span>
+                  <span class="pve-hw-v">${escH(label)}</span>
+                </div>
+                ${gpuProgressBar(pct)}
+              </div>`;
+          }).join("")}
+        </div>
+      </div>`;
+  }
+
+  function renderGpuProcesses(rt) {
+    const procs = Array.isArray(rt?.processes) ? rt.processes : [];
+    if (!procs.length) {
+      return `
+        <div class="pve-hw-modal-sec">
+          <div class="pve-hw-modal-sec-title">Active Processes (0)</div>
+          <div class="pve-hw-empty">No active processes.</div>
+        </div>`;
+    }
+    const cards = procs.map((p) => {
+      const name = p.name || p.process || p.cmd || "process";
+      const pid = p.pid != null ? String(p.pid) : "—";
+      // ProxMenux: L(memory.resident / 1024) where resident is bytes → KB into L
+      let memLabel = "0 MB";
+      if (p.memory && typeof p.memory === "object") {
+        const resident = Number(p.memory.resident);
+        if (Number.isFinite(resident)) memLabel = formatGpuKiB(resident / 1024);
+        else if (Number.isFinite(Number(p.memory.total))) memLabel = formatGpuKiB(Number(p.memory.total) / 1024);
+      } else if (p.memory != null) {
+        memLabel = formatGpuKiB(p.memory);
+      }
+
+      const engEntries = (p.engines && typeof p.engines === "object")
+        ? Object.entries(p.engines)
+        : [];
+      // ProxMenux hides 0%/NaN engine rows for processes
+      const engHtml = engEntries.map(([k, v]) => {
+        const raw = (v && typeof v === "object") ? (v.busy ?? v) : v;
+        const pct = parseGpuPct(raw);
+        if (pct == null || pct === 0) return "";
+        return `
+          <div class="pve-hw-gpu-eng">
+            <div class="pve-hw-gpu-eng-top">
+              <span class="pve-hw-k">${escH(k)}</span>
+              <span class="pve-hw-v">${escH(formatGpuEngineLabel(raw) || `${pct.toFixed(1)}%`)}</span>
+            </div>
+            ${gpuProgressBar(pct)}
+          </div>`;
+      }).filter(Boolean).join("");
+
+      return `
+        <div class="pve-hw-gpu-proc">
+          <div class="pve-hw-gpu-proc-top">
+            <div>
+              <div class="pve-hw-gpu-proc-name">${escH(name)}</div>
+              <div class="pve-hw-gpu-proc-meta">PID: ${escH(pid)}</div>
+            </div>
+            <span class="pve-hw-gpu-proc-mem">${escH(memLabel)}</span>
+          </div>
+          ${engHtml ? `<div class="pve-hw-gpu-proc-engs"><div class="pve-hw-gpu-proc-eng-label">Engine Utilization:</div>${engHtml}</div>` : ""}
+        </div>`;
+    }).join("");
+
+    return `
+      <div class="pve-hw-modal-sec">
+        <div class="pve-hw-modal-sec-title">Active Processes (${procs.length})</div>
+        <div class="pve-hw-gpu-proc-list">${cards}</div>
+      </div>`;
+  }
+
+  function renderGpuMemory(rt) {
+    const totalLabel = rt?.memory_total != null ? String(rt.memory_total) : "—";
+    const usedLabel = rt?.memory_used != null ? String(rt.memory_used) : "—";
+    const freeLabel = rt?.memory_free != null ? String(rt.memory_free) : "—";
+    let pct = parseGpuPct(rt?.utilization_memory);
+    if (pct == null) pct = 0;
+
+    return `
+      <div class="pve-hw-modal-sec">
+        <div class="pve-hw-modal-sec-title">Memory</div>
+        <div class="pve-hw-gpu-props">
+          <div class="pve-hw-gpu-prop"><span class="pve-hw-k">Total</span><span class="pve-hw-v">${escH(totalLabel)}</span></div>
+          <div class="pve-hw-gpu-prop"><span class="pve-hw-k">Used</span><span class="pve-hw-v">${escH(usedLabel)}</span></div>
+          <div class="pve-hw-gpu-prop"><span class="pve-hw-k">Free</span><span class="pve-hw-v">${escH(freeLabel)}</span></div>
+        </div>
+        <div class="pve-hw-gpu-eng" style="margin-top:10px">
+          <div class="pve-hw-gpu-eng-top">
+            <span class="pve-hw-k">Memory Utilization</span>
+            <span class="pve-hw-v">${pct.toFixed(1)}%</span>
+          </div>
+          ${gpuProgressBar(pct)}
+        </div>
+      </div>`;
+  }
+
+  async function refreshGpuModalBody(modal, nodeCfg, gpu) {
+    const body = modal.querySelector("[data-gpu-live]");
+    if (!body) return;
+    const slot = gpu.slot || "";
+    try {
+      const rt = await prxApiFetch(nodeCfg, `/api/gpu/${encodeURIComponent(slot)}/realtime`, { silent: true });
+      body.innerHTML = `
+        <div class="pve-hw-gpu-live-pill"><span class="pve-hw-live-dot"></span>Updating every 3 seconds</div>
+        ${renderGpuRealtimeExtras(rt)}
+        ${renderGpuEngineBars(rt)}
+        ${renderGpuProcesses(rt)}
+        ${renderGpuMemory(rt)}`;
+    } catch (err) {
+      body.innerHTML = `<div class="pve-hw-empty">Live metrics unavailable (${escH(err.message || "error")}).</div>`;
+    }
+  }
+
+  function openGpuDetails(nodeCfg, slot) {
+    const hw = _prxHwCache[nodeCfg.groupName]?.data;
+    const gpu = (hw?.gpus || []).find((g) => String(g.slot) === String(slot))
+      || (hw?.pci_devices || []).map((d) => d.gpu_info).find((g) => g && String(g.slot) === String(slot));
+    if (!gpu) return;
+    closeGpuDetails();
+
+    const vendor = String(gpu.vendor || "").toUpperCase() || "—";
+    const driver = gpu.pci_driver || "—";
+    const hasDriver = !!(gpu.pci_driver && String(gpu.pci_driver).toLowerCase() !== "none");
+
+    const backdrop = document.createElement("div");
+    backdrop.className = "pve-hw-gpu-backdrop";
+    backdrop.innerHTML = `
+      <div class="pve-hw-gpu-modal" role="dialog" aria-modal="true">
+        <button type="button" class="pve-hw-gpu-close" data-gpu-close aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+        <div class="pve-hw-gpu-modal-hdr">
+          <div class="pve-hw-gpu-modal-title">${escH(gpu.name || "GPU")}</div>
+          <div class="pve-hw-gpu-modal-sub">GPU Real-Time Monitoring</div>
+        </div>
+        <div class="pve-hw-modal-body">
+          <div class="pve-hw-modal-sec">
+            <div class="pve-hw-modal-sec-title">Basic Information</div>
+            <div class="pve-hw-gpu-props">
+              <div class="pve-hw-gpu-prop"><span class="pve-hw-k">Vendor</span><span class="pve-hw-vendor-pill">${escH(vendor)}</span></div>
+              <div class="pve-hw-gpu-prop"><span class="pve-hw-k">Type</span><span class="pve-hw-v">${escH(gpu.type || "PCI")}</span></div>
+              <div class="pve-hw-gpu-prop"><span class="pve-hw-k">PCI Slot</span><span class="pve-hw-v pve-hw-mono">${escH(gpu.slot || "—")}</span></div>
+              <div class="pve-hw-gpu-prop">
+                <span class="pve-hw-k">Driver</span>
+                <span class="pve-hw-v pve-hw-driver">
+                  <span class="pve-hw-mono pve-hw-v--ok">${escH(driver)}</span>
+                  ${hasDriver ? `<span class="pve-hw-driver-ok" title="Driver active">✓</span>` : ""}
+                </span>
+              </div>
+              <div class="pve-hw-gpu-prop"><span class="pve-hw-k">Kernel Module</span><span class="pve-hw-v pve-hw-mono">${escH(gpu.pci_kernel_module || "—")}</span></div>
+            </div>
+          </div>
+          <div data-gpu-live><div class="pve-hw-empty">Loading live metrics…</div></div>
+        </div>
+      </div>`;
+    document.body.appendChild(backdrop);
+    _gpuModal = backdrop;
+    backdrop.addEventListener("click", (e) => { if (e.target === backdrop) closeGpuDetails(); });
+    backdrop.querySelector("[data-gpu-close]")?.addEventListener("click", closeGpuDetails);
+    refreshGpuModalBody(backdrop, nodeCfg, gpu);
+    backdrop.__pveGpuPoll = setInterval(() => refreshGpuModalBody(backdrop, nodeCfg, gpu), 3000);
+  }
+
   // ── Build HTML ─────────────────────────────────────────────────────
   function buildSkeleton() {
     return `
@@ -5315,6 +6041,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
           <button type="button" class="pve-tab" data-tab="network">Network</button>
           <button type="button" class="pve-tab" data-tab="guests">VMs &amp; LXCs</button>
           <button type="button" class="pve-tab" data-tab="storage">Storage</button>
+          <button type="button" class="pve-tab" data-tab="hardware">Hardware</button>
         </div>
       </div>
       <div class="pve-body">
@@ -5508,6 +6235,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
             <button type="button" class="pve-tab ${activeTab === "network" ? "pve-tab--active" : ""}" data-tab="network">Network</button>
             <button type="button" class="pve-tab ${activeTab === "guests" ? "pve-tab--active" : ""}" data-tab="guests">VMs &amp; LXCs</button>
             <button type="button" class="pve-tab ${activeTab === "storage" ? "pve-tab--active" : ""}" data-tab="storage">Storage</button>
+            <button type="button" class="pve-tab ${activeTab === "hardware" ? "pve-tab--active" : ""}" data-tab="hardware">Hardware</button>
           </div>
         </div>
 
@@ -5525,6 +6253,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
         ` : activeTab === "network" ? buildNetworkTab(nodeCfg, pveData, glancesData, rrdData)
           : activeTab === "guests" ? buildGuestsTab(nodeCfg, pveData)
           : activeTab === "storage" ? buildStorageTab(nodeCfg, pveData, glancesData)
+          : activeTab === "hardware" ? buildHardwareTab(nodeCfg)
           : buildOverviewTab({
               nodeCfg,
               hist: _history[nodeCfg.groupName] || { cpu: [], mem: [], rx: [], tx: [] },
@@ -5578,10 +6307,11 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
       console.warn(`[PveWidget] ${nodeCfg.label} PVE fetch failed:`, err.message);
     }
 
-    // Warm ProxMenux network + guest update caches
+    // Warm ProxMenux network + guest update + hardware caches
     await Promise.all([
       fetchPrxNetwork(nodeCfg, { silent: true }).catch(() => null),
       fetchPrxVms(nodeCfg, { silent: true }).catch(() => null),
+      fetchPrxHardware(nodeCfg, { silent: true }).catch(() => null),
     ]);
 
     try {
@@ -5657,7 +6387,10 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     if ((_guestModal && document.body.contains(_guestModal)) ||
         (_termModal && document.body.contains(_termModal)) ||
         (_ifaceModal && document.body.contains(_ifaceModal)) ||
-        (_diskModal && document.body.contains(_diskModal))) {
+        (_diskModal && document.body.contains(_diskModal)) ||
+        (_gpuModal && document.body.contains(_gpuModal)) ||
+        (_pciModal && document.body.contains(_pciModal)) ||
+        (_gpuSwitchModal && document.body.contains(_gpuSwitchModal))) {
       return;
     }
 
@@ -5669,6 +6402,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     bindGuestRows(host, nodeCfg);
     bindStorageSubTabs(host, nodeCfg);
     bindNetworkSubTabs(host, nodeCfg);
+    bindHardwareSubTabs(host, nodeCfg);
     bindIfaceFlowNodes(host, nodeCfg);
     const list = host.querySelector(".pve-g-list");
     if (list && prevScroll) list.scrollTop = prevScroll;
@@ -5679,7 +6413,10 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     if ((_guestModal && document.body.contains(_guestModal)) ||
         (_termModal && document.body.contains(_termModal)) ||
         (_ifaceModal && document.body.contains(_ifaceModal)) ||
-        (_diskModal && document.body.contains(_diskModal))) {
+        (_diskModal && document.body.contains(_diskModal)) ||
+        (_gpuModal && document.body.contains(_gpuModal)) ||
+        (_pciModal && document.body.contains(_pciModal)) ||
+        (_gpuSwitchModal && document.body.contains(_gpuSwitchModal))) {
       return;
     }
     const group = findGroupContainer(nodeCfg.groupName);
@@ -5696,6 +6433,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     bindGuestRows(host, nodeCfg);
     bindStorageSubTabs(host, nodeCfg);
     bindNetworkSubTabs(host, nodeCfg);
+    bindHardwareSubTabs(host, nodeCfg);
     bindIfaceFlowNodes(host, nodeCfg);
     const list = host.querySelector(".pve-g-list");
     if (list && prevScroll) list.scrollTop = prevScroll;
@@ -5798,6 +6536,287 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
           kind: btn.getAttribute("data-kind") || "bridge",
           iface: btn.getAttribute("data-iface") || "",
         });
+      });
+    });
+  }
+
+  function closeGpuSwitchRunner() {
+    if (_gpuSwitchModal?.__ws) {
+      try { _gpuSwitchModal.__ws.close(); } catch {}
+      _gpuSwitchModal.__ws = null;
+    }
+    if (_gpuSwitchModal) {
+      _gpuSwitchModal.remove();
+      _gpuSwitchModal = null;
+    }
+  }
+
+  function prxScriptWsUrl(prxUrl, sessionId, ticket) {
+    const u = String(prxUrl || "").replace(/\/$/, "");
+    const wsProto = u.startsWith("https") ? "wss" : "ws";
+    const host = u.replace(/^https?:\/\//, "");
+    const base = `${wsProto}://${host}/ws/script/${encodeURIComponent(sessionId)}`;
+    return ticket ? `${base}?ticket=${encodeURIComponent(ticket)}` : base;
+  }
+
+  async function fetchPrxTerminalTicket(nodeCfg) {
+    const base = String(nodeCfg.prxUrl || "").replace(/\/$/, "");
+    if (!base) throw new Error("No ProxMenux MONITOR URL configured");
+    let token = getStoredPrxToken(nodeCfg);
+    if (!token) {
+      const pasted = await promptPrxTokenGuide(nodeCfg, {});
+      if (!pasted) throw new Error("ProxMenux token required");
+      rememberPrxToken(nodeCfg, pasted);
+      token = pasted;
+    }
+    const doFetch = (t) => fetch(`${base}/api/terminal/ticket`, {
+      method: "POST",
+      cache: "no-store",
+      headers: { Accept: "application/json", Authorization: `Bearer ${t}` },
+    });
+    let res = await doFetch(token);
+    if (res.status === 401 || res.status === 403) {
+      const pasted = await promptPrxTokenGuide(nodeCfg, { rejected: true });
+      if (!pasted) throw new Error("ProxMenux token rejected");
+      rememberPrxToken(nodeCfg, pasted);
+      token = pasted;
+      res = await doFetch(token);
+    }
+    if (!res.ok) throw new Error(`Terminal ticket HTTP ${res.status}`);
+    const data = await res.json();
+    const ticket = data?.ticket || data?.data?.ticket || "";
+    if (!ticket) throw new Error("No terminal ticket returned");
+    return ticket;
+  }
+
+  function appendGpuSwitchLog(modal, text, cls = "") {
+    const log = modal.querySelector("[data-gpu-sw-log]");
+    if (!log) return;
+    const line = document.createElement("div");
+    if (cls) line.className = cls;
+    line.textContent = text;
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function showGpuSwitchInteraction(modal, interaction, ws) {
+    const box = modal.querySelector("[data-gpu-sw-prompt]");
+    if (!box) return;
+    box.hidden = false;
+    const opts = Array.isArray(interaction.options) ? interaction.options : ["yes", "no"];
+    box.innerHTML = `
+      <div class="pve-hw-swrun-prompt-title">${escH(interaction.title || "Confirm")}</div>
+      <div class="pve-hw-swrun-prompt-msg">${escH(interaction.message || "")}</div>
+      <div class="pve-hw-swrun-prompt-actions">
+        ${opts.map((o) => `<button type="button" class="pve-hw-gpu-sw-btn pve-hw-gpu-sw-btn--ghost" data-gpu-sw-answer="${escH(String(o))}">${escH(String(o))}</button>`).join("")}
+      </div>`;
+    box.querySelectorAll("[data-gpu-sw-answer]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const value = btn.getAttribute("data-gpu-sw-answer") || "";
+        try {
+          ws.send(JSON.stringify({ type: "interaction_response", id: interaction.id, value }));
+        } catch {}
+        box.hidden = true;
+        box.innerHTML = "";
+      });
+    });
+  }
+
+  async function runGpuSwitchScript(nodeCfg, gpu, targetMode) {
+    closeGpuSwitchRunner();
+    const slot = String(gpu.slot || "");
+    const title = `GPU Switch Mode → ${String(targetMode || "").toUpperCase()}`;
+    const desc = `Switching GPU ${slot} to ${targetMode === "vm" ? "VM (VFIO passthrough)" : "LXC (native driver)"} mode...`;
+
+    const backdrop = document.createElement("div");
+    backdrop.className = "pve-hw-swrun-backdrop";
+    backdrop.innerHTML = `
+      <div class="pve-hw-swrun-modal" role="dialog" aria-modal="true">
+        <div class="pve-hw-swrun-hdr">
+          <div>
+            <div class="pve-hw-swrun-title">${escH(title)}</div>
+            <div class="pve-hw-swrun-sub">${escH(desc)}</div>
+          </div>
+          <button type="button" class="pve-hw-gpu-close" data-gpu-sw-close aria-label="Close">×</button>
+        </div>
+        <div class="pve-hw-swrun-status" data-gpu-sw-status>Connecting…</div>
+        <div class="pve-hw-swrun-log" data-gpu-sw-log></div>
+        <div class="pve-hw-swrun-prompt" data-gpu-sw-prompt hidden></div>
+        <div class="pve-hw-swrun-ftr">
+          <button type="button" class="pve-hw-gpu-sw-btn pve-hw-gpu-sw-btn--ghost" data-gpu-sw-close>Close</button>
+        </div>
+      </div>`;
+    document.body.appendChild(backdrop);
+    _gpuSwitchModal = backdrop;
+    backdrop.querySelectorAll("[data-gpu-sw-close]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        closeGpuSwitchRunner();
+        fetchPrxHardware(nodeCfg, { force: true, silent: true }).catch(() => null).then(() => paintNodeFromCache(nodeCfg));
+      });
+    });
+
+    const statusEl = backdrop.querySelector("[data-gpu-sw-status]");
+    try {
+      const ticket = await fetchPrxTerminalTicket(nodeCfg);
+      const sessionId = Math.random().toString(36).slice(2, 8);
+      const wsUrl = prxScriptWsUrl(nodeCfg.prxUrl, sessionId, ticket);
+      const ws = new WebSocket(wsUrl);
+      backdrop.__ws = ws;
+      statusEl.textContent = "Connected — starting switch…";
+
+      ws.onopen = () => {
+        ws.send(JSON.stringify({
+          script_path: "/usr/local/share/proxmenux/scripts/gpu_tpu/switch_gpu_mode_direct.sh",
+          params: {
+            EXECUTION_MODE: "web",
+            GPU_SWITCH_PARAMS: `${slot}|${targetMode}`,
+          },
+        }));
+        appendGpuSwitchLog(backdrop, `Running switch_gpu_mode_direct → ${targetMode}`, "is-meta");
+      };
+      ws.onmessage = (ev) => {
+        const raw = String(ev.data || "");
+        if (raw === '{"type": "pong"}' || raw === '{"type":"pong"}') return;
+        try {
+          const msg = JSON.parse(raw);
+          if (msg?.type === "web_interaction" && msg.interaction) {
+            showGpuSwitchInteraction(backdrop, msg.interaction, ws);
+            return;
+          }
+          if (msg?.type === "error") {
+            appendGpuSwitchLog(backdrop, msg.message || "Error", "is-err");
+            statusEl.textContent = "Failed";
+            return;
+          }
+        } catch {}
+        appendGpuSwitchLog(backdrop, raw.replace(/\x1b\[[0-9;]*m/g, ""));
+      };
+      ws.onerror = () => {
+        statusEl.textContent = "Connection error";
+        appendGpuSwitchLog(backdrop, "WebSocket error", "is-err");
+      };
+      ws.onclose = () => {
+        statusEl.textContent = "Finished";
+        appendGpuSwitchLog(backdrop, "Connection closed", "is-meta");
+        const ui = gpuSwitchUi(nodeCfg.groupName);
+        ui.editingSlot = null;
+        delete ui.pending[slot];
+        fetchPrxHardware(nodeCfg, { force: true, silent: true }).catch(() => null).then(() => {
+          if (_gpuSwitchModal === backdrop) return; // keep modal open; refresh after close
+        });
+      };
+    } catch (err) {
+      statusEl.textContent = "Failed to start";
+      appendGpuSwitchLog(backdrop, err.message || String(err), "is-err");
+    }
+  }
+
+  function bindHardwareSubTabs(host, nodeCfg) {
+    host.querySelectorAll("[data-hw-sub]").forEach((btn) => {
+      if (btn.__pveHwSubBound) return;
+      btn.__pveHwSubBound = true;
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const next = btn.getAttribute("data-hw-sub") || "thermal";
+        if (_hardwareSubTabs[nodeCfg.groupName] === next) return;
+        _hardwareSubTabs[nodeCfg.groupName] = next;
+        paintNodeFromCache(nodeCfg);
+      });
+    });
+
+    host.querySelectorAll("[data-gpu-slot]").forEach((btn) => {
+      if (btn.__pveGpuBound) return;
+      btn.__pveGpuBound = true;
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const slot = btn.getAttribute("data-gpu-slot");
+        if (slot) openGpuDetails(nodeCfg, slot);
+      });
+    });
+
+    const ui = gpuSwitchUi(nodeCfg.groupName);
+    const hw = _prxHwCache[nodeCfg.groupName]?.data;
+    const findGpu = (slot) => (hw?.gpus || []).find((g) => String(g.slot) === String(slot));
+
+    host.querySelectorAll("[data-gpu-sw-edit]").forEach((btn) => {
+      if (btn.__pveGpuSwBound) return;
+      btn.__pveGpuSwBound = true;
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const slot = btn.getAttribute("data-gpu-sw-edit");
+        ui.editingSlot = slot;
+        if (slot && ui.pending[slot] == null) {
+          // start edit with current mode selected (hub amber); first hub click flips
+          delete ui.pending[slot];
+        }
+        paintNodeFromCache(nodeCfg);
+      });
+    });
+
+    host.querySelectorAll("[data-gpu-sw-cancel]").forEach((btn) => {
+      if (btn.__pveGpuSwBound) return;
+      btn.__pveGpuSwBound = true;
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const slot = btn.getAttribute("data-gpu-sw-cancel");
+        ui.editingSlot = null;
+        if (slot) delete ui.pending[slot];
+        paintNodeFromCache(nodeCfg);
+      });
+    });
+
+    host.querySelectorAll("[data-gpu-sw-hub]").forEach((hub) => {
+      if (hub.__pveGpuSwBound) return;
+      hub.__pveGpuSwBound = true;
+      hub.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const slot = hub.getAttribute("data-gpu-sw-hub");
+        const gpu = findGpu(slot);
+        if (!gpu || ui.editingSlot !== slot) return;
+        const actual = gpuActualMode(gpu);
+        if (actual === "sriov" || actual === "unknown") return;
+        const current = ui.pending[slot] || actual;
+        const next = current === "lxc" ? "vm" : "lxc";
+        if (next === actual) delete ui.pending[slot];
+        else ui.pending[slot] = next;
+        paintNodeFromCache(nodeCfg);
+      });
+    });
+
+    host.querySelectorAll("[data-gpu-sw-save]").forEach((btn) => {
+      if (btn.__pveGpuSwBound) return;
+      btn.__pveGpuSwBound = true;
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const slot = btn.getAttribute("data-gpu-sw-save");
+        const gpu = findGpu(slot);
+        if (!gpu) return;
+        const actual = gpuActualMode(gpu);
+        const target = ui.pending[slot] || actual;
+        ui.editingSlot = null;
+        if (!ui.pending[slot] || target === actual) {
+          delete ui.pending[slot];
+          paintNodeFromCache(nodeCfg);
+          return;
+        }
+        runGpuSwitchScript(nodeCfg, gpu, target);
+      });
+    });
+
+    host.querySelectorAll("[data-pci-slot]").forEach((btn) => {
+      if (btn.__pvePciBound) return;
+      btn.__pvePciBound = true;
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const slot = btn.getAttribute("data-pci-slot");
+        if (slot) openPciDetails(nodeCfg, slot);
       });
     });
   }
