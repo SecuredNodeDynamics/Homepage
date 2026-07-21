@@ -4863,6 +4863,235 @@ body.light .pve-stat-sub,
   padding-bottom: 8px;
 }
 
+.pve-net-card-body--ifaces {
+  padding: 4px 12px 16px;
+}
+
+.pve-net-subtabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+.pve-net-subtab {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.62);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.pve-net-subtab:hover {
+  color: rgba(255, 255, 255, 0.88);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+.pve-net-subtab--active {
+  color: #0b1220;
+  background: linear-gradient(135deg, #22d3ee, #0891b2);
+  border-color: transparent;
+}
+.pve-net-subtab--active .pve-net-poc-tag {
+  color: #78350f;
+  background: rgba(251, 191, 36, 0.35);
+  border-color: rgba(251, 191, 36, 0.45);
+}
+
+.pve-ni-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.pve-ni-section-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.pve-ni-section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  font-weight: 750;
+  color: rgba(255, 255, 255, 0.92);
+}
+.pve-ni-section-title svg { color: #22d3ee; opacity: 0.9; }
+.pve-ni-count-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+}
+.pve-ni-count-badge--blue {
+  color: #7dd3fc;
+  background: rgba(14, 165, 233, 0.14);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+}
+.pve-ni-count-badge--green {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(74, 222, 128, 0.28);
+}
+.pve-ni-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+.pve-ni-bridge-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pve-ni-card {
+  appearance: none;
+  width: 100%;
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(8, 12, 18, 0.72);
+  border-radius: 14px;
+  padding: 12px 13px 10px;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease, transform .12s ease;
+}
+.pve-ni-card:hover {
+  border-color: rgba(34, 211, 238, 0.35);
+  background: rgba(14, 22, 34, 0.92);
+}
+.pve-ni-card--down { opacity: 0.72; }
+.pve-ni-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.pve-ni-card-id {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.pve-ni-name {
+  font-size: 0.95rem;
+  font-weight: 780;
+  color: rgba(255, 255, 255, 0.95);
+}
+.pve-ni-card-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.pve-ni-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+}
+.pve-ni-status.is-up { color: #4ade80; }
+.pve-ni-status.is-down { color: #f87171; }
+.pve-ni-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+}
+.pve-ni-dot--red {
+  background: #f87171;
+  box-shadow: 0 0 8px rgba(248, 113, 113, 0.55);
+}
+.pve-ni-duplex {
+  font-size: 0.66rem;
+  color: rgba(255, 255, 255, 0.42);
+  font-weight: 600;
+}
+.pve-ni-card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+}
+.pve-ni-card-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px 12px;
+}
+.pve-ni-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.pve-ni-stat-k {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+}
+.pve-ni-stat-v {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.88);
+  font-variant-numeric: tabular-nums;
+}
+.pve-ni-stat-v.is-rx { color: #6ee7b7; }
+.pve-ni-stat-v.is-tx { color: #38bdf8; }
+.pve-ni-stat-v--speed {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.pve-ni-stat-v--speed svg { color: #fbbf24; }
+.pve-ni-stat-v--mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+}
+.pve-ni-stat--drops .pve-ni-stat-v {
+  color: #f87171;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pve-ni-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 11px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+.pve-ni-mac {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+.pve-ni-card-arrow { color: #38bdf8; opacity: 0.75; }
+
+@media (max-width: 720px) {
+  .pve-ni-card-row { grid-template-columns: 1fr 1fr; }
+}
+
+
 .pve-net-traffic-svg {
   width: 100%;
   height: auto;
@@ -4906,7 +5135,7 @@ body.light .pve-stat-sub,
 .pve-flow-svg {
   width: 100%;
   height: auto;
-  max-height: 360px;
+  max-height: 560px;
   display: block;
 }
 
@@ -5000,7 +5229,8 @@ body.light .pve-stat-sub,
 @media (max-width: 720px) {
   .pve-net-legend { margin-left: 0; width: 100%; }
   .pve-net-card-hdr { gap: 8px; }
-  .pve-flow-svg { max-height: 320px; }
+  .pve-flow-svg,
+  .pve-flow-svg.pve-nf-svg { max-height: 440px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -5012,12 +5242,14 @@ body.light .pve-stat-sub,
 .pve-nf-wrap {
   position: relative;
   width: 100%;
+  min-height: 280px;
 }
 .pve-nf-svg,
 .pve-nf-beams {
   width: 100%;
   height: auto;
   display: block;
+  max-height: 560px;
 }
 .pve-nf-beams {
   position: absolute;
@@ -5027,11 +5259,11 @@ body.light .pve-stat-sub,
   pointer-events: none;
 }
 .pve-flow-svg.pve-nf-svg {
-  max-height: 420px;
+  max-height: 560px;
 }
 .pve-nf-link {
   fill: none;
-  stroke: rgba(120, 130, 145, 0.55);
+  stroke: rgba(148, 163, 184, 0.48);
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -5043,18 +5275,25 @@ body.light .pve-stat-sub,
   fill: rgba(10, 14, 20, 0.92);
 }
 .pve-nf-label {
-  fill: rgba(255, 255, 255, 0.88);
-  font-size: 10px;
-  font-weight: 600;
+  fill: rgba(255, 255, 255, 0.94);
+  font-size: 12.5px;
+  font-weight: 700;
   font-family: ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0.01em;
 }
 .pve-nf-sub {
-  fill: rgba(255, 255, 255, 0.42);
-  font-size: 9px;
+  fill: rgba(226, 232, 240, 0.78);
+  font-size: 11px;
+  font-weight: 600;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
 }
 .pve-nf-icon {
   color: inherit;
+}
+.pve-nf-node--host .pve-nf-label {
+  font-size: 13px;
+  letter-spacing: 0.04em;
 }
 .pve-nf-node--clickable {
   cursor: pointer;
@@ -5443,22 +5682,62 @@ body.light .pve-stat-sub,
   stroke-width: 3;
 }
 
-/* Download (rx): forward along path. Upload (tx): reverse. Duration set inline from rate. */
+/* #3 softComet — gentler glow, less laser */
+.pve-nf-beam-rx.pve-nf-beam--soft,
+.pve-nf-beam-head-rx.pve-nf-beam--soft {
+  filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.28));
+}
+.pve-nf-beam-tx.pve-nf-beam--soft,
+.pve-nf-beam-head-tx.pve-nf-beam--soft {
+  filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.28));
+}
+.pve-nf-beam-head-rx.pve-nf-beam--soft {
+  stroke: #a5f3fc;
+  stroke-width: 3.25;
+}
+.pve-nf-beam-head-tx.pve-nf-beam--soft {
+  stroke: #fcd34d;
+  stroke-width: 3.25;
+}
+
+/* #4 nodePulse — breath ring on hot nodes */
+.pve-nf-pulse {
+  stroke-width: 1.4;
+  opacity: 0;
+  pointer-events: none;
+  animation: pve-nf-node-pulse 2.4s ease-out infinite;
+}
+.pve-nf-node--nic .pve-nf-pulse,
+.pve-nf-node--host .pve-nf-pulse {
+  animation-duration: 2.1s;
+}
+
+/* Download (rx): forward. Upload (tx): reverse.
+   Duration + dash density set inline from rate AND path length
+   so long highways travel at similar visual speed to short stubs.
+   #6 cornerEase sets cubic-bezier via inline animation-timing-function. */
 @keyframes pve-nf-beam {
   to { stroke-dashoffset: -100; }
 }
 @keyframes pve-nf-beam-rev {
   to { stroke-dashoffset: 100; }
 }
+@keyframes pve-nf-node-pulse {
+  0% { opacity: 0.5; stroke-width: 1.6; }
+  70% { opacity: 0; stroke-width: 0.6; }
+  100% { opacity: 0; stroke-width: 0.6; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .pve-nf-beam-rx,
   .pve-nf-beam-tx,
   .pve-nf-beam-head-rx,
-  .pve-nf-beam-head-tx {
+  .pve-nf-beam-head-tx,
+  .pve-nf-pulse {
     animation: none !important;
     opacity: 0.35 !important;
   }
+  .pve-nf-pulse { opacity: 0 !important; }
 }
 
 

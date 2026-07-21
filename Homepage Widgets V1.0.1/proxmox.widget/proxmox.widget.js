@@ -58,7 +58,10 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
   const _history = {};
   const _tabs = {};
   const _storageSubTabs = {}; // groupName -> pve|remote|physical|external
-  const _guestNetPrev = {};
+  const _networkSubTabs = {}; // groupName -> flow|ifaces
+  const _guestNetPrev = {};  // last cumulative netin/netout sample per guest
+  const _guestNetRates = {}; // last computed {rx,tx,rate,ready} — only updated on fresh PVE polls
+  const GUEST_NET_LS_KEY = "hp-pve-guest-net-rates-v1";
   const _rrdCache = {};
   const _nodeCache = {};
   let _guestModal = null;
@@ -73,6 +76,58 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
   const _liveUpdateOverride = {}; // groupName -> { [vmid]: { at, uc } }
   const LIVE_UPDATE_OVERRIDE_TTL_MS = 6 * 60 * 60 * 1000;
   const LIVE_UPDATE_LS_KEY = "hp-pve-live-update-overrides";
+
+  function loadGuestNetState() {
+    try {
+      const raw = sessionStorage.getItem(GUEST_NET_LS_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return;
+      // Drop baselines older than 10 minutes — counters may have wrapped/rebooted
+      const maxAge = 10 * 60 * 1000;
+      const now = Date.now();
+      const prevIn = parsed.prev && typeof parsed.prev === "object" ? parsed.prev : {};
+      const ratesIn = parsed.rates && typeof parsed.rates === "object" ? parsed.rates : {};
+      Object.keys(prevIn).forEach((group) => {
+        const gPrev = prevIn[group];
+        if (!gPrev || typeof gPrev !== "object") return;
+        _guestNetPrev[group] = {};
+        Object.keys(gPrev).forEach((key) => {
+          const s = gPrev[key];
+          if (!s || typeof s.t !== "number" || (now - s.t) > maxAge) return;
+          _guestNetPrev[group][key] = s;
+        });
+      });
+      Object.keys(ratesIn).forEach((group) => {
+        const gRates = ratesIn[group];
+        if (!gRates || typeof gRates !== "object") return;
+        _guestNetRates[group] = {};
+        Object.keys(gRates).forEach((key) => {
+          const r = gRates[key];
+          if (!r || typeof r !== "object") return;
+          _guestNetRates[group][key] = {
+            rx: Number(r.rx) || 0,
+            tx: Number(r.tx) || 0,
+            rate: Number(r.rate) || 0,
+            ready: !!r.ready,
+            at: Number(r.at) || 0,
+          };
+        });
+      });
+    } catch {}
+  }
+
+  function saveGuestNetState() {
+    try {
+      sessionStorage.setItem(GUEST_NET_LS_KEY, JSON.stringify({
+        prev: _guestNetPrev,
+        rates: _guestNetRates,
+        savedAt: Date.now(),
+      }));
+    } catch {}
+  }
+
+  loadGuestNetState();
 
   function loadLiveUpdateOverrides() {
     try {
@@ -106,7 +161,9 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     _history[n.groupName] = { cpu: [], mem: [], rx: [], tx: [] };
     _tabs[n.groupName] = "overview";
     _storageSubTabs[n.groupName] = "pve";
-    _guestNetPrev[n.groupName] = {};
+    _networkSubTabs[n.groupName] = "flow";
+    if (!_guestNetPrev[n.groupName]) _guestNetPrev[n.groupName] = {};
+    if (!_guestNetRates[n.groupName]) _guestNetRates[n.groupName] = {};
   });
 
   // ── Utilities ────────────────────────────────────────────────────
@@ -142,6 +199,14 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     if (bytesPerSec >= 1e6) return (bytesPerSec / 1e6).toFixed(1) + " MB/s";
     if (bytesPerSec >= 1e3) return (bytesPerSec / 1e3).toFixed(0) + " KB/s";
     return Math.round(bytesPerSec) + " B/s";
+  }
+
+  /** True when the flow label would read as idle ("0 B/s"). */
+  function isZeroFlowLabel(bps) {
+    const n = Number(bps) || 0;
+    if (n <= 0) return true;
+    if (n < 1e3) return Math.round(n) === 0;
+    return false;
   }
 
   function fmtGbVolume(bytes) {
@@ -1135,31 +1200,146 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
       </svg>`;
   }
 
-  function guestRates(groupName, key, netin, netout) {
+  const _guestNetQuickSample = {}; // groupName -> true after scheduling a cold-start resample
+
+  /**
+   * Diff Proxmox cumulative netin/netout → bytes/sec.
+   * Only run on fresh PVE polls. Baselines persist in sessionStorage so a
+   * hard refresh / script remount can still produce rates on the first fetch.
+   */
+  function updateGuestNetRates(groupName, pveData) {
+    if (!pveData) return;
     const prevMap = _guestNetPrev[groupName] || (_guestNetPrev[groupName] = {});
+    const ratesMap = _guestNetRates[groupName] || (_guestNetRates[groupName] = {});
     const now = Date.now();
-    const prev = prevMap[key];
-    const nin = Number(netin) || 0;
-    const nout = Number(netout) || 0;
-    let rx = 0;
-    let tx = 0;
-    if (prev && now > prev.t) {
-      const dt = (now - prev.t) / 1000;
-      if (dt > 0) {
-        rx = Math.max(0, (nin - (prev.netin || 0)) / dt);
-        tx = Math.max(0, (nout - (prev.netout || 0)) / dt);
+    const samples = [
+      ...(pveData.vms || []).map((v) => ({ key: `qemu-${v.vmid}`, netin: v.netin, netout: v.netout })),
+      ...(pveData.lxcs || []).map((v) => ({ key: `lxc-${v.vmid}`, netin: v.netin, netout: v.netout })),
+    ];
+    const seen = new Set();
+    for (const g of samples) {
+      seen.add(g.key);
+      const ninRaw = Number(g.netin);
+      const noutRaw = Number(g.netout);
+      // API omitted stats entirely — keep whatever we already have
+      if (!Number.isFinite(ninRaw) && !Number.isFinite(noutRaw)) continue;
+
+      const nin = Number.isFinite(ninRaw) ? ninRaw : (prevMap[g.key]?.netin || 0);
+      const nout = Number.isFinite(noutRaw) ? noutRaw : (prevMap[g.key]?.netout || 0);
+      const prev = prevMap[g.key];
+
+      if (!prev || typeof prev.t !== "number") {
+        prevMap[g.key] = { t: now, netin: nin, netout: nout };
+        if (!ratesMap[g.key]) ratesMap[g.key] = { rx: 0, tx: 0, rate: 0, ready: false, at: now };
+        continue;
       }
+
+      const dt = (now - prev.t) / 1000;
+      if (dt < 1) continue; // too soon — keep last rate + baseline
+
+      // Guest reboot / counter wrap — re-baseline, keep last rate briefly
+      if (nin < (prev.netin || 0) || nout < (prev.netout || 0)) {
+        prevMap[g.key] = { t: now, netin: nin, netout: nout };
+        if (ratesMap[g.key]) ratesMap[g.key] = { ...ratesMap[g.key], ready: false, at: now };
+        continue;
+      }
+
+      const rx = Math.max(0, (nin - (prev.netin || 0)) / dt);
+      const tx = Math.max(0, (nout - (prev.netout || 0)) / dt);
+      prevMap[g.key] = { t: now, netin: nin, netout: nout };
+      ratesMap[g.key] = { rx, tx, rate: rx + tx, ready: true, at: now };
     }
-    prevMap[key] = { t: now, netin: nin, netout: nout, total: nin + nout };
-    return { rx, tx, rate: rx + tx };
+    Object.keys(ratesMap).forEach((k) => { if (!seen.has(k)) delete ratesMap[k]; });
+    Object.keys(prevMap).forEach((k) => { if (!seen.has(k)) delete prevMap[k]; });
+    saveGuestNetState();
   }
 
-  /** Map bytes/sec → beam loop duration. 0 = idle (no pulse). Faster = more traffic. */
+  function getGuestRates(groupName, key) {
+    return _guestNetRates[groupName]?.[key] || { rx: 0, tx: 0, rate: 0, ready: false };
+  }
+
+  /**
+   * Network Flow animation upgrades — flip any flag to false to disable that effect.
+   * 1 density        packet count scales with throughput
+   * 2 splitBranches  beams follow bridge→guest branches (not one shared highway pulse)
+   * 3 softComet      softer glow / longer fade trail
+   * 4 nodePulse      ring breath on hot nodes
+   * 5 dirOnly        only draw rx or tx when that direction has traffic
+   * 6 cornerEase     ease-in-out timing (less snappy through turns)
+   */
+  const PVE_NF_ANIM = {
+    density: true,
+    splitBranches: true,
+    softComet: true,
+    nodePulse: true,
+    dirOnly: true,
+    cornerEase: true,
+  };
+
+  /** Map bytes/sec → time to travel a short reference hop. 0 = idle (no pulse). */
   function beamSec(bps) {
     const B = Number(bps) || 0;
     if (B < 512) return 0; // < 0.5 KB/s
     const kb = B / 1024;
-    return Math.max(0.65, Math.min(4.0, 4.2 - Math.log10(kb + 1) * 1.15));
+    return Math.max(0.85, Math.min(3.6, 3.8 - Math.log10(kb + 1) * 0.95));
+  }
+
+  /** Approx length of our M/L/Q flow paths (SVG user units). */
+  function approxPathLen(d) {
+    const tokens = String(d || "").match(/[MLQ]|[-+]?(?:\d*\.\d+|\d+)/gi) || [];
+    let i = 0;
+    let x = 0;
+    let y = 0;
+    let len = 0;
+    let started = false;
+    while (i < tokens.length) {
+      const t = tokens[i++];
+      if (t === "M" || t === "L") {
+        const nx = Number(tokens[i++]);
+        const ny = Number(tokens[i++]);
+        if (!Number.isFinite(nx) || !Number.isFinite(ny)) break;
+        if (t === "L" && started) len += Math.hypot(nx - x, ny - y);
+        x = nx;
+        y = ny;
+        started = true;
+      } else if (t === "Q") {
+        const cx = Number(tokens[i++]);
+        const cy = Number(tokens[i++]);
+        const nx = Number(tokens[i++]);
+        const ny = Number(tokens[i++]);
+        if (![cx, cy, nx, ny].every(Number.isFinite)) break;
+        if (started) {
+          const chord = Math.hypot(nx - x, ny - y);
+          const via = Math.hypot(cx - x, cy - y) + Math.hypot(nx - cx, ny - cy);
+          len += (chord + via) / 2;
+        }
+        x = nx;
+        y = ny;
+        started = true;
+      }
+    }
+    return Math.max(len, 1);
+  }
+
+  /**
+   * Duration for one packet lap. Scales with path length so long highways don't
+   * look like they teleport — visual px/s stays roughly constant, rate still modulates speed.
+   */
+  function beamTravelSec(bps, pathLen) {
+    const base = beamSec(bps);
+    if (!base) return 0;
+    const REF = 88;
+    const len = Math.max(Number(pathLen) || REF, REF * 0.5);
+    return Math.min(14, Math.max(0.9, base * (len / REF)));
+  }
+
+  /** #1 density — packets from path length and/or throughput */
+  function beamPacketCount(bps, pathLen) {
+    const lenPack = Math.max(1, Math.min(4, Math.round((Number(pathLen) || 88) / 120)));
+    if (!PVE_NF_ANIM.density) return lenPack;
+    const kb = (Number(bps) || 0) / 1024;
+    const rateExtra = kb < 80 ? 0 : kb < 400 ? 1 : kb < 2048 ? 2 : 3;
+    return Math.max(1, Math.min(6, lenPack + rateExtra));
   }
 
   function buildNetworkFlow(nodeCfg, pveData, glancesData) {
@@ -1234,64 +1414,74 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     const guests = [];
     for (const vm of (pveData?.vms || [])) {
       if (vm.status !== "running") continue;
-      const rates = guestRates(nodeCfg.groupName, `qemu-${vm.vmid}`, vm.netin, vm.netout);
+      const rates = getGuestRates(nodeCfg.groupName, `qemu-${vm.vmid}`);
       guests.push({
         name: vm.name || `vm-${vm.vmid}`,
         vmid: vm.vmid,
         rx: rates.rx,
         tx: rates.tx,
         rate: rates.rate,
+        ready: !!rates.ready,
         kind: "vm",
       });
     }
     for (const ct of (pveData?.lxcs || [])) {
       if (ct.status !== "running") continue;
-      const rates = guestRates(nodeCfg.groupName, `lxc-${ct.vmid}`, ct.netin, ct.netout);
+      const rates = getGuestRates(nodeCfg.groupName, `lxc-${ct.vmid}`);
       guests.push({
         name: ct.name || `ct-${ct.vmid}`,
         vmid: ct.vmid,
         rx: rates.rx,
         tx: rates.tx,
         rate: rates.rate,
+        ready: !!rates.ready,
         kind: "lxc",
       });
     }
     guests.sort((a, b) => b.rate - a.rate || String(a.name).localeCompare(String(b.name)));
     const shown = guests.slice(0, 24);
 
-    // Compact ProxMenux tree geometry
-    const R_NIC = 18, R_HOST = 26, R_BR = 16, R_GUEST = 14;
-    const nicX = 55, hostX = 200, brX = 320;
+    // Readable ProxMenux-style tree geometry (sized for label legibility)
+    const R_NIC = 22, R_HOST = 32, R_BR = 20, R_GUEST = 18;
+    const nicX = 64, hostX = 220, brX = 350;
     const cols = 4;
-    const colGap = 100;
-    const gridX0 = 430;
-    const pairGap = 120;  // vertical distance between above/below pair (room for 24px fillets)
-    const bandGap = 40;   // gap between bands
+    const colGap = 118;
+    const gridX0 = 470;
+    const pairGap = 160;  // vertical distance between above/below pair
+    const bandGap = 56;   // gap between bands
     const bands = Math.max(1, Math.ceil(Math.max(shown.length, 1) / (cols * 2)));
-    const bandH = pairGap + 70;
+    const bandH = pairGap + 100; // room for outer-side labels above top guests
     const gridH = bands * bandH + (bands - 1) * bandGap;
-    const leftH = Math.max(physical.slice(0, 3).length, 1) * 70;
-    const H = Math.max(260, 50 + Math.max(leftH, gridH));
+    const leftH = Math.max(physical.slice(0, 3).length, 1) * 88;
+    const H = Math.max(320, 64 + Math.max(leftH, gridH));
     const midY = H / 2;
-    const W = gridX0 + (cols - 1) * colGap + 70;
+    const W = gridX0 + (cols - 1) * colGap + 90;
 
-    function shortName(name, max = 13) {
+    function shortName(name, max = 16) {
       const s = String(name || "");
       return s.length > max ? s.slice(0, max - 1) + "…" : s;
     }
 
     const leftCount = Math.min(physical.length, 3);
     function stackY(i, n) {
-      if (n <= 1) return midY - 20;
-      const span = (n - 1) * 70;
-      return midY - 20 - span / 2 + i * 70;
+      if (n <= 1) return midY - 24;
+      const span = (n - 1) * 88;
+      return midY - 24 - span / 2 + i * 88;
     }
 
     const physNodes = physical.slice(0, leftCount).map((p, i) => ({
       ...p, x: nicX, y: stackY(i, leftCount), r: R_NIC, kind: "nic",
     }));
-    const hostNode = { name: "PROXMOX", x: hostX, y: midY, r: R_HOST, rate: hostRate, label: fmtRateBytes(hostRate), kind: "host", iface: bridgeName, active: true };
-    const brNode = { name: bridgeName, x: brX, y: midY, r: R_BR, rate: bridgeRate, label: fmtRateBytes(bridgeRate), kind: "bridge", iface: bridgeName, active: true };
+    const hostNode = {
+      name: "PROXMOX", x: hostX, y: midY, r: R_HOST,
+      rate: hostRate, rx: hostRx, tx: hostTx,
+      label: fmtRateBytes(hostRate), kind: "host", iface: bridgeName, active: true,
+    };
+    const brNode = {
+      name: bridgeName, x: brX, y: midY, r: R_BR,
+      rate: bridgeRate, rx: bridgeRx, tx: bridgeTx,
+      label: fmtRateBytes(bridgeRate), kind: "bridge", iface: bridgeName, active: true,
+    };
 
     // Place guests in ProxMenux bands: each band = horizontal bus + 4 cols × (above/below)
     const guestNodes = [];
@@ -1314,24 +1504,33 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
           r: R_GUEST,
           busY,
           col: c,
-          label: fmtRateBytes(g.rate),
+          label: (!g.ready && !(Number(g.rate) > 0)) ? "—" : fmtRateBytes(g.rate),
           kind: g.kind === "vm" ? "guest" : "guest",
         });
       }
     }
 
-    // ProxMenux nf-link fillets (from their SVG): quadratic corners, ~14px radius
-    // H→V via corner (x2,y1):  L x2-r,y1  Q x2,y1  x2,y1±r  L x2,y2
-    // V→H via corner (x1,y2):  L x1,y2∓r  Q x1,y2  x1±r,y2  L x2,y2
-    const CORNER = 14;
+    // ProxMenux nf-link fillets (from their SVG): quadratic corners
+    // Guest stubs leave a gap before the circle so lines never kiss the ring,
+    // and labels sit on the outer side (not between bus and node).
+    const CORNER = 16;
+    const STUB_GAP = 8;
 
+    function guestStubEndY(g) {
+      // End short of the circle — gap between line tip and ring
+      return g.y < g.busY ? (g.y + g.r + STUB_GAP) : (g.y - g.r - STUB_GAP);
+    }
 
     let links = "";
-    const beamPaths = []; // { d, dir: "rx"|"tx", sec }
+    const beamPaths = []; // { d, dir, sec, pathLen, bps }
 
     function pushBeam(d, dir, bps) {
-      const sec = beamSec(bps);
-      if (sec > 0) beamPaths.push({ d, dir, sec });
+      // #5 dirOnly — skip a direction when that side is idle
+      const rate = Number(bps) || 0;
+      if (PVE_NF_ANIM.dirOnly && rate < 512) return;
+      const pathLen = approxPathLen(d);
+      const sec = beamTravelSec(rate, pathLen);
+      if (sec > 0) beamPaths.push({ d, dir, sec, pathLen, bps: rate });
     }
 
     // Active NIC → host (H→V→H orthogonal S-bend, enters host from the left)
@@ -1346,20 +1545,16 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
       const dy = Math.sign(y1 - y0);
       let d = `M ${x0} ${y0}`;
       if (Math.abs(y1 - y0) < 2) {
-        // Same row — straight horizontal
         d += ` L ${x1} ${y1}`;
       } else {
         const r = Math.min(CORNER, Math.abs(x1 - x0) / 4, Math.abs(y1 - y0) / 2);
-        // H to elbow, curve into vertical, curve onto host row, H into host
         d += ` L ${elbowX - r} ${y0}`;
         d += ` Q ${elbowX} ${y0} ${elbowX} ${y0 + dy * r}`;
         d += ` L ${elbowX} ${y1 - dy * r}`;
         d += ` Q ${elbowX} ${y1} ${elbowX + r} ${y1}`;
         d += ` L ${x1} ${y1}`;
       }
-      links += `<path class="pve-nf-link" d="${d}" stroke-width="3.5"/>`;
-      // Glances often reports link-speed on the NIC but byte rates on the bridge —
-      // fall back so the uplink still pulses with real traffic.
+      links += `<path class="pve-nf-link" d="${d}" stroke-width="4"/>`;
       const uplinkRx = Math.max(Number(p.rx) || 0, bridgeRx || 0, hostRx || 0);
       const uplinkTx = Math.max(Number(p.tx) || 0, bridgeTx || 0, hostTx || 0);
       pushBeam(d, "rx", uplinkRx);
@@ -1369,7 +1564,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     // Host → bridge (straight)
     {
       const d = `M ${hostNode.x + hostNode.r} ${hostNode.y} L ${brNode.x - brNode.r} ${brNode.y}`;
-      links += `<path class="pve-nf-link" d="${d}" stroke-width="3.5"/>`;
+      links += `<path class="pve-nf-link" d="${d}" stroke-width="4"/>`;
       pushBeam(d, "rx", bridgeRx || hostRx);
       pushBeam(d, "tx", bridgeTx || hostTx);
     }
@@ -1381,18 +1576,12 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     const guestTxSum = guestNodes.reduce((s, g) => s + (Number(g.tx) || 0), 0);
     const trunkRx = bridgeRx || hostRx || guestRxSum;
     const trunkTx = bridgeTx || hostTx || guestTxSum;
+    const busJoinX = hubX + CORNER;
 
-    // Shared spine + horizontal bus rail (one path per band)
-    // Bus stops at each column's stub-start (g.x - CORNER), never through g.x —
-    // otherwise a ~14px spike sticks past the curved branch.
-    bandBuses.forEach((busY) => {
-      const bandGuests = guestNodes.filter((g) => g.busY === busY);
-      const colXs = [...new Set(bandGuests.map((g) => g.x))].sort((a, b) => a - b);
-      const dy = Math.sign(busY - brNode.y); // +1 if bus below mid
+    function pathBridgeToBusJoin(busY) {
+      const dy = Math.sign(busY - brNode.y);
       let d = `M ${brNode.x + brNode.r} ${brNode.y}`;
-      const busJoinX = hubX + CORNER;
       if (dy !== 0 && Math.abs(busY - brNode.y) > CORNER * 2) {
-        // H to spine, Q into vertical, Q onto bus
         d += ` L ${hubX - CORNER} ${brNode.y}`;
         d += ` Q ${hubX} ${brNode.y} ${hubX} ${brNode.y + dy * CORNER}`;
         d += ` L ${hubX} ${busY - dy * CORNER}`;
@@ -1400,7 +1589,42 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
       } else {
         d += ` L ${busJoinX} ${busY}`;
       }
-      // Walk column stub-starts only (no overshoot past curves)
+      return d;
+    }
+
+    function pathGuestStub(g) {
+      const busY = g.busY;
+      const dropY = guestStubEndY(g);
+      const dy = Math.sign(dropY - busY) || 1;
+      const r = Math.min(CORNER, Math.abs(dropY - busY) / 2);
+      return (
+        `M ${g.x - r} ${busY} ` +
+        `Q ${g.x} ${busY} ${g.x} ${busY + dy * r} ` +
+        `L ${g.x} ${dropY}`
+      );
+    }
+
+    // #2 splitBranches — full bridge→guest beam path for one guest
+    function pathBranchToGuest(g) {
+      const busY = g.busY;
+      let d = pathBridgeToBusJoin(busY);
+      const stubStart = g.x - CORNER;
+      if (stubStart > busJoinX + 0.5) d += ` L ${stubStart} ${busY}`;
+      const dropY = guestStubEndY(g);
+      const dy = Math.sign(dropY - busY) || 1;
+      const r = Math.min(CORNER, Math.abs(dropY - busY) / 2);
+      d += ` L ${g.x - r} ${busY}`;
+      d += ` Q ${g.x} ${busY} ${g.x} ${busY + dy * r}`;
+      d += ` L ${g.x} ${dropY}`;
+      return d;
+    }
+
+    // Shared spine + horizontal bus rail (static links always; beams depend on splitBranches)
+    // Bus stops at each column's stub-start (g.x - CORNER), never through g.x.
+    bandBuses.forEach((busY) => {
+      const bandGuests = guestNodes.filter((g) => g.busY === busY);
+      const colXs = [...new Set(bandGuests.map((g) => g.x))].sort((a, b) => a - b);
+      let d = pathBridgeToBusJoin(busY);
       let x = busJoinX;
       colXs.forEach((cx) => {
         const stubStart = cx - CORNER;
@@ -1408,24 +1632,32 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
         x = Math.max(x, stubStart);
       });
       links += `<path class="pve-nf-link" d="${d}" stroke-width="3"/>`;
-      pushBeam(d, "rx", trunkRx);
-      pushBeam(d, "tx", trunkTx);
+      if (!PVE_NF_ANIM.splitBranches) {
+        pushBeam(d, "rx", trunkRx);
+        pushBeam(d, "tx", trunkTx);
+      }
     });
 
-    // Guest stubs — ProxMenux: M (col-r, busY) Q (col, busY) (col, busY±r) L (col, dropY)
+    // Guest stubs (static links always)
     guestNodes.forEach((g) => {
-      const busY = g.busY;
-      const dropY = g.y < busY ? (g.y + g.r) : (g.y - g.r);
-      const dy = Math.sign(dropY - busY) || 1;
-      const r = Math.min(CORNER, Math.abs(dropY - busY) / 2);
-      const d =
-        `M ${g.x - r} ${busY} ` +
-        `Q ${g.x} ${busY} ${g.x} ${busY + dy * r} ` +
-        `L ${g.x} ${dropY}`;
+      const d = pathGuestStub(g);
       links += `<path class="pve-nf-link" d="${d}" stroke-width="3"/>`;
-      pushBeam(d, "rx", g.rx);
-      pushBeam(d, "tx", g.tx);
+      // No beams when the node label would show 0 B/s
+      if (!PVE_NF_ANIM.splitBranches && !isZeroFlowLabel(g.rate)) {
+        pushBeam(d, "rx", g.rx);
+        pushBeam(d, "tx", g.tx);
+      }
     });
+
+    // #2 splitBranches — beams only for guests with non-zero labels (no shared-trunk fallback)
+    if (PVE_NF_ANIM.splitBranches) {
+      guestNodes.forEach((g) => {
+        if (isZeroFlowLabel(g.rate)) return;
+        const d = pathBranchToGuest(g);
+        pushBeam(d, "rx", g.rx);
+        pushBeam(d, "tx", g.tx);
+      });
+    }
 
     function nodeHtml(n) {
       const kind = n.kind || "guest";
@@ -1436,49 +1668,82 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
           ? "var(--pve-nf-amber, #f59e0b)"
           : "var(--pve-nf-cyan, #06b6d4)";
       const opacity = kind === "nic" && !active ? "0.45" : "1";
-      const sw = kind === "host" ? "2.5" : "1.8";
+      const sw = kind === "host" ? "3" : "2.2";
       const icon = kind === "nic" ? ICONS.nic : kind === "host" ? ICONS.host : kind === "bridge" ? ICONS.bridge : ICONS.guest;
-      const scale = kind === "host" ? 1 : kind === "nic" ? 0.75 : kind === "bridge" ? 0.67 : 0.58;
+      const scale = kind === "host" ? 1.15 : kind === "nic" ? 0.9 : kind === "bridge" ? 0.82 : 0.74;
       const iconOff = 12 * scale;
       const iface = n.iface || n.name || "";
       const guestAttr = kind === "guest"
         ? ` data-guest="${escH(n.name || "")}" data-vmid="${escH(n.vmid != null ? n.vmid : "")}" data-gtype="${escH(n.kind === "vm" ? "qemu" : "lxc")}"`
         : "";
+      // #4 nodePulse — ring breath when node has meaningful traffic (never on 0 B/s labels)
+      const hot = PVE_NF_ANIM.nodePulse && active && !isZeroFlowLabel(n.rate)
+        && ((Number(n.rate) || 0) >= 2048 || (Number(n.rx) || 0) >= 1024 || (Number(n.tx) || 0) >= 1024);
+      const pulse = hot
+        ? `<circle class="pve-nf-pulse" cx="${n.x}" cy="${n.y}" r="${n.r + 4}" stroke="${stroke}" fill="none" pointer-events="none"/>`
+        : "";
+      const nameMax = kind === "guest" ? 17 : kind === "host" ? 10 : 14;
+      // Guests above the bus: labels on the outer (top) side so stubs never cross text.
+      // Guests below the bus (and all other nodes): labels underneath.
+      const aboveBus = kind === "guest" && n.busY != null && n.y < n.busY;
+      const nameY = aboveBus ? (n.y - n.r - 18) : (n.y + n.r + 17);
+      const subY = aboveBus ? (n.y - n.r - 32) : (n.y + n.r + 32);
 
       return `
-        <g class="pve-nf-node pve-nf-node--${kind} pve-nf-node--clickable" opacity="${opacity}" style="color:${stroke}"
+        <g class="pve-nf-node pve-nf-node--${kind} pve-nf-node--clickable${hot ? " pve-nf-node--hot" : ""}" opacity="${opacity}" style="color:${stroke}"
            role="button" tabindex="0" data-kind="${escH(kind)}" data-iface="${escH(iface)}"${guestAttr}>
-          <circle class="pve-nf-hit" cx="${n.x}" cy="${n.y}" r="${n.r + 10}" fill="transparent"/>
+          <circle class="pve-nf-hit" cx="${n.x}" cy="${n.y}" r="${n.r + 12}" fill="transparent"/>
+          ${pulse}
           <circle class="pve-nf-circle" cx="${n.x}" cy="${n.y}" r="${n.r}" stroke="${stroke}" stroke-width="${sw}" fill="rgba(10,14,20,0.92)"/>
           <g transform="translate(${n.x - iconOff}, ${n.y - iconOff}) scale(${scale})" pointer-events="none">${icon}</g>
-          <text class="pve-nf-label" x="${n.x}" y="${n.y + n.r + 14}" text-anchor="middle" pointer-events="none">${escH(shortName(n.name, kind === "guest" ? 14 : 12))}</text>
-          <text class="pve-nf-sub" x="${n.x}" y="${n.y + n.r + 26}" text-anchor="middle" pointer-events="none">${escH(n.label || fmtRateBytes(n.rate || 0))}</text>
+          <text class="pve-nf-label" x="${n.x}" y="${nameY}" text-anchor="middle" pointer-events="none">${escH(shortName(n.name, nameMax))}</text>
+          <text class="pve-nf-sub" x="${n.x}" y="${subY}" text-anchor="middle" pointer-events="none">${escH(n.label || fmtRateBytes(n.rate || 0))}</text>
         </g>`;
     }
 
-    function beamGroup(d, dir, sec) {
-      // ProxMenux-style trailing pulse packets; duration scales with throughput
+    function beamGroup(d, dir, sec, pathLen, bps) {
       if (!sec || sec <= 0) return "";
+      const soft = PVE_NF_ANIM.softComet ? " pve-nf-beam--soft" : "";
+      const ease = PVE_NF_ANIM.cornerEase ? "cubic-bezier(0.45, 0.05, 0.55, 0.95)" : "linear";
       const base = dir === "tx" ? "pve-nf-beam-base-tx" : "pve-nf-beam-base-rx";
-      const mid = dir === "tx" ? "pve-nf-beam-tx" : "pve-nf-beam-rx";
-      const head = dir === "tx" ? "pve-nf-beam-head-tx" : "pve-nf-beam-head-rx";
+      const mid = (dir === "tx" ? "pve-nf-beam-tx" : "pve-nf-beam-rx") + soft;
+      const head = (dir === "tx" ? "pve-nf-beam-head-tx" : "pve-nf-beam-head-rx") + soft;
       const dur = sec.toFixed(2);
-      const d1 = (sec * 0.22).toFixed(2);
-      const d2 = (sec * 0.13).toFixed(2);
-      const d3 = (sec * 0.06).toFixed(2);
+      const packets = beamPacketCount(bps, pathLen);
+      // #3 softComet — longer head, softer trail dashes
+      const dash = PVE_NF_ANIM.softComet ? (packets > 2 ? 5.5 : 7) : (packets > 2 ? 4.5 : 6);
+      const gap = Math.max(12, (100 / packets) - dash);
+      const headDash = PVE_NF_ANIM.softComet ? Math.max(3, dash * 0.7) : Math.max(2.5, dash * 0.55);
+      const headGap = Math.max(12, (100 / packets) - headDash);
+      const dashStyle = `stroke-dasharray:${dash} ${gap}`;
+      const headStyle = `stroke-dasharray:${headDash} ${headGap}`;
+      const span = sec / packets;
+      const trail = PVE_NF_ANIM.softComet
+        ? [
+            { delay: span * 0.34, op: 0.12, sw: 3.2 },
+            { delay: span * 0.22, op: 0.22, sw: 2.8 },
+            { delay: span * 0.12, op: 0.4, sw: 2.5 },
+            { delay: span * 0.05, op: 0.62, sw: 2.3 },
+          ]
+        : [
+            { delay: span * 0.28, op: 0.18, sw: 2.5 },
+            { delay: span * 0.16, op: 0.38, sw: 2.5 },
+            { delay: span * 0.08, op: 0.62, sw: 2.5 },
+          ];
+      const trailHtml = trail.map((t) =>
+        `<path class="${mid}" d="${d}" stroke-width="${t.sw}" pathLength="100" style="animation-duration:${dur}s;animation-delay:${t.delay.toFixed(2)}s;animation-timing-function:${ease};opacity:${t.op};${dashStyle}"/>`
+      ).join("");
       return `<g>
         <path class="${base}" d="${d}" stroke-width="2.5" pathLength="100"/>
-        <path class="${mid}" d="${d}" stroke-width="2.5" pathLength="100" style="animation-duration:${dur}s;animation-delay:${d1}s;opacity:0.15"/>
-        <path class="${mid}" d="${d}" stroke-width="2.5" pathLength="100" style="animation-duration:${dur}s;animation-delay:${d2}s;opacity:0.35"/>
-        <path class="${mid}" d="${d}" stroke-width="2.5" pathLength="100" style="animation-duration:${dur}s;animation-delay:${d3}s;opacity:0.65"/>
-        <path class="${head}" d="${d}" stroke-width="2.5" pathLength="100" style="animation-duration:${dur}s"/>
+        ${trailHtml}
+        <path class="${head}" d="${d}" stroke-width="${PVE_NF_ANIM.softComet ? 3.2 : 2.5}" pathLength="100" style="animation-duration:${dur}s;animation-timing-function:${ease};${headStyle}"/>
       </g>`;
     }
 
     // Beams: cyan download (rx, forward) + amber upload (tx, reverse)
     let beams = "";
     beamPaths.forEach((bp) => {
-      beams += beamGroup(bp.d, bp.dir, bp.sec);
+      beams += beamGroup(bp.d, bp.dir, bp.sec, bp.pathLen, bp.bps);
     });
 
     return `
@@ -4787,6 +5052,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     const bridge = glNet.find(n => n.interface_name === (nodeCfg.iface || "vmbr0"));
     const rx = bridge?.bytes_recv_rate_per_sec ?? 0;
     const tx = bridge?.bytes_sent_rate_per_sec ?? 0;
+    const sub = _networkSubTabs[nodeCfg.groupName] || "flow";
 
     return `
       <div class="pve-network-tab">
@@ -4812,19 +5078,224 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
           </div>
         </section>
 
-        <section class="pve-net-card">
-          <div class="pve-net-card-hdr">
-            <div class="pve-net-card-title">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="6" cy="12" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="18" cy="18" r="2"/>
-                <path d="M8 12h6M14 10l4-3M14 14l4 3"/>
-              </svg>
+        <section class="pve-net-card pve-net-card--flow-ifaces">
+          <div class="pve-net-subtabs" role="tablist" aria-label="Network views">
+            <button type="button" class="pve-net-subtab ${sub === "flow" ? "pve-net-subtab--active" : ""}" data-net-sub="flow" role="tab" aria-selected="${sub === "flow"}">
               Network Flow <span class="pve-net-poc-tag">PoC</span>
+            </button>
+            <button type="button" class="pve-net-subtab ${sub === "ifaces" ? "pve-net-subtab--active" : ""}" data-net-sub="ifaces" role="tab" aria-selected="${sub === "ifaces"}">
+              Interfaces
+            </button>
+          </div>
+          <div class="pve-net-card-body ${sub === "flow" ? "pve-net-card-body--flow" : "pve-net-card-body--ifaces"}">
+            ${sub === "flow"
+              ? buildNetworkFlow(nodeCfg, pveData, glancesData)
+              : buildNetworkInterfaces(nodeCfg, glancesData)}
+          </div>
+        </section>
+      </div>`;
+  }
+
+  function ifacePrimaryIp(iface) {
+    const addrs = Array.isArray(iface?.addresses) ? iface.addresses : [];
+    const pick = addrs.find((a) => {
+      const s = typeof a === "string" ? a : (a?.address || a?.ip || "");
+      return s && !String(s).includes(":");
+    }) || addrs[0];
+    if (!pick) return "—";
+    if (typeof pick === "string") return pick.replace(/\/\d+$/, "");
+    return String(pick.address || pick.ip || "—").replace(/\/\d+$/, "");
+  }
+
+  function collectIfaceCards(nodeCfg, glancesData) {
+    const glNet = Array.isArray(glancesData?.network) ? glancesData.network : [];
+    const prx = _prxNetCache[nodeCfg.groupName]?.data || null;
+
+    const physical = [];
+    const bridges = [];
+
+    if (Array.isArray(prx?.physical_interfaces) && prx.physical_interfaces.length) {
+      prx.physical_interfaces.forEach((raw, idx) => {
+        if (!raw?.name) return;
+        let iface = { ...raw, type: raw.type || "physical" };
+        iface = enrichIfaceFromGlances(iface, glNet, iface.name);
+        const rx = Number(iface.bytes_recv_rate_per_sec) || Number(glNet.find(n => n.interface_name === iface.name)?.bytes_recv_rate_per_sec) || 0;
+        const tx = Number(iface.bytes_sent_rate_per_sec) || Number(glNet.find(n => n.interface_name === iface.name)?.bytes_sent_rate_per_sec) || 0;
+        const speed = Number(iface.speed) || glancesSpeedToMbps(glNet.find(n => n.interface_name === iface.name)?.speed) || 0;
+        const up = /up/i.test(String(iface.status || "")) || speed > 0 || (rx + tx) > 0;
+        physical.push({
+          name: iface.name || `nic${idx}`,
+          kind: "nic",
+          typeLabel: "Physical",
+          up,
+          status: up ? "UP" : "DOWN",
+          duplex: capitalizeWord(iface.duplex || "unknown"),
+          speed,
+          mtu: iface.mtu ?? "—",
+          rx, tx,
+          drops: (Number(iface.drops_in) || 0) + (Number(iface.drops_out) || 0),
+          mac: iface.mac_address || iface.mac || "—",
+          ip: ifacePrimaryIp(iface),
+        });
+      });
+    } else {
+      glNet.filter((n) => isPhysicalIface(n.interface_name)).forEach((n, idx) => {
+        const rx = n.bytes_recv_rate_per_sec || 0;
+        const tx = n.bytes_sent_rate_per_sec || 0;
+        const speed = glancesSpeedToMbps(n.speed);
+        const up = n.isup === true || speed > 0 || (rx + tx) > 0;
+        physical.push({
+          name: n.interface_name || `nic${idx}`,
+          kind: "nic",
+          typeLabel: "Physical",
+          up,
+          status: up ? "UP" : "DOWN",
+          duplex: capitalizeWord(n.duplex || "unknown"),
+          speed,
+          mtu: n.mtu ?? "—",
+          rx, tx,
+          drops: (Number(n.dropin) || Number(n.dropout) || 0),
+          mac: n.mac || n.macaddress || n.hwaddr || "—",
+          ip: "—",
+        });
+      });
+    }
+
+    if (Array.isArray(prx?.bridge_interfaces) && prx.bridge_interfaces.length) {
+      prx.bridge_interfaces.forEach((raw) => {
+        if (!raw?.name) return;
+        let iface = { ...raw, type: raw.type || "bridge" };
+        iface = enrichIfaceFromGlances(iface, glNet, iface.name);
+        const g = glNet.find(n => n.interface_name === iface.name);
+        const rx = Number(iface.bytes_recv_rate_per_sec) || Number(g?.bytes_recv_rate_per_sec) || 0;
+        const tx = Number(iface.bytes_sent_rate_per_sec) || Number(g?.bytes_sent_rate_per_sec) || 0;
+        const speed = Number(iface.speed) || glancesSpeedToMbps(g?.speed) || 0;
+        const up = /up/i.test(String(iface.status || "")) || speed > 0 || (rx + tx) > 0
+          || String(iface.name) === String(nodeCfg.iface || "vmbr0");
+        bridges.push({
+          name: iface.name,
+          kind: "bridge",
+          typeLabel: "Bridge",
+          up,
+          status: up ? "UP" : "DOWN",
+          duplex: capitalizeWord(iface.duplex || "unknown"),
+          speed,
+          mtu: iface.mtu ?? "—",
+          rx, tx,
+          drops: (Number(iface.drops_in) || 0) + (Number(iface.drops_out) || 0),
+          mac: iface.mac_address || iface.mac || "—",
+          ip: ifacePrimaryIp(iface),
+        });
+      });
+    } else {
+      glNet.filter((n) => isBridgeIface(n.interface_name)).forEach((n) => {
+        const rx = n.bytes_recv_rate_per_sec || 0;
+        const tx = n.bytes_sent_rate_per_sec || 0;
+        const speed = glancesSpeedToMbps(n.speed);
+        bridges.push({
+          name: n.interface_name,
+          kind: "bridge",
+          typeLabel: "Bridge",
+          up: true,
+          status: "UP",
+          duplex: capitalizeWord(n.duplex || "unknown"),
+          speed,
+          mtu: n.mtu ?? "—",
+          rx, tx,
+          drops: 0,
+          mac: n.mac || n.macaddress || n.hwaddr || "—",
+          ip: "—",
+        });
+      });
+    }
+
+    physical.sort((a, b) => Number(b.up) - Number(a.up) || String(a.name).localeCompare(String(b.name)));
+    bridges.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    return { physical, bridges };
+  }
+
+  function buildNetworkInterfaces(nodeCfg, glancesData) {
+    const { physical, bridges } = collectIfaceCards(nodeCfg, glancesData);
+    const physActive = physical.filter((p) => p.up).length;
+    const brActive = bridges.filter((b) => b.up).length;
+
+    const bolt = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>`;
+    const arrow = `<svg class="pve-ni-card-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>`;
+    const routerIco = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="8" x="2" y="14" rx="2"/><path d="M6.01 18H6"/><path d="M10.01 18H10"/><path d="M15 10v4"/><path d="M17.84 7.17a4 4 0 0 0-5.66 0"/><path d="M20.66 4.34a8 8 0 0 0-11.31 0"/></svg>`;
+    const bridgeIco = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/></svg>`;
+
+    const physCards = physical.length
+      ? physical.map((p) => {
+          const dropsHtml = p.drops > 0
+            ? `<div class="pve-ni-stat pve-ni-stat--drops"><span class="pve-ni-stat-k">Drops</span><span class="pve-ni-stat-v"><i class="pve-ni-dot pve-ni-dot--red"></i>${escH(fmtCount(p.drops))}</span></div>`
+            : "";
+          return `
+            <button type="button" class="pve-ni-card pve-ni-card--physical ${p.up ? "" : "pve-ni-card--down"}"
+              data-iface-open data-kind="nic" data-iface="${escH(p.name)}">
+              <div class="pve-ni-card-top">
+                <div class="pve-ni-card-id">
+                  <span class="pve-ni-name">${escH(p.name)}</span>
+                  ${ifaceBadge("Physical", "blue")}
+                </div>
+                <div class="pve-ni-card-status">
+                  <span class="pve-ni-status ${p.up ? "is-up" : "is-down"}"><i class="pve-ni-dot"></i>${escH(p.status)}</span>
+                  <span class="pve-ni-duplex">${escH(p.duplex)}</span>
+                </div>
+              </div>
+              <div class="pve-ni-card-grid">
+                <div class="pve-ni-stat"><span class="pve-ni-stat-k">Speed</span><span class="pve-ni-stat-v pve-ni-stat-v--speed">${bolt}${escH(p.speed > 0 ? fmtIfaceSpeed(p.speed) : "N/A")}</span></div>
+                <div class="pve-ni-stat"><span class="pve-ni-stat-k">MTU</span><span class="pve-ni-stat-v">${escH(String(p.mtu))}</span></div>
+                <div class="pve-ni-stat"><span class="pve-ni-stat-k">Received</span><span class="pve-ni-stat-v is-rx">${escH(fmtRateBytes(p.rx))}</span></div>
+                <div class="pve-ni-stat"><span class="pve-ni-stat-k">Sent</span><span class="pve-ni-stat-v is-tx">${escH(fmtRateBytes(p.tx))}</span></div>
+                ${dropsHtml}
+              </div>
+              <div class="pve-ni-card-foot">
+                <span class="pve-ni-mac">${escH(p.mac)}</span>
+                ${arrow}
+              </div>
+            </button>`;
+        }).join("")
+      : `<div class="pve-net-empty">No physical interfaces found.</div>`;
+
+    const bridgeCards = bridges.length
+      ? bridges.map((b) => `
+          <button type="button" class="pve-ni-card pve-ni-card--bridge ${b.up ? "" : "pve-ni-card--down"}"
+            data-iface-open data-kind="bridge" data-iface="${escH(b.name)}">
+            <div class="pve-ni-card-top">
+              <div class="pve-ni-card-id">
+                <span class="pve-ni-name">${escH(b.name)}</span>
+                ${ifaceBadge("Bridge", "green")}
+              </div>
+              <span class="pve-ni-status ${b.up ? "is-up" : "is-down"}"><i class="pve-ni-dot"></i>${escH(b.status)}</span>
             </div>
+            <div class="pve-ni-card-row">
+              <div class="pve-ni-stat"><span class="pve-ni-stat-k">IP Address</span><span class="pve-ni-stat-v pve-ni-stat-v--mono">${escH(b.ip)}</span></div>
+              <div class="pve-ni-stat"><span class="pve-ni-stat-k">Speed</span><span class="pve-ni-stat-v pve-ni-stat-v--speed">${bolt}${escH(b.speed > 0 ? fmtIfaceSpeed(b.speed) : "N/A")}</span></div>
+              <div class="pve-ni-stat"><span class="pve-ni-stat-k">Duplex</span><span class="pve-ni-stat-v">${escH(b.duplex)}</span></div>
+              <div class="pve-ni-stat"><span class="pve-ni-stat-k">MTU</span><span class="pve-ni-stat-v">${escH(String(b.mtu))}</span></div>
+            </div>
+            <div class="pve-ni-card-foot">
+              <span class="pve-ni-mac">${escH(b.mac)}</span>
+              ${arrow}
+            </div>
+          </button>`).join("")
+      : `<div class="pve-net-empty">No bridge interfaces found.</div>`;
+
+    return `
+      <div class="pve-ni-wrap">
+        <section class="pve-ni-section">
+          <div class="pve-ni-section-hdr">
+            <div class="pve-ni-section-title">${routerIco}<span>Physical Interfaces</span></div>
+            <span class="pve-ni-count-badge pve-ni-count-badge--blue">${physActive}/${physical.length || 0} Active</span>
           </div>
-          <div class="pve-net-card-body pve-net-card-body--flow">
-            ${buildNetworkFlow(nodeCfg, pveData, glancesData)}
+          <div class="pve-ni-grid">${physCards}</div>
+        </section>
+        <section class="pve-ni-section">
+          <div class="pve-ni-section-hdr">
+            <div class="pve-ni-section-title">${bridgeIco}<span>Bridge Interfaces</span></div>
+            <span class="pve-ni-count-badge pve-ni-count-badge--green">${brActive}/${bridges.length || 0} Active</span>
           </div>
+          <div class="pve-ni-bridge-list">${bridgeCards}</div>
         </section>
       </div>`;
   }
@@ -5152,6 +5623,35 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
 
     const rrdData = _rrdCache[nodeCfg.groupName] || [];
     _nodeCache[nodeCfg.groupName] = { nodeCfg, pveData, glancesData };
+    // Diff guest net counters here (fresh poll only) — not during tab repaints
+    updateGuestNetRates(nodeCfg.groupName, pveData);
+
+    // Cold start: one quick resample ~2.5s later so flow labels aren't stuck on "—" / 0
+    // until the normal 30s poll. Baseline from the first fetch makes this produce real rates.
+    if (pveData && !_guestNetQuickSample[nodeCfg.groupName]) {
+      const rates = _guestNetRates[nodeCfg.groupName] || {};
+      const anyReady = Object.keys(rates).some((k) => rates[k]?.ready);
+      if (!anyReady) {
+        _guestNetQuickSample[nodeCfg.groupName] = true;
+        setTimeout(() => {
+          Promise.all([
+            fetchPveVMs(nodeCfg).catch(() => null),
+            fetchPveLXC(nodeCfg).catch(() => null),
+          ]).then(([vms, lxcs]) => {
+            const cache = _nodeCache[nodeCfg.groupName];
+            if (!cache?.pveData) return;
+            if (Array.isArray(vms)) cache.pveData.vms = vms;
+            if (Array.isArray(lxcs)) cache.pveData.lxcs = lxcs;
+            updateGuestNetRates(nodeCfg.groupName, cache.pveData);
+            if ((_tabs[nodeCfg.groupName] || "overview") === "network") {
+              paintNodeFromCache(nodeCfg);
+            }
+          }).catch(() => {});
+        }, 2500);
+      } else {
+        _guestNetQuickSample[nodeCfg.groupName] = true;
+      }
+    }
 
     // Don't wipe the widget (or lose the active tab UI) while a modal is open
     if ((_guestModal && document.body.contains(_guestModal)) ||
@@ -5168,6 +5668,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     bindPveTabs(host, nodeCfg);
     bindGuestRows(host, nodeCfg);
     bindStorageSubTabs(host, nodeCfg);
+    bindNetworkSubTabs(host, nodeCfg);
     bindIfaceFlowNodes(host, nodeCfg);
     const list = host.querySelector(".pve-g-list");
     if (list && prevScroll) list.scrollTop = prevScroll;
@@ -5194,6 +5695,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     bindPveTabs(host, nodeCfg);
     bindGuestRows(host, nodeCfg);
     bindStorageSubTabs(host, nodeCfg);
+    bindNetworkSubTabs(host, nodeCfg);
     bindIfaceFlowNodes(host, nodeCfg);
     const list = host.querySelector(".pve-g-list");
     if (list && prevScroll) list.scrollTop = prevScroll;
@@ -5268,6 +5770,34 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
         if (_tabs[nodeCfg.groupName] === next) return;
         _tabs[nodeCfg.groupName] = next;
         paintNodeFromCache(nodeCfg);
+      });
+    });
+  }
+
+  function bindNetworkSubTabs(host, nodeCfg) {
+    host.querySelectorAll("[data-net-sub]").forEach((btn) => {
+      if (btn.__pveNetSubBound) return;
+      btn.__pveNetSubBound = true;
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const next = btn.getAttribute("data-net-sub") || "flow";
+        if (_networkSubTabs[nodeCfg.groupName] === next) return;
+        _networkSubTabs[nodeCfg.groupName] = next;
+        paintNodeFromCache(nodeCfg);
+      });
+    });
+
+    host.querySelectorAll("[data-iface-open]").forEach((btn) => {
+      if (btn.__pveIfaceOpenBound) return;
+      btn.__pveIfaceOpenBound = true;
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openIfaceDetails(nodeCfg, {
+          kind: btn.getAttribute("data-kind") || "bridge",
+          iface: btn.getAttribute("data-iface") || "",
+        });
       });
     });
   }
