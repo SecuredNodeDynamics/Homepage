@@ -5901,6 +5901,635 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
       </div>`;
   }
 
+
+  // ── Security / Lynis (ProxMenux) ───────────────────────────────────
+  const _prxLynisCache = {}; // groupName -> cache
+  const _lynisPoll = {}; // groupName -> interval id
+  let _lynisInstallModal = null;
+
+  function lynisState(groupName) {
+    if (!_prxLynisCache[groupName]) {
+      _prxLynisCache[groupName] = {
+        tools: null,
+        report: null,
+        status: null,
+        at: 0,
+        expanded: false,
+        reportPane: "overview",
+        msg: "",
+        err: "",
+        loading: false,
+      };
+    }
+    return _prxLynisCache[groupName];
+  }
+
+  function stopLynisPoll(groupName) {
+    if (_lynisPoll[groupName]) {
+      clearInterval(_lynisPoll[groupName]);
+      delete _lynisPoll[groupName];
+    }
+  }
+
+  function stripAnsi(str) {
+    return String(str || "")
+      .replace(/\u001b\[[0-9;]*[A-Za-z]/g, "")
+      .replace(/\[[0-9;]*m/g, "");
+  }
+
+  /** ProxMenux sometimes returns `lynis --version` stdout (ANSI + PID warnings). */
+  function cleanLynisVersion(raw) {
+    const cleaned = stripAnsi(raw).replace(/\s+/g, " ").trim();
+    if (!cleaned) return "";
+    const m = cleaned.match(/\b(\d+\.\d+(?:\.\d+)?)\b/);
+    if (m) return m[1];
+    // Reject multi-line / warning dumps
+    if (/PID file|Warning:|Note:/i.test(cleaned) || cleaned.length > 24) return "";
+    return cleaned.slice(0, 24);
+  }
+
+  function normalizeLynisTools(tools) {
+    if (!tools || typeof tools !== "object") return tools;
+    const lynis = tools.lynis;
+    if (!lynis || typeof lynis !== "object") return tools;
+    const version = cleanLynisVersion(lynis.version);
+    return {
+      ...tools,
+      lynis: {
+        ...lynis,
+        version: version || cleanLynisVersion(lynis.lynis_version) || "",
+      },
+    };
+  }
+
+  async function fetchPrxSecurityTools(nodeCfg, { silent = true } = {}) {
+    return prxApiFetch(nodeCfg, "/api/security/tools", { silent });
+  }
+
+  async function fetchPrxLynisStatus(nodeCfg, { silent = true } = {}) {
+    return prxApiFetch(nodeCfg, "/api/security/lynis/status", { silent });
+  }
+
+  async function fetchPrxLynisReport(nodeCfg, { silent = true } = {}) {
+    return prxApiFetch(nodeCfg, "/api/security/lynis/report", { silent });
+  }
+
+  async function refreshLynisCache(nodeCfg, { force = false, silent = true } = {}) {
+    const st = lynisState(nodeCfg.groupName);
+    if (!force && st.tools && (Date.now() - st.at) < 15000) return st;
+    st.loading = true;
+    try {
+      const [toolsRes, statusRes] = await Promise.all([
+        fetchPrxSecurityTools(nodeCfg, { silent }).catch(() => null),
+        fetchPrxLynisStatus(nodeCfg, { silent }).catch(() => null),
+      ]);
+      if (toolsRes?.tools) st.tools = normalizeLynisTools(toolsRes.tools);
+      if (statusRes) st.status = statusRes;
+      const lynis = st.tools?.lynis;
+      if (lynis?.installed && lynis?.last_scan) {
+        try {
+          const rep = await fetchPrxLynisReport(nodeCfg, { silent });
+          if (rep?.success && rep.report) st.report = rep.report;
+          // Prefer clean version from report when tools version was junk
+          if (st.report?.lynis_version) {
+            const ver = cleanLynisVersion(st.report.lynis_version);
+            if (ver && st.tools?.lynis) st.tools.lynis.version = ver;
+          }
+        } catch {
+          /* keep previous report */
+        }
+      }
+      st.at = Date.now();
+      st.err = "";
+    } catch (err) {
+      st.err = err.message || String(err);
+    } finally {
+      st.loading = false;
+    }
+    return st;
+  }
+
+  function lynisScoreColor(score) {
+    if (score == null || Number.isNaN(Number(score))) return "muted";
+    const n = Number(score);
+    if (n >= 70) return "good";
+    if (n >= 50) return "warn";
+    return "bad";
+  }
+
+  function fmtLynisStamp(val) {
+    if (!val) return "Never";
+    return String(val).replace("T", " ").substring(0, 16);
+  }
+
+  function buildLynisReportExpandHtml(report, pane) {
+    if (!report) return "";
+    const warnings = Array.isArray(report.warnings) ? report.warnings : [];
+    const suggestions = Array.isArray(report.suggestions) ? report.suggestions : [];
+    const sections = Array.isArray(report.sections) ? report.sections : [];
+    const expW = Number(report.proxmox_expected_warnings) || 0;
+    const expS = Number(report.proxmox_expected_suggestions) || 0;
+    const adj = report.proxmox_adjusted_score != null ? report.proxmox_adjusted_score : report.hardening_index;
+    const raw = report.hardening_index;
+    const tabs = [
+      ["overview", "Overview"],
+      ["checks", `Checks (${sections.length})`],
+      ["warnings", `Warnings (${warnings.length})`],
+      ["suggestions", `Suggestions (${suggestions.length})`],
+    ];
+    const tabBtns = tabs.map(([id, label]) => `
+      <button type="button" class="pve-sec-rpane ${pane === id ? "pve-sec-rpane--active" : ""}" data-lynis-pane="${id}">${escH(label)}</button>
+    `).join("");
+
+    let body = "";
+    if (pane === "overview") {
+      body = `
+        <div class="pve-sec-ov-grid">
+          <div class="pve-sec-ov"><span>Hardening</span><b class="pve-sec-score--${lynisScoreColor(adj)}">${escH(adj ?? "—")}/100</b></div>
+          <div class="pve-sec-ov"><span>Lynis raw</span><b>${escH(raw ?? "—")}/100</b></div>
+          <div class="pve-sec-ov"><span>Warnings</span><b>${warnings.length} <small>(${Math.max(0, warnings.length - expW)} actionable)</small></b></div>
+          <div class="pve-sec-ov"><span>Suggestions</span><b>${suggestions.length} <small>(${Math.max(0, suggestions.length - expS)} actionable)</small></b></div>
+          <div class="pve-sec-ov"><span>Firewall</span><b>${report.firewall_active ? "Active" : "Inactive"}</b></div>
+          <div class="pve-sec-ov"><span>Malware scanner</span><b>${report.malware_scanner ? "Present" : "Missing"}</b></div>
+          <div class="pve-sec-ov"><span>Packages</span><b>${escH(report.installed_packages ?? "—")}</b></div>
+          <div class="pve-sec-ov"><span>Lynis</span><b>${escH(report.lynis_version || "—")}</b></div>
+        </div>`;
+    } else if (pane === "checks") {
+      const rows = sections.slice(0, 40).map((sec) => {
+        const checks = Array.isArray(sec.checks) ? sec.checks : [];
+        const preview = checks.slice(0, 4).map((c) => escH(c.name || "")).filter(Boolean).join(" · ");
+        return `
+          <div class="pve-sec-check">
+            <div class="pve-sec-check-name">${escH(sec.name || "Section")}</div>
+            <div class="pve-sec-check-meta">${checks.length} checks${preview ? ` — ${preview}` : ""}</div>
+          </div>`;
+      }).join("") || `<div class="pve-sec-empty">No check sections available</div>`;
+      body = `<div class="pve-sec-list">${rows}</div>`;
+    } else if (pane === "warnings") {
+      const rows = warnings.map((w) => `
+        <div class="pve-sec-finding ${w.proxmox_expected ? "is-expected" : "is-action"}">
+          <div class="pve-sec-finding-top">
+            <span class="pve-sec-finding-id">${escH(w.test_id || "WARN")}</span>
+            ${w.proxmox_expected ? `<span class="pve-sec-tag">PVE expected</span>` : `<span class="pve-sec-tag pve-sec-tag--warn">Actionable</span>`}
+          </div>
+          <div class="pve-sec-finding-title">${escH(w.description || "Warning")}</div>
+          ${w.proxmox_context ? `<div class="pve-sec-finding-ctx">${escH(w.proxmox_context)}</div>` : ""}
+          ${w.solution ? `<div class="pve-sec-finding-sol">${escH(w.solution)}</div>` : ""}
+        </div>`).join("") || `<div class="pve-sec-empty">No warnings</div>`;
+      body = `<div class="pve-sec-list">${rows}</div>`;
+    } else {
+      const rows = suggestions.slice(0, 60).map((s) => `
+        <div class="pve-sec-finding ${s.proxmox_expected ? "is-expected" : "is-action"}">
+          <div class="pve-sec-finding-top">
+            <span class="pve-sec-finding-id">${escH(s.test_id || "SUG")}</span>
+            ${s.proxmox_expected ? `<span class="pve-sec-tag">PVE expected</span>` : `<span class="pve-sec-tag pve-sec-tag--sug">Actionable</span>`}
+          </div>
+          <div class="pve-sec-finding-title">${escH(s.description || "Suggestion")}</div>
+          ${s.proxmox_context ? `<div class="pve-sec-finding-ctx">${escH(s.proxmox_context)}</div>` : ""}
+          ${s.details ? `<div class="pve-sec-finding-sol">${escH(s.details)}</div>` : ""}
+          ${s.solution ? `<div class="pve-sec-finding-sol">${escH(s.solution)}</div>` : ""}
+        </div>`).join("") || `<div class="pve-sec-empty">No suggestions</div>`;
+      body = `<div class="pve-sec-list">${rows}</div>`;
+    }
+
+    return `
+      <div class="pve-sec-expand">
+        <div class="pve-sec-meta-grid">
+          <div><span>Hostname</span><b>${escH(report.hostname || "N/A")}</b></div>
+          <div><span>OS</span><b>${escH(report.os_fullname || `${report.os_name || ""} ${report.os_version || ""}`.trim() || "N/A")}</b></div>
+          <div><span>Kernel</span><b>${escH(report.kernel_version || "N/A")}</b></div>
+          <div><span>Tests</span><b>${escH(report.tests_performed ?? "—")}</b></div>
+        </div>
+        <div class="pve-sec-rpanes">${tabBtns}</div>
+        <div class="pve-sec-rbody">${body}</div>
+      </div>`;
+  }
+
+  function buildLynisPdfHtml(report, nodeCfg) {
+    const warnings = Array.isArray(report?.warnings) ? report.warnings : [];
+    const suggestions = Array.isArray(report?.suggestions) ? report.suggestions : [];
+    const expW = Number(report?.proxmox_expected_warnings) || 0;
+    const expS = Number(report?.proxmox_expected_suggestions) || 0;
+    const adj = report?.proxmox_adjusted_score != null ? report.proxmox_adjusted_score : report?.hardening_index;
+    const raw = report?.hardening_index;
+    const actW = Math.max(0, warnings.length - expW);
+    const actS = Math.max(0, suggestions.length - expS);
+    const color = adj == null ? "#64748b" : adj >= 70 ? "#16a34a" : adj >= 50 ? "#ca8a04" : "#dc2626";
+    const now = new Date().toLocaleString();
+    const warnRows = warnings.map((w) => `
+      <tr>
+        <td>${escH(w.test_id || "")}</td>
+        <td>${escH(w.description || "")}${w.proxmox_expected ? ' <em style="color:#64748b">(PVE expected)</em>' : ""}</td>
+      </tr>`).join("") || `<tr><td colspan="2">None</td></tr>`;
+    const sugRows = suggestions.slice(0, 80).map((s) => `
+      <tr>
+        <td>${escH(s.test_id || "")}</td>
+        <td>${escH(s.description || "")}${s.proxmox_expected ? ' <em style="color:#64748b">(PVE expected)</em>' : ""}</td>
+      </tr>`).join("") || `<tr><td colspan="2">None</td></tr>`;
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Lynis Security Audit</title>
+<style>
+  body{font-family:Inter,Segoe UI,system-ui,sans-serif;margin:0;background:#f1f5f9;color:#0f172a}
+  .wrap{max-width:920px;margin:0 auto;padding:28px 20px 48px}
+  .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px;margin-bottom:14px}
+  h1{margin:0 0 6px;font-size:26px} .sub{color:#64748b;font-size:13px;margin-bottom:18px}
+  .score{font-size:42px;font-weight:900;color:${color}}
+  table{width:100%;border-collapse:collapse;font-size:13px} th,td{padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:left;vertical-align:top}
+  th{font-size:11px;color:#64748b;text-transform:uppercase}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .kv{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px}
+  .kv span{display:block;font-size:11px;color:#64748b} .kv b{font-size:14px}
+  @media print{body{background:#fff}.wrap{padding:0}}
+</style></head><body><div class="wrap">
+  <h1>Lynis Security Audit</h1>
+  <div class="sub">${escH(report?.hostname || nodeCfg.pveNode || "")} · ${escH(fmtLynisStamp(report?.datetime_start))} · Generated ${escH(now)}</div>
+  <div class="card" style="display:flex;gap:24px;align-items:center">
+    <div class="score">${escH(adj ?? "—")}</div>
+    <div>
+      <div style="font-weight:800">Proxmox-adjusted hardening score</div>
+      <div style="color:#64748b;font-size:13px;margin-top:4px">Lynis raw: ${escH(raw ?? "—")}/100 · ${escH(report?.tests_performed ?? "—")} tests</div>
+      <div style="color:#64748b;font-size:13px">${actW} actionable warnings · ${actS} actionable suggestions</div>
+    </div>
+  </div>
+  <div class="card"><div class="grid">
+    <div class="kv"><span>OS</span><b>${escH(report?.os_fullname || "—")}</b></div>
+    <div class="kv"><span>Kernel</span><b>${escH(report?.kernel_version || "—")}</b></div>
+    <div class="kv"><span>Lynis</span><b>${escH(report?.lynis_version || "—")}</b></div>
+    <div class="kv"><span>Packages</span><b>${escH(report?.installed_packages ?? "—")}</b></div>
+  </div></div>
+  <div class="card"><h3 style="margin:0 0 10px">Warnings (${warnings.length})</h3><table><tr><th>ID</th><th>Finding</th></tr>${warnRows}</table></div>
+  <div class="card"><h3 style="margin:0 0 10px">Suggestions (${suggestions.length})</h3><table><tr><th>ID</th><th>Finding</th></tr>${sugRows}</table></div>
+  <div style="text-align:center;color:#94a3b8;font-size:12px">ProxMenux Monitor · Homepage widget</div>
+</div></body></html>`;
+  }
+
+  function buildSecurityTab(nodeCfg) {
+    const st = lynisState(nodeCfg.groupName);
+    const lynis = st.tools?.lynis || null;
+    const report = st.report;
+    const running = !!(st.status?.running || st.localRunning);
+    const installed = !!lynis?.installed;
+
+    if (!nodeCfg.prxUrl) {
+      return `<div class="pve-sec-tab"><div class="pve-sec-empty-block">ProxMenux MONITOR URL is not configured for this node.</div></div>`;
+    }
+    if (st.loading && !lynis) {
+      return `<div class="pve-sec-tab"><div class="pve-sec-empty-block">Loading Lynis status from ProxMenux…</div></div>`;
+    }
+    if (st.err && !lynis) {
+      return `<div class="pve-sec-tab"><div class="pve-sec-empty-block">${escH(st.err)}</div></div>`;
+    }
+
+    if (!installed) {
+      return `
+        <div class="pve-sec-tab">
+          <div class="pve-sec-hdr">
+            <div class="pve-sec-hdr-left">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <div>
+                <div class="pve-sec-title">Lynis Security Audit</div>
+                <div class="pve-sec-sub">System security auditing tool that performs comprehensive security scans</div>
+              </div>
+            </div>
+          </div>
+          <div class="pve-sec-status">
+            <div class="pve-sec-status-left">
+              <div class="pve-sec-ico pve-sec-ico--muted">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              </div>
+              <div>
+                <div class="pve-sec-status-title">Lynis Not Installed</div>
+                <div class="pve-sec-status-sub">Comprehensive security auditing and hardening tool</div>
+              </div>
+            </div>
+          </div>
+          <div class="pve-sec-info">
+            <div class="pve-sec-info-title">Lynis features:</div>
+            <ul>
+              <li>System hardening scoring (0–100)</li>
+              <li>Vulnerability detection and suggestions</li>
+              <li>Compliance checking (PCI-DSS, HIPAA, etc.)</li>
+              <li>Installed from latest GitHub source via ProxMenux</li>
+            </ul>
+          </div>
+          <button type="button" class="pve-sec-run" data-lynis-install>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            Install Lynis
+          </button>
+          ${st.err ? `<div class="pve-sec-banner pve-sec-banner--err">${escH(st.err)}</div>` : ""}
+        </div>`;
+    }
+
+    const raw = report?.hardening_index != null ? Number(report.hardening_index)
+      : (lynis.hardening_index != null ? Number(lynis.hardening_index) : null);
+    const adj = report?.proxmox_adjusted_score != null ? Number(report.proxmox_adjusted_score) : raw;
+    const expW = Number(report?.proxmox_expected_warnings) || 0;
+    const expS = Number(report?.proxmox_expected_suggestions) || 0;
+    const warnTotal = Array.isArray(report?.warnings) ? report.warnings.length : 0;
+    const sugTotal = Array.isArray(report?.suggestions) ? report.suggestions.length : 0;
+    const warnAction = Math.max(0, warnTotal - expW);
+    const sugAction = Math.max(0, sugTotal - expS);
+    const warnDisplay = warnAction > 0 ? warnAction : warnTotal;
+    const sugDisplay = sugAction > 0 ? sugAction : sugTotal;
+    const scoreCls = lynisScoreColor(adj);
+    const warnCls = warnAction > 0 ? "bad" : (warnTotal > 0 ? "warn" : "good");
+    const sugCls = sugAction > 0 ? "warn" : "good";
+    const lastScan = fmtLynisStamp(lynis.last_scan || report?.datetime_start);
+    const adjusted = adj != null && raw != null && adj !== raw;
+    const expectedFindings = expW + expS;
+
+    const reportRow = report ? `
+      <div class="pve-sec-reports">
+        <div class="pve-sec-reports-label">Audit Reports</div>
+        <div class="pve-sec-report">
+          <div class="pve-sec-report-main" data-lynis-toggle role="button" tabindex="0">
+            <div class="pve-sec-report-left">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+              <div>
+                <div class="pve-sec-report-title">Security Audit - ${escH(fmtLynisStamp(report.datetime_start || lynis.last_scan))}</div>
+                <div class="pve-sec-report-sub">${escH(report.hostname || nodeCfg.pveNode || "System")} - ${escH(report.tests_performed ?? "—")} tests - PVE Score: ${escH(adj ?? "N/A")}/100 - ${warnAction} warnings - ${sugAction} suggestions</div>
+              </div>
+            </div>
+            <div class="pve-sec-report-actions">
+              <button type="button" class="pve-sec-pdf" data-lynis-pdf title="Print / Save as PDF">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
+                PDF
+              </button>
+              <svg class="pve-sec-chevron ${st.expanded ? "is-open" : ""}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+              <button type="button" class="pve-sec-del" data-lynis-delete title="Delete report">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+              </button>
+            </div>
+          </div>
+          ${st.expanded ? buildLynisReportExpandHtml(report, st.reportPane || "overview") : ""}
+        </div>
+      </div>` : "";
+
+    return `
+      <div class="pve-sec-tab">
+        <div class="pve-sec-hdr">
+          <div class="pve-sec-hdr-left">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <div>
+              <div class="pve-sec-title">Lynis Security Audit</div>
+              <div class="pve-sec-sub">System security auditing tool that performs comprehensive security scans</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pve-sec-status">
+          <div class="pve-sec-status-left">
+            <div class="pve-sec-ico pve-sec-ico--ok">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            </div>
+            <div>
+              <div class="pve-sec-status-title">Lynis ${escH(cleanLynisVersion(lynis.version || report?.lynis_version) || "installed")}</div>
+              <div class="pve-sec-status-sub">Security auditing tool installed</div>
+            </div>
+          </div>
+          <span class="pve-sec-badge pve-sec-badge--ok">Installed</span>
+        </div>
+
+        <div class="pve-sec-metrics">
+          <div class="pve-sec-metric">
+            <div class="pve-sec-metric-label">Last Scan</div>
+            <div class="pve-sec-metric-val">${escH(lastScan)}</div>
+          </div>
+          <div class="pve-sec-metric">
+            <div class="pve-sec-metric-label">Hardening Index</div>
+            <div class="pve-sec-metric-big pve-sec-score--${scoreCls}">${adj != null ? escH(adj) : "—"}</div>
+            ${adjusted ? `<div class="pve-sec-metric-sub">Lynis: ${escH(raw)} | PVE: ${escH(adj)}</div>` : ""}
+          </div>
+          <div class="pve-sec-metric">
+            <div class="pve-sec-metric-label">Warnings</div>
+            <div class="pve-sec-metric-big pve-sec-score--${report ? warnCls : "muted"}">${report ? warnDisplay : "—"}</div>
+            ${expW > 0 ? `<div class="pve-sec-metric-sub">+${expW} PVE expected</div>` : ""}
+          </div>
+          <div class="pve-sec-metric">
+            <div class="pve-sec-metric-label">Suggestions</div>
+            <div class="pve-sec-metric-big pve-sec-score--${report ? sugCls : "muted"}">${report ? sugDisplay : "—"}</div>
+            ${expS > 0 ? `<div class="pve-sec-metric-sub">+${expS} PVE expected</div>` : ""}
+          </div>
+        </div>
+
+        ${raw != null ? `
+        <div class="pve-sec-scoreblock">
+          <div class="pve-sec-scorehdr">
+            <span>Security Hardening Score ${adjusted ? `<em>(Proxmox Adjusted)</em>` : ""}</span>
+            <b class="pve-sec-score--${scoreCls}">${escH(adj)}/100</b>
+          </div>
+          <div class="pve-sec-bar">
+            ${adjusted ? `<div class="pve-sec-bar-raw" style="width:${Math.max(0, Math.min(100, raw))}%"></div>` : ""}
+            <div class="pve-sec-bar-adj pve-sec-bar-adj--${scoreCls}" style="width:${Math.max(0, Math.min(100, Number(adj) || 0))}%"></div>
+          </div>
+          <div class="pve-sec-bar-legend">
+            <span>Critical (0-49)</span><span>Moderate (50-69)</span><span>Good (70-100)</span>
+          </div>
+          ${adjusted ? `<div class="pve-sec-score-note">Lynis raw score: ${escH(raw)}/100 | ${expectedFindings} findings are expected in Proxmox VE</div>` : ""}
+        </div>` : ""}
+
+        ${running ? `
+        <div class="pve-sec-progress">
+          <div class="pve-sec-spinner"></div>
+          <div>
+            <div class="pve-sec-progress-title">Security audit in progress...</div>
+            <div class="pve-sec-progress-sub">This may take 2-5 minutes. Lynis is scanning your system for vulnerabilities, misconfigurations, and hardening opportunities.</div>
+          </div>
+        </div>` : ""}
+
+        ${st.msg ? `<div class="pve-sec-banner pve-sec-banner--ok">${escH(st.msg)}</div>` : ""}
+        ${st.err ? `<div class="pve-sec-banner pve-sec-banner--err">${escH(st.err)}</div>` : ""}
+
+        ${reportRow}
+
+        <button type="button" class="pve-sec-run" data-lynis-run ${running ? "disabled" : ""}>
+          ${running
+            ? `<span class="pve-sec-spinner pve-sec-spinner--btn"></span>Running Audit...`
+            : `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>Run Security Audit`}
+        </button>
+      </div>`;
+  }
+
+  function startLynisPoll(nodeCfg) {
+    const group = nodeCfg.groupName;
+    stopLynisPoll(group);
+    _lynisPoll[group] = setInterval(async () => {
+      try {
+        const status = await fetchPrxLynisStatus(nodeCfg, { silent: true });
+        const st = lynisState(group);
+        st.status = status;
+        if (!status?.running) {
+          stopLynisPoll(group);
+          st.localRunning = false;
+          if (status?.progress === "completed") {
+            st.msg = "Security audit completed successfully";
+            st.err = "";
+            await refreshLynisCache(nodeCfg, { force: true, silent: true });
+          } else {
+            const prog = stripAnsi(status?.progress || "Audit failed").replace(/\s+/g, " ").trim();
+            st.err = prog.length > 180 ? `${prog.slice(0, 180)}…` : prog;
+          }
+          if ((_tabs[group] || "overview") === "security") paintNodeFromCache(nodeCfg);
+        } else if ((_tabs[group] || "overview") === "security") {
+          paintNodeFromCache(nodeCfg);
+        }
+      } catch {
+        /* keep polling */
+      }
+    }, 3000);
+  }
+
+  async function openLynisInstallModal(nodeCfg) {
+    if (_lynisInstallModal) {
+      _lynisInstallModal.remove();
+      _lynisInstallModal = null;
+    }
+    const backdrop = document.createElement("div");
+    backdrop.className = "pve-hw-swrun-backdrop";
+    backdrop.innerHTML = `
+      <div class="pve-hw-swrun-modal" role="dialog" aria-modal="true">
+        <div class="pve-hw-swrun-title">Lynis Installation</div>
+        <div class="pve-hw-swrun-sub">Installing Lynis security auditing tool via ProxMenux…</div>
+        <div class="pve-hw-swrun-status" data-lynis-inst-status>Connecting…</div>
+        <div class="pve-hw-swrun-log" data-lynis-inst-log></div>
+        <div class="pve-hw-swrun-ftr">
+          <button type="button" class="pve-hw-gpu-sw-btn pve-hw-gpu-sw-btn--ghost" data-lynis-inst-close>Close</button>
+        </div>
+      </div>`;
+    document.body.appendChild(backdrop);
+    _lynisInstallModal = backdrop;
+    const statusEl = backdrop.querySelector("[data-lynis-inst-status]");
+    const logEl = backdrop.querySelector("[data-lynis-inst-log]");
+    const append = (line, cls = "") => {
+      const div = document.createElement("div");
+      if (cls) div.className = cls;
+      div.textContent = line;
+      logEl.appendChild(div);
+      logEl.scrollTop = logEl.scrollHeight;
+    };
+    backdrop.querySelector("[data-lynis-inst-close]")?.addEventListener("click", () => {
+      try { backdrop.__ws?.close(); } catch {}
+      backdrop.remove();
+      if (_lynisInstallModal === backdrop) _lynisInstallModal = null;
+      refreshLynisCache(nodeCfg, { force: true, silent: true }).then(() => paintNodeFromCache(nodeCfg));
+    });
+    try {
+      const ticket = await fetchPrxTerminalTicket(nodeCfg);
+      const sessionId = Math.random().toString(36).slice(2, 8);
+      const wsUrl = prxScriptWsUrl(nodeCfg.prxUrl, sessionId, ticket);
+      const ws = new WebSocket(wsUrl);
+      backdrop.__ws = ws;
+      statusEl.textContent = "Connected — starting installer…";
+      ws.onopen = () => {
+        ws.send(JSON.stringify({
+          script_path: "/usr/local/share/proxmenux/scripts/security/lynis_installer.sh",
+          params: { EXECUTION_MODE: "web" },
+        }));
+        append("Running lynis_installer.sh", "is-meta");
+      };
+      ws.onmessage = (ev) => {
+        const raw = String(ev.data || "");
+        if (raw === '{"type": "pong"}' || raw === '{"type":"pong"}') return;
+        try {
+          const msg = JSON.parse(raw);
+          if (msg?.type === "error") {
+            append(msg.message || "Error", "is-err");
+            statusEl.textContent = "Failed";
+            return;
+          }
+        } catch {}
+        append(raw.replace(/\x1b\[[0-9;]*m/g, ""));
+      };
+      ws.onerror = () => { statusEl.textContent = "Connection error"; append("WebSocket error", "is-err"); };
+      ws.onclose = () => { statusEl.textContent = "Finished"; append("Connection closed", "is-meta"); };
+    } catch (err) {
+      statusEl.textContent = "Failed to start";
+      append(err.message || String(err), "is-err");
+    }
+  }
+
+  function bindSecurityTab(host, nodeCfg) {
+    const st = lynisState(nodeCfg.groupName);
+
+    host.querySelector("[data-lynis-run]")?.addEventListener("click", async (e) => {
+      e.preventDefault();
+      if (st.localRunning || st.status?.running) return;
+      st.err = "";
+      st.msg = "";
+      st.localRunning = true;
+      paintNodeFromCache(nodeCfg);
+      try {
+        const res = await prxApiFetch(nodeCfg, "/api/security/lynis/run", { method: "POST" });
+        if (!res?.success) throw new Error(res?.message || "Failed to start audit");
+        st.status = { running: true, progress: "running", success: true };
+        startLynisPoll(nodeCfg);
+        paintNodeFromCache(nodeCfg);
+      } catch (err) {
+        st.localRunning = false;
+        st.err = err.message || String(err);
+        paintNodeFromCache(nodeCfg);
+      }
+    });
+
+    host.querySelector("[data-lynis-install]")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      openLynisInstallModal(nodeCfg);
+    });
+
+    const toggle = host.querySelector("[data-lynis-toggle]");
+    if (toggle) {
+      const onToggle = (e) => {
+        if (e.target.closest("[data-lynis-pdf], [data-lynis-delete]")) return;
+        st.expanded = !st.expanded;
+        paintNodeFromCache(nodeCfg);
+      };
+      toggle.addEventListener("click", onToggle);
+      toggle.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onToggle(e);
+        }
+      });
+    }
+
+    host.querySelector("[data-lynis-pdf]")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!st.report) return;
+      const html = buildLynisPdfHtml(st.report, nodeCfg);
+      const blob = new Blob([html], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    });
+
+    host.querySelector("[data-lynis-delete]")?.addEventListener("click", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!confirm("Delete this audit report? The report file will be removed from the server.")) return;
+      try {
+        await prxApiFetch(nodeCfg, "/api/security/lynis/report", { method: "DELETE" });
+        st.report = null;
+        st.expanded = false;
+        st.msg = "Report deleted";
+        st.err = "";
+        await refreshLynisCache(nodeCfg, { force: true, silent: true });
+        paintNodeFromCache(nodeCfg);
+      } catch (err) {
+        st.err = err.message || "Failed to delete report";
+        paintNodeFromCache(nodeCfg);
+      }
+    });
+
+    host.querySelectorAll("[data-lynis-pane]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        st.reportPane = btn.getAttribute("data-lynis-pane") || "overview";
+        paintNodeFromCache(nodeCfg);
+      });
+    });
+  }
+
   function closePciDetails() {
     if (_pciModal) {
       _pciModal.remove();
@@ -6236,6 +6865,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
           <button type="button" class="pve-tab" data-tab="guests">VMs &amp; LXCs</button>
           <button type="button" class="pve-tab" data-tab="storage">Storage</button>
           <button type="button" class="pve-tab" data-tab="hardware">Hardware</button>
+          <button type="button" class="pve-tab" data-tab="security">Security</button>
         </div>
       </div>
       <div class="pve-body">
@@ -6434,6 +7064,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
             <button type="button" class="pve-tab ${activeTab === "guests" ? "pve-tab--active" : ""}" data-tab="guests">VMs &amp; LXCs</button>
             <button type="button" class="pve-tab ${activeTab === "storage" ? "pve-tab--active" : ""}" data-tab="storage">Storage</button>
             <button type="button" class="pve-tab ${activeTab === "hardware" ? "pve-tab--active" : ""}" data-tab="hardware">Hardware</button>
+            <button type="button" class="pve-tab ${activeTab === "security" ? "pve-tab--active" : ""}" data-tab="security">Security</button>
           </div>
         </div>
 
@@ -6452,6 +7083,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
           : activeTab === "guests" ? buildGuestsTab(nodeCfg, pveData)
           : activeTab === "storage" ? buildStorageTab(nodeCfg, pveData, glancesData)
           : activeTab === "hardware" ? buildHardwareTab(nodeCfg)
+          : activeTab === "security" ? buildSecurityTab(nodeCfg)
           : buildOverviewTab({
               nodeCfg,
               hist: _history[nodeCfg.groupName] || { cpu: [], mem: [], rx: [], tx: [] },
@@ -6510,6 +7142,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
       fetchPrxNetwork(nodeCfg, { silent: true }).catch(() => null),
       fetchPrxVms(nodeCfg, { silent: true }).catch(() => null),
       fetchPrxHardware(nodeCfg, { silent: true }).catch(() => null),
+      refreshLynisCache(nodeCfg, { silent: true }).catch(() => null),
     ]);
 
     try {
@@ -6588,7 +7221,8 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
         (_diskModal && document.body.contains(_diskModal)) ||
         (_gpuModal && document.body.contains(_gpuModal)) ||
         (_pciModal && document.body.contains(_pciModal)) ||
-        (_gpuSwitchModal && document.body.contains(_gpuSwitchModal))) {
+        (_gpuSwitchModal && document.body.contains(_gpuSwitchModal)) ||
+        (_lynisInstallModal && document.body.contains(_lynisInstallModal))) {
       return;
     }
 
@@ -6602,11 +7236,17 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     bindStorageSubTabs(host, nodeCfg);
     bindNetworkSubTabs(host, nodeCfg);
     bindHardwareSubTabs(host, nodeCfg);
+    bindSecurityTab(host, nodeCfg);
     bindIfaceFlowNodes(host, nodeCfg);
     const list = host.querySelector(".pve-g-list");
     if (list && prevScroll) list.scrollTop = prevScroll;
     scheduleStaleUpdateReconcile(nodeCfg, pveData);
     scheduleGuestIpWarm(nodeCfg, pveData);
+    if ((_tabs[nodeCfg.groupName] || "overview") === "security") {
+      refreshLynisCache(nodeCfg, { force: false, silent: true }).then(() => {
+        if ((_tabs[nodeCfg.groupName] || "overview") === "security") paintNodeFromCache(nodeCfg);
+      }).catch(() => {});
+    }
   }
 
   function paintNodeFromCache(nodeCfg) {
@@ -6616,7 +7256,8 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
         (_diskModal && document.body.contains(_diskModal)) ||
         (_gpuModal && document.body.contains(_gpuModal)) ||
         (_pciModal && document.body.contains(_pciModal)) ||
-        (_gpuSwitchModal && document.body.contains(_gpuSwitchModal))) {
+        (_gpuSwitchModal && document.body.contains(_gpuSwitchModal)) ||
+        (_lynisInstallModal && document.body.contains(_lynisInstallModal))) {
       return;
     }
     const group = findGroupContainer(nodeCfg.groupName);
@@ -6635,6 +7276,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     bindStorageSubTabs(host, nodeCfg);
     bindNetworkSubTabs(host, nodeCfg);
     bindHardwareSubTabs(host, nodeCfg);
+    bindSecurityTab(host, nodeCfg);
     bindIfaceFlowNodes(host, nodeCfg);
     const list = host.querySelector(".pve-g-list");
     if (list && prevScroll) list.scrollTop = prevScroll;
@@ -6710,6 +7352,11 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
         if (_tabs[nodeCfg.groupName] === next) return;
         _tabs[nodeCfg.groupName] = next;
         paintNodeFromCache(nodeCfg);
+        if (next === "security") {
+          refreshLynisCache(nodeCfg, { force: true, silent: true }).then(() => {
+            if ((_tabs[nodeCfg.groupName] || "overview") === "security") paintNodeFromCache(nodeCfg);
+          }).catch(() => {});
+        }
       });
     });
   }
