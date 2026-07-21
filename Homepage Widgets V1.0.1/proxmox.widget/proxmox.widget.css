@@ -319,6 +319,9 @@ body.light .pve-node-subtitle,
   font-size: 0.70rem;
   font-weight: 700;
   letter-spacing: 0.05em;
+  line-height: 1.25;
+  min-height: 26px;
+  box-sizing: border-box;
   flex-shrink: 0;
 }
 
@@ -453,6 +456,9 @@ body.light .pve-stat-label,
   border-radius: 999px;
   font-size: 0.70rem;
   font-weight: 600;
+  line-height: 1.25;
+  min-height: 26px;
+  box-sizing: border-box;
   white-space: nowrap;
 }
 
@@ -912,10 +918,13 @@ body.light .pve-footer,
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 11px;
+  padding: 4px 10px;
   border-radius: 999px;
-  font-size: 0.68rem;
+  font-size: 0.70rem;
   font-weight: 600;
+  line-height: 1.25;
+  min-height: 26px;
+  box-sizing: border-box;
   text-decoration: none;
   flex-shrink: 0;
   transition: background 0.15s, color 0.15s;
@@ -932,14 +941,46 @@ body.light .pve-footer,
   color: rgba(251, 191, 36, 1.0);
 }
 
+button.pve-open-link {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.70rem;
+  font-weight: 600;
+  line-height: 1.25;
+  padding: 4px 10px;
+  min-height: 26px;
+  box-sizing: border-box;
+}
+
+.pve-open-link--term {
+  background: rgba(34, 211, 238, 0.10);
+  border: 1px solid rgba(34, 211, 238, 0.28);
+  color: rgba(103, 232, 249, 0.92);
+}
+.pve-open-link--term:hover {
+  background: rgba(34, 211, 238, 0.18);
+  color: #67e8f9;
+}
+.pve-open-link--term svg {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+}
+
 .prx-open-link {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 11px;
+  padding: 4px 10px;
   border-radius: 999px;
-  font-size: 0.68rem;
+  font-size: 0.70rem;
   font-weight: 600;
+  line-height: 1.25;
+  min-height: 26px;
+  box-sizing: border-box;
   text-decoration: none;
   flex-shrink: 0;
   transition: background 0.15s, color 0.15s;
@@ -6457,7 +6498,7 @@ button.pve-g-updates:hover {
 }
 .pve-g-metrics {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 12px;
 }
 .pve-g-metric-label {
@@ -6479,6 +6520,22 @@ button.pve-g-updates:hover {
   font-size: 0.74rem;
   font-weight: 650;
   font-variant-numeric: tabular-nums;
+}
+.pve-g-metric-ip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.78rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+}
+.pve-g-ip {
+  color: #fb923c;
+}
+.pve-g-ip--empty {
+  color: rgba(255, 255, 255, 0.38);
+  font-weight: 550;
 }
 .pve-g-io--r, .pve-g-io--rx { color: #6ee7b7; }
 .pve-g-io--w, .pve-g-io--tx { color: #38bdf8; }

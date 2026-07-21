@@ -68,6 +68,9 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
   const _guestNetPrev = {};  // last cumulative netin/netout sample per guest
   const _guestNetRates = {}; // last computed {rx,tx,rate,ready} — only updated on fresh PVE polls
   const GUEST_NET_LS_KEY = "hp-pve-guest-net-rates-v1";
+  const _guestIpCache = {}; // groupName -> { [type-vmid]: { ips: string[], at: number } }
+  const _guestIpWarmInflight = {}; // groupName -> Promise|null
+  const GUEST_IP_TTL_MS = 60 * 1000;
   const _rrdCache = {};
   const _nodeCache = {};
   let _guestModal = null;
@@ -739,6 +742,133 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     return [...new Set(ips)];
   }
 
+  function guestIpKey(type, vmid) {
+    return `${type === "qemu" ? "qemu" : "lxc"}-${vmid}`;
+  }
+
+  function getCachedGuestIps(nodeCfg, type, vmid) {
+    const ent = _guestIpCache[nodeCfg.groupName]?.[guestIpKey(type, vmid)];
+    return ent?.ips || null;
+  }
+
+  function isUsefulGuestIp(ip) {
+    const s = String(ip || "").trim();
+    if (!s) return false;
+    if (s === "127.0.0.1" || s === "::1") return false;
+    if (/^fe80:/i.test(s)) return false;
+    if (/^169\.254\./.test(s)) return false;
+    return true;
+  }
+
+  function parseIpsFromInterfaces(ifaces) {
+    const list = Array.isArray(ifaces) ? ifaces : [];
+    const v4 = [];
+    const v6 = [];
+    for (const iface of list) {
+      const name = String(iface?.name || "");
+      if (!name || name === "lo") continue;
+      const addrs = Array.isArray(iface["ip-addresses"]) ? iface["ip-addresses"] : [];
+      if (addrs.length) {
+        for (const a of addrs) {
+          const ip = String(a?.["ip-address"] || "").split("/")[0].trim();
+          if (!isUsefulGuestIp(ip)) continue;
+          const typ = String(a?.["ip-address-type"] || "").toLowerCase();
+          if (typ === "inet" || typ === "ipv4" || /^\d+\.\d+\.\d+\.\d+$/.test(ip)) v4.push(ip);
+          else if (typ === "inet6" || typ === "ipv6" || ip.includes(":")) v6.push(ip);
+        }
+        continue;
+      }
+      const inet = String(iface?.inet || "").split("/")[0].trim();
+      if (isUsefulGuestIp(inet) && /^\d+\.\d+\.\d+\.\d+$/.test(inet)) v4.push(inet);
+      const inet6 = String(iface?.inet6 || "").split("/")[0].trim();
+      if (isUsefulGuestIp(inet6) && inet6.includes(":")) v6.push(inet6);
+    }
+    return [...new Set([...v4, ...v6])];
+  }
+
+  async function fetchGuestRuntimeIps(node, type, vmid) {
+    const kind = type === "qemu" ? "qemu" : "lxc";
+    if (kind === "lxc") {
+      const ifaces = await pveGet(node, `${guestApiBase(node, type, vmid)}/interfaces`).catch(() => null);
+      return parseIpsFromInterfaces(ifaces);
+    }
+    try {
+      const data = await pveGet(node, `${guestApiBase(node, type, vmid)}/agent/network-get-interfaces`);
+      const ifaces = Array.isArray(data) ? data : (Array.isArray(data?.result) ? data.result : []);
+      return parseIpsFromInterfaces(ifaces);
+    } catch {
+      return [];
+    }
+  }
+
+  async function resolveGuestIps(node, type, vmid, status) {
+    let ips = [];
+    if (status === "running") {
+      try { ips = await fetchGuestRuntimeIps(node, type, vmid); } catch { ips = []; }
+    }
+    if (!ips.length) {
+      try {
+        const cfg = await fetchGuestConfig(node, type, vmid);
+        ips = parseGuestIps(cfg);
+      } catch {
+        ips = [];
+      }
+    }
+    return ips;
+  }
+
+  function warmGuestIpCache(nodeCfg, pveData, { force = false } = {}) {
+    const group = nodeCfg.groupName;
+    if (_guestIpWarmInflight[group]) return _guestIpWarmInflight[group];
+    const guests = [
+      ...(pveData?.vms || []).map((v) => ({ type: "qemu", vmid: v.vmid, status: v.status })),
+      ...(pveData?.lxcs || []).map((v) => ({ type: "lxc", vmid: v.vmid, status: v.status })),
+    ];
+    if (!guests.length) return Promise.resolve(false);
+
+    const now = Date.now();
+    const cache = _guestIpCache[group] || (_guestIpCache[group] = {});
+    const need = guests.filter((g) => {
+      const ent = cache[guestIpKey(g.type, g.vmid)];
+      if (force || !ent) return true;
+      return (now - ent.at) > GUEST_IP_TTL_MS;
+    });
+    if (!need.length) return Promise.resolve(false);
+
+    const before = JSON.stringify(
+      Object.fromEntries(Object.keys(cache).sort().map((k) => [k, cache[k]?.ips || []]))
+    );
+
+    _guestIpWarmInflight[group] = Promise.all(need.map(async (g) => {
+      const key = guestIpKey(g.type, g.vmid);
+      try {
+        const ips = await resolveGuestIps(nodeCfg, g.type, g.vmid, g.status);
+        cache[key] = { ips, at: Date.now() };
+      } catch {
+        if (!cache[key]) cache[key] = { ips: [], at: Date.now() };
+        else cache[key].at = Date.now();
+      }
+    })).then(() => {
+      const after = JSON.stringify(
+        Object.fromEntries(Object.keys(cache).sort().map((k) => [k, cache[k]?.ips || []]))
+      );
+      return before !== after;
+    }).catch(() => false).finally(() => {
+      _guestIpWarmInflight[group] = null;
+    });
+
+    return _guestIpWarmInflight[group];
+  }
+
+  function scheduleGuestIpWarm(nodeCfg, pveData) {
+    if (!pveData) return;
+    if ((_tabs[nodeCfg.groupName] || "overview") !== "guests") return;
+    warmGuestIpCache(nodeCfg, pveData).then((changed) => {
+      if (changed && (_tabs[nodeCfg.groupName] || "overview") === "guests") {
+        paintNodeFromCache(nodeCfg);
+      }
+    });
+  }
 
   function decodePveNotes(str) {
     try {
@@ -2790,6 +2920,10 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
       const up = g.uptime != null ? fmtUptimeFull(g.uptime) : "—";
       const uc = normalizeUpdateCheck(getGuestUpdateCheck(nodeCfg, g.vmid));
       const updatesBadge = uc ? guestUpdatesBadgeHtml(uc) : "";
+      const cachedIps = getCachedGuestIps(nodeCfg, g._type, g.vmid);
+      const ipHtml = cachedIps && cachedIps.length
+        ? cachedIps.slice(0, 2).map((ip) => `<span class="pve-g-ip">${escH(ip)}</span>`).join("")
+        : `<span class="pve-g-ip pve-g-ip--empty">—</span>`;
 
       return `
         <div class="pve-g-row" role="button" tabindex="0" data-vmid="${escH(g.vmid)}" data-gtype="${isLxc ? "lxc" : "qemu"}" title="Open guest controller">
@@ -2840,6 +2974,10 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
                 <span class="pve-g-io pve-g-io--rx">↓ ${escH(fmtBytes(g.netin || 0))}</span>
                 <span class="pve-g-io pve-g-io--tx">↑ ${escH(fmtBytes(g.netout || 0))}</span>
               </div>
+            </div>
+            <div class="pve-g-metric">
+              <div class="pve-g-metric-label">IP</div>
+              <div class="pve-g-metric-ip">${ipHtml}</div>
             </div>
           </div>
         </div>`;
@@ -4422,7 +4560,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
         `/api/storage/observations?disk=${encodeURIComponent(name)}&limit=20`,
         { silent: true }
       );
-      observations = Array.isArray(obs) ? obs : (obs?.observations || []);
+      observations = normalizeSmartObservations(obs);
     } catch {}
     try {
       for (const tf of ["month", "week", "day", "hour"]) {
@@ -4444,6 +4582,55 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
       tempHistory,
       lastTestDate: status?.last_test?.timestamp,
     });
+  }
+
+  function normalizeSmartObservations(payload) {
+    const list = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload?.observations)
+        ? payload.observations
+        : Array.isArray(payload?.data)
+          ? payload.data
+          : [];
+    return list.filter((o) => o != null);
+  }
+
+  function formatSmartObservationHtml(o) {
+    if (typeof o === "string") {
+      return `<li class="obs-item"><div class="obs-msg">${escH(o)}</div></li>`;
+    }
+    const sev = String(o.severity || o.level || o.status || "info").toLowerCase();
+    const sevColor = /crit|error|fail/.test(sev)
+      ? "#dc2626"
+      : /warn/.test(sev)
+        ? "#ca8a04"
+        : "#2563eb";
+    const typeRaw = o.error_type || o.type || o.title || "Observation";
+    const typeLabel = String(typeRaw).replace(/_/g, " ");
+    const msg = o.raw_message || o.message || o.detail || o.description || "";
+    const count = o.occurrence_count != null ? Number(o.occurrence_count) : null;
+    const when = o.last_occurrence || o.first_occurrence || o.timestamp || "";
+    let whenLabel = "";
+    if (when) {
+      try {
+        const d = new Date(when);
+        whenLabel = Number.isNaN(d.getTime()) ? String(when) : d.toLocaleString();
+      } catch {
+        whenLabel = String(when);
+      }
+    }
+    const msgHtml = msg
+      ? escH(String(msg)).replace(/\n/g, "<br>")
+      : escH(`${typeLabel}${o.device_name ? ` on ${o.device_name}` : ""}`);
+    return `<li class="obs-item" style="border-left-color:${sevColor}">
+      <div class="obs-top">
+        <span class="obs-sev" style="color:${sevColor}">${escH(sev)}</span>
+        <span class="obs-type">${escH(typeLabel)}</span>
+        ${count != null && !Number.isNaN(count) ? `<span class="obs-count">×${escH(String(count))}</span>` : ""}
+        ${whenLabel ? `<span class="obs-when">${escH(whenLabel)}</span>` : ""}
+      </div>
+      <div class="obs-msg">${msgHtml}</div>
+    </li>`;
   }
 
   function openPrxSmartReportFromStatus(nodeCfg, disk, testStatus, targetWindow, opts = {}) {
@@ -4528,7 +4715,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
   .hdr h1{margin:0;font-size:28px} .hdr .sub{color:#64748b;margin-top:4px;font-size:13px}
   .meta{text-align:right;font-size:12px;color:#64748b;line-height:1.5}
   .print{appearance:none;border:0;background:#2563eb;color:#fff;padding:10px 14px;border-radius:8px;font-weight:700;cursor:pointer;margin-top:8px}
-  .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+  .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 1px 2px rgba(15,23,42,.04);overflow:hidden;max-width:100%}
   .sec-title{font-size:15px;font-weight:800;margin:0 0 14px;display:flex;align-items:center;gap:8px}
   .sec-title span{display:inline-flex;width:22px;height:22px;border-radius:999px;background:#eff6ff;color:#2563eb;align-items:center;justify-content:center;font-size:11px}
   .pass{display:flex;gap:18px;align-items:center}
@@ -4537,13 +4724,20 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
   .banner{margin-top:14px;padding:12px 14px;border-radius:8px;background:${isHealthy ? "#dcfce7" : "#fee2e2"};color:${isHealthy ? "#166534" : "#991b1b"};font-size:13px}
   .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
   .kv{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px}
-  .kv span{display:block;font-size:11px;color:#64748b;margin-bottom:4px} .kv b{font-size:13px}
-  table{width:100%;border-collapse:collapse;font-size:13px}
-  th,td{padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:left}
+  .kv span{display:block;font-size:11px;color:#64748b;margin-bottom:4px} .kv b{font-size:13px;overflow-wrap:anywhere;word-break:break-word}
+  table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+  th,td{padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:left;overflow-wrap:anywhere;word-break:break-word}
   th{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.04em;background:#f8fafc}
   .recs{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
   .rec{border:1px solid #e2e8f0;border-radius:10px;padding:14px;border-top:3px solid var(--c)}
   .rec h4{margin:0 0 6px;font-size:13px} .rec p{margin:0;font-size:12px;color:#64748b;line-height:1.45}
+  .obs-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;max-width:100%}
+  .obs-item{background:#f8fafc;border:1px solid #e2e8f0;border-left:3px solid #2563eb;border-radius:8px;padding:10px 12px;max-width:100%;overflow-wrap:anywhere;word-break:break-word}
+  .obs-top{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:11px;margin-bottom:6px}
+  .obs-sev{font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+  .obs-type{font-weight:700;color:#334155;text-transform:capitalize}
+  .obs-count,.obs-when{color:#64748b}
+  .obs-msg{font-size:13px;color:#475569;line-height:1.55;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
   .footer{text-align:center;color:#94a3b8;font-size:12px;margin-top:20px}
   .life{display:flex;gap:24px;align-items:center}
   .ring{width:110px;height:110px;border-radius:999px;background:conic-gradient(#16a34a ${life != null ? life : 0}%,#e2e8f0 0);display:flex;align-items:center;justify-content:center}
@@ -4647,8 +4841,8 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
   ${observations.length ? `
   <div class="card">
     <div class="sec-title"><span>${isNvme || life != null ? "6" : "5"}</span> Observations</div>
-    <ul style="margin:0;padding-left:18px;font-size:13px;color:#475569;line-height:1.6">
-      ${observations.slice(0, 12).map((o) => `<li>${escH(o.message || o.title || JSON.stringify(o))}</li>`).join("")}
+    <ul class="obs-list">
+      ${observations.slice(0, 12).map((o) => formatSmartObservationHtml(o)).join("")}
     </ul>
   </div>` : ""}
 
@@ -6226,6 +6420,10 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
               <span class="pve-status-badge ${statusCls}">
                 <span class="pve-status-dot"></span>${statusText}
               </span>
+              <button type="button" class="pve-open-link pve-open-link--term" data-host-term title="Open host terminal">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>
+                Terminal
+              </button>
               <a class="pve-open-link pve-open-link--pve" href="${escH(nodeCfg.pveUrl)}" target="_blank" rel="noopener">SERVER ↗</a>
               <a class="prx-open-link prx-open-link--prx" href="${escH(nodeCfg.prxUrl)}" target="_blank" rel="noopener">MONITOR ↗</a>
             </div>
@@ -6399,6 +6597,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     applyPveShell(host, buildShell(nodeCfg, pveData, glancesData, rrdData), nodeCfg);
     _tabs[nodeCfg.groupName] = prevTab;
     bindPveTabs(host, nodeCfg);
+    bindHostTerminalBtn(host, nodeCfg);
     bindGuestRows(host, nodeCfg);
     bindStorageSubTabs(host, nodeCfg);
     bindNetworkSubTabs(host, nodeCfg);
@@ -6407,6 +6606,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     const list = host.querySelector(".pve-g-list");
     if (list && prevScroll) list.scrollTop = prevScroll;
     scheduleStaleUpdateReconcile(nodeCfg, pveData);
+    scheduleGuestIpWarm(nodeCfg, pveData);
   }
 
   function paintNodeFromCache(nodeCfg) {
@@ -6430,6 +6630,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     const prevScroll = host.querySelector(".pve-g-list")?.scrollTop || 0;
     applyPveShell(host, buildShell(nodeCfg, cache.pveData, cache.glancesData, _rrdCache[nodeCfg.groupName] || []), nodeCfg);
     bindPveTabs(host, nodeCfg);
+    bindHostTerminalBtn(host, nodeCfg);
     bindGuestRows(host, nodeCfg);
     bindStorageSubTabs(host, nodeCfg);
     bindNetworkSubTabs(host, nodeCfg);
@@ -6437,6 +6638,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     bindIfaceFlowNodes(host, nodeCfg);
     const list = host.querySelector(".pve-g-list");
     if (list && prevScroll) list.scrollTop = prevScroll;
+    scheduleGuestIpWarm(nodeCfg, cache.pveData);
   }
 
   /** Keep the tab bar DOM stable — only swap header stats + body/footer. */
@@ -6508,6 +6710,18 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
         if (_tabs[nodeCfg.groupName] === next) return;
         _tabs[nodeCfg.groupName] = next;
         paintNodeFromCache(nodeCfg);
+      });
+    });
+  }
+
+  function bindHostTerminalBtn(host, nodeCfg) {
+    host.querySelectorAll("[data-host-term]").forEach((btn) => {
+      if (btn.__pveHostTermBound) return;
+      btn.__pveHostTermBound = true;
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openHostTerminal(nodeCfg);
       });
     });
   }
@@ -7327,6 +7541,412 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     }, 5000);
 
     return true;
+  }
+
+  async function connectProxmenuxHostShell(nodeCfg, term, hooks) {
+    const { setStatus, showError, cleanupFns, onWs } = hooks;
+    if (!nodeCfg.prxUrl) return false;
+
+    const base = String(nodeCfg.prxUrl).replace(/\/$/, "");
+    let healthy = false;
+    try {
+      const h = await fetch(`${base}/api/terminal/health`, { cache: "no-store" });
+      healthy = h.ok;
+    } catch {}
+    if (!healthy) return false;
+
+    let token = getStoredPrxToken(nodeCfg);
+    const issueTicket = async (bearer) => {
+      const headers = { "Content-Type": "application/json", "Accept": "application/json" };
+      if (bearer) headers.Authorization = `Bearer ${bearer}`;
+      const res = await fetch(`${base}/api/terminal/ticket`, {
+        method: "POST",
+        headers,
+        cache: "no-store",
+      });
+      if (!res.ok) return null;
+      const j = await res.json().catch(() => ({}));
+      return j?.ticket || null;
+    };
+
+    let ticket = await issueTicket(token);
+    if (!ticket && !token) {
+      const entered = await promptPrxTokenGuide(nodeCfg, { rejected: false });
+      if (entered) {
+        token = entered;
+        rememberPrxToken(nodeCfg, token);
+        ticket = await issueTicket(token);
+      }
+    }
+    if (!ticket && token) {
+      const entered = await promptPrxTokenGuide(nodeCfg, { rejected: true });
+      if (entered) {
+        token = entered;
+        rememberPrxToken(nodeCfg, token);
+        ticket = await issueTicket(token);
+      }
+    }
+
+    let wsUrl = prxWsBase(nodeCfg.prxUrl);
+    if (ticket) wsUrl += `?ticket=${encodeURIComponent(ticket)}`;
+
+    let ws;
+    try {
+      ws = new WebSocket(wsUrl);
+    } catch (err) {
+      showError(`ProxMenux WS failed (${err.message || err})`);
+      return true;
+    }
+    onWs(ws);
+    cleanupFns.push(() => { try { ws.close(); } catch {} });
+
+    let sawOutput = false;
+    ws.onopen = () => {
+      setStatus("online", true);
+      const ping = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+          try { ws.send(JSON.stringify({ type: "ping" })); } catch {}
+        }
+      }, 25000);
+      cleanupFns.push(() => clearInterval(ping));
+      try { ws.send(JSON.stringify({ type: "resize", cols: term.cols || 80, rows: term.rows || 24 })); } catch {}
+    };
+    ws.onmessage = (ev) => {
+      const raw = typeof ev.data === "string" ? ev.data : "";
+      if (!raw) return;
+      if (raw === '{"type": "pong"}' || raw === '{"type":"pong"}') return;
+      sawOutput = true;
+      term.write(raw);
+    };
+    ws.onerror = () => {
+      if (!sawOutput) showError("ProxMenux terminal socket error");
+      setStatus("offline", false);
+    };
+    ws.onclose = () => {
+      setStatus("offline", false);
+      if (sawOutput) term.writeln("\r\n\x1b[90mConnection closed\x1b[0m");
+      else showError("ProxMenux terminal closed before ready (auth?)");
+    };
+    term.onData((data) => {
+      if (ws.readyState === WebSocket.OPEN) ws.send(data);
+    });
+    setTimeout(() => {
+      if (!sawOutput) {
+        showError("ProxMenux terminal auth failed — paste a fresh MONITOR token");
+        setStatus("offline", false);
+        try { ws.close(); } catch {}
+      }
+    }, 5000);
+    return true;
+  }
+
+  async function connectPveNodeShell(nodeCfg, term, hooks) {
+    const { setStatus, showError, cleanupFns, onWs } = hooks;
+    const node = nodeCfg.pveNode;
+    if (!node) return false;
+    let port, ticket, user;
+    try {
+      const res = await fetch(`${nodeCfg.pveUrl}/api2/json/nodes/${encodeURIComponent(node)}/termproxy`, {
+        method: "POST",
+        headers: pveHeaders(nodeCfg),
+      });
+      if (!res.ok) {
+        let errDetail = "";
+        try {
+          const j = await res.json();
+          errDetail = j?.message || "";
+        } catch {}
+        throw new Error(`Error ${res.status}${errDetail ? ": " + errDetail : ""}`);
+      }
+      const payload = await res.json();
+      const data = payload.data || payload;
+      port = data.port;
+      ticket = data.ticket;
+      user = data.user || nodeCfg.pveUser;
+      if (!port || !ticket) throw new Error("termproxy missing port/ticket");
+    } catch (err) {
+      showError(`Host termproxy failed (${err.message || err})`);
+      setStatus("offline", false);
+      return true;
+    }
+
+    const fullUser = String(user || nodeCfg.pveUser || "");
+    const authUser = /!/.test(fullUser) ? fullUser.replace(/!.*$/, "") : fullUser;
+    const wsProto = nodeCfg.pveUrl.startsWith("https") ? "wss" : "ws";
+    const host = nodeCfg.pveUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+    const wsUrl = `${wsProto}://${host}/api2/json/nodes/${encodeURIComponent(node)}/vncwebsocket?port=${encodeURIComponent(port)}&vncticket=${encodeURIComponent(ticket)}`;
+
+    let ws;
+    try { ws = new WebSocket(wsUrl, "binary"); }
+    catch (err) {
+      showError(`Connection failed (${err.message || err})`);
+      setStatus("offline", false);
+      return true;
+    }
+    ws.binaryType = "arraybuffer";
+    ws.__pveFramed = true;
+    onWs(ws);
+    cleanupFns.push(() => { try { ws.close(); } catch {} });
+
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    let sawOutput = false;
+
+    ws.onopen = () => {
+      ws.send(`${authUser}:${ticket}\n`);
+      try { ws.send(`1:${term.cols || 80}:${term.rows || 24}:`); } catch {}
+      setStatus("online", true);
+      const ping = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) ws.send("2");
+      }, 30000);
+      cleanupFns.push(() => clearInterval(ping));
+    };
+    ws.onmessage = (ev) => {
+      sawOutput = true;
+      setStatus("online", true);
+      if (typeof ev.data === "string") {
+        if (ev.data.length >= 2 && ev.data[0] === "0" && ev.data[1] === ":") {
+          const payload = ev.data.slice(2);
+          const i = payload.indexOf(":");
+          if (i >= 0) term.write(payload.slice(i + 1));
+          else term.write(payload);
+        } else if (ev.data !== "2" && !ev.data.startsWith("1:")) {
+          term.write(ev.data);
+        }
+        return;
+      }
+      try {
+        const bytes = new Uint8Array(ev.data);
+        const text = decoder.decode(bytes);
+        if (text.length >= 2 && text[0] === "0" && text[1] === ":") {
+          const payload = text.slice(2);
+          const i = payload.indexOf(":");
+          if (i >= 0) term.write(payload.slice(i + 1));
+          else term.write(payload);
+        } else {
+          term.write(text);
+        }
+      } catch {
+        term.write(decoder.decode(ev.data));
+      }
+    };
+    ws.onerror = () => {
+      if (!sawOutput) showError("PVE host terminal socket error");
+      setStatus("offline", false);
+    };
+    ws.onclose = () => {
+      setStatus("offline", false);
+      if (sawOutput) term.writeln("\r\n\x1b[90mConnection closed\x1b[0m");
+    };
+    term.onData((data) => {
+      if (ws.readyState !== WebSocket.OPEN) return;
+      const payload = data;
+      const bytes = encoder.encode(payload);
+      ws.send(`0:${bytes.length}:${payload}`);
+    });
+    return true;
+  }
+
+  async function openHostTerminal(nodeCfg) {
+    closeGuestTerminal({ skipRefresh: true });
+    _termGuestCtx = { nodeCfg, type: "host", vmid: null, sawPackageChange: false };
+
+    const shellParams = new URLSearchParams({
+      console: "shell",
+      xtermjs: "1",
+      node: nodeCfg.pveNode,
+      resize: "1",
+      cmd: "",
+    });
+    const consoleHref = `${nodeCfg.pveUrl}/?${shellParams.toString()}`;
+
+    const backdrop = document.createElement("div");
+    backdrop.className = "pve-term-backdrop";
+    backdrop.innerHTML = `
+      <div class="pve-term-modal" role="dialog" aria-modal="true">
+        <div class="pve-term-grip" title="Drag to resize" data-term-grip>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="9" r="1"/><circle cx="19" cy="9" r="1"/><circle cx="5" cy="9" r="1"/><circle cx="12" cy="15" r="1"/><circle cx="19" cy="15" r="1"/><circle cx="5" cy="15" r="1"/></svg>
+        </div>
+        <div class="pve-term-hdr">
+          <div class="pve-term-title">Terminal: ${escH(nodeCfg.label || nodeCfg.pveNode)} <span>(host)</span></div>
+          <div class="pve-term-hdr-actions">
+            <button type="button" class="pve-term-btn pve-term-btn--search" data-term-search title="Search commands">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              Search
+            </button>
+            <button type="button" class="pve-term-btn pve-term-btn--clear" data-term-clear title="Clear">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+              Clear
+            </button>
+          </div>
+        </div>
+        <div class="pve-term-error" data-term-error hidden></div>
+        <div class="pve-term-body" data-term-mount></div>
+        <div class="pve-term-ftr">
+          <div class="pve-term-status" data-term-status>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg>
+            <span class="pve-term-dot" data-term-dot></span>
+            <span data-term-status-text>connecting</span>
+          </div>
+          <div class="pve-term-ftr-actions">
+            <a class="pve-term-btn pve-term-btn--ext" href="${escH(consoleHref)}" target="_blank" rel="noopener" data-term-ext hidden>Open in Proxmox</a>
+            <button type="button" class="pve-term-btn pve-term-btn--close" data-term-close>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              Close
+            </button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(backdrop);
+    _termModal = backdrop;
+
+    const modalEl = backdrop.querySelector(".pve-term-modal");
+    const statusText = backdrop.querySelector("[data-term-status-text]");
+    const statusWrap = backdrop.querySelector("[data-term-status]");
+    const errorEl = backdrop.querySelector("[data-term-error]");
+    const mount = backdrop.querySelector("[data-term-mount]");
+    const extLink = backdrop.querySelector("[data-term-ext]");
+    const setStatus = (txt, online = false) => {
+      if (statusText) statusText.textContent = String(txt || "").toLowerCase();
+      statusWrap?.classList.toggle("pve-term-status--online", !!online);
+      statusWrap?.classList.toggle("pve-term-status--offline", !online && txt !== "connecting");
+    };
+    const showError = (msg) => {
+      if (!errorEl) return;
+      errorEl.hidden = false;
+      errorEl.textContent = msg;
+      if (extLink) extLink.hidden = false;
+    };
+
+    const cleanupFns = [];
+    backdrop.__pveTermCleanup = () => cleanupFns.forEach(fn => { try { fn(); } catch {} });
+    backdrop.querySelector("[data-term-close]")?.addEventListener("click", closeGuestTerminal);
+    backdrop.addEventListener("click", (e) => { if (e.target === backdrop) closeGuestTerminal(); });
+
+    const grip = backdrop.querySelector("[data-term-grip]");
+    if (grip && modalEl) {
+      let startY = 0, startH = 0;
+      const onMove = (e) => {
+        const y = e.touches ? e.touches[0].clientY : e.clientY;
+        modalEl.style.height = `${Math.max(320, Math.min(window.innerHeight - 40, startH + (startY - y)))}px`;
+      };
+      const onUp = () => {
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+        document.removeEventListener("touchmove", onMove);
+        document.removeEventListener("touchend", onUp);
+      };
+      const onDown = (e) => {
+        e.preventDefault();
+        startY = e.touches ? e.touches[0].clientY : e.clientY;
+        startH = modalEl.getBoundingClientRect().height;
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onUp);
+        document.addEventListener("touchmove", onMove, { passive: false });
+        document.addEventListener("touchend", onUp);
+      };
+      grip.addEventListener("mousedown", onDown);
+      grip.addEventListener("touchstart", onDown, { passive: false });
+    }
+
+    const esc = (e) => {
+      if (e.key === "Escape") { e.stopPropagation(); closeGuestTerminal(); }
+    };
+    document.addEventListener("keydown", esc, true);
+    cleanupFns.push(() => document.removeEventListener("keydown", esc, true));
+
+    let term = null;
+    let activeWs = null;
+    try {
+      const Terminal = await loadXterm();
+      const fontSize = window.innerWidth < 768 ? 12 : 15;
+      term = new Terminal({
+        cursorBlink: true,
+        fontSize,
+        fontFamily: '"MesloLGS NF", "FiraCode Nerd Font", "JetBrainsMono Nerd Font", "Hack Nerd Font", ui-monospace, Menlo, Consolas, monospace',
+        fontWeight: "500",
+        fontWeightBold: "700",
+        scrollback: 2000,
+        convertEol: true,
+        theme: {
+          background: "#000000",
+          foreground: "#ffffff",
+          cursor: "#ffffff",
+          cursorAccent: "#000000",
+          selectionBackground: "#4d4d4d",
+          black: "#2e3436", red: "#cc0000", green: "#4e9a06", yellow: "#c4a000",
+          blue: "#3465a4", magenta: "#75507b", cyan: "#06989a", white: "#d3d7cf",
+          brightBlack: "#555753", brightRed: "#ef2929", brightGreen: "#8ae234", brightYellow: "#fce94f",
+          brightBlue: "#729fcf", brightMagenta: "#ad7fa8", brightCyan: "#34e2e2", brightWhite: "#eeeeec",
+        },
+      });
+      term.open(mount);
+      term.focus();
+      if (_termGuestCtx) {
+        _termGuestCtx.term = term;
+        _termGuestCtx.setStatus = setStatus;
+        _termGuestCtx.type = "host";
+      }
+      cleanupFns.push(() => { try { term.dispose(); } catch {} });
+      backdrop.querySelector("[data-term-clear]")?.addEventListener("click", () => term.clear());
+      backdrop.querySelector("[data-term-search]")?.addEventListener("click", () => {
+        const q = prompt("Inject command:", "hostnamectl");
+        if (q == null) return;
+        if (activeWs && activeWs.readyState === WebSocket.OPEN) {
+          if (activeWs.__pveFramed) {
+            const payload = q.endsWith("\n") ? q : `${q}\n`;
+            const bytes = new TextEncoder().encode(payload);
+            activeWs.send(`0:${bytes.length}:${payload}`);
+          } else {
+            activeWs.send(q.endsWith("\r") || q.endsWith("\n") ? q : `${q}\r`);
+          }
+        } else {
+          term.writeln(`\x1b[33m(not connected) ${q}\x1b[0m`);
+        }
+      });
+    } catch (err) {
+      showError("Failed to load terminal UI");
+      setStatus("offline", false);
+      return;
+    }
+
+    const fit = () => {
+      try {
+        const rect = mount.getBoundingClientRect();
+        const cols = Math.max(40, Math.floor(rect.width / 9.0));
+        const rows = Math.max(10, Math.floor(rect.height / 18));
+        term.resize(cols, rows);
+        if (activeWs?.readyState === WebSocket.OPEN) {
+          if (activeWs.__pveFramed) activeWs.send(`1:${cols}:${rows}:`);
+          else {
+            try { activeWs.send(JSON.stringify({ type: "resize", cols, rows })); } catch {}
+          }
+        }
+      } catch {}
+    };
+    const ro = new ResizeObserver(fit);
+    ro.observe(mount);
+    cleanupFns.push(() => ro.disconnect());
+    setTimeout(fit, 50);
+
+    // Prefer ProxMenux host shell (already on the Proxmox node)
+    if (nodeCfg.prxUrl) {
+      const used = await connectProxmenuxHostShell(nodeCfg, term, {
+        setStatus,
+        showError,
+        cleanupFns,
+        onWs: (ws) => { activeWs = ws; activeWs.__pveFramed = false; },
+      });
+      if (used) return;
+    }
+
+    // Fallback: PVE node termproxy
+    await connectPveNodeShell(nodeCfg, term, {
+      setStatus,
+      showError,
+      cleanupFns,
+      onWs: (ws) => { activeWs = ws; },
+    });
   }
 
   async function openGuestTerminal(nodeCfg, type, vmid, name) {
