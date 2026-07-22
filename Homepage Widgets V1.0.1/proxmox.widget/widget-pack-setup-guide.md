@@ -21,7 +21,7 @@ baseUrl: "http://YOUR_LOCAL_IP:PORT",
 fallbackUrl: "https://YOUR_TUNNEL_URL", // or null if not using a tunnel
 ```
 
-**`baseUrl`** is the primary address the widget tries first. This should be your local IP and port, for example `http://192.168.1.50:8096`.
+**`baseUrl`** is the primary address the widget tries first. This should be your local IP and port, for example `http://YOUR_LOCAL_IP:8096`.
 
 **`fallbackUrl`** is tried automatically if the primary fails. If you are not using a tunnel, set this to `null` and the widget will skip it cleanly.
 

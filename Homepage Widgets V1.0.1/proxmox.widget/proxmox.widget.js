@@ -1,55 +1,80 @@
 /* =====================================================
 PVE NODE COMBINED WIDGETS
 Proxmox (via API token) + Glances v4 per node
-Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
+Groups: PVE-NODE-1 / PVE-NODE-2 / PVE-NODE-3
 ===================================================== */
 (function () {
 
   const PVE_NODES = [
     {
-      groupName: "PVE-NODE-LNV1",
-      label: "LNV1",
+      groupName: "PVE-NODE-1",
+      label: "NODE-1",
       color: "#6ee7b7",
-      pveUrl: "https://YOUR-PVE-HOST:8006",
-      prxUrl: "https://YOUR-PROXMENUX-MONITOR",
+      // Prefer LAN IP first; Cloudflare tunnel/worker is fallback only.
+      pveUrl: "https://YOUR_LOCAL_IP:8006",
+      pveFallbackUrl: "https://YOUR-PVE-TUNNEL-HOST",
+      activePveUrl: null,
+      prxUrl: "https://YOUR_LOCAL_IP:8008",
+      prxFallbackUrl: "https://YOUR-PROXMENUX-MONITOR",
+      activePrxUrl: null,
+      // ProxMenux Settings → API Access Tokens (365-day). NOT the 24h session JWT from localStorage.
+      // Each node needs its own token — do not reuse across MONITOR instances.
       prxToken: "",
       pveUser: "USER@pam!TOKENID",
       pveToken: "PVE_TOKEN",
-      pveNode: "proxmox-primary",
-      glancesUrl: "https://YOUR-GLANCES-HOST:61208",
+      pveNode: "pve-node-1",
+      glancesUrl: "http://YOUR_LOCAL_IP:61208",
+      glancesFallbackUrl: "https://YOUR-GLANCES-TUNNEL-HOST",
+      activeGlancesUrl: null,
       iface: "vmbr0",
-      cpuSensor: "k10temp 0",
-      backupMount: "/mnt/BUP_SL",
+      cpuSensor: "YOUR_CPU_SENSOR",
+      backupMount: "/mnt/BACKUP",
     },
     {
-      groupName: "PVE-NODE-LNV2",
-      label: "LNV2",
+      groupName: "PVE-NODE-2",
+      label: "NODE-2",
       color: "#60a5fa",
-      pveUrl: "https://YOUR-PVE-HOST:8006",
-      prxUrl: "https://YOUR-PROXMENUX-MONITOR",
+      pveUrl: "https://YOUR_LOCAL_IP:8006",
+      pveFallbackUrl: "https://YOUR-PVE-TUNNEL-HOST",
+      activePveUrl: null,
+      prxUrl: "https://YOUR_LOCAL_IP:8008",
+      prxFallbackUrl: "https://YOUR-PROXMENUX-MONITOR",
+      activePrxUrl: null,
+      // ProxMenux Settings → API Access Tokens (365-day). NOT the 24h session JWT from localStorage.
+      // Each node needs its own token — do not reuse across MONITOR instances.
       prxToken: "",
       pveUser: "USER@pam!TOKENID",
       pveToken: "PVE_TOKEN",
-      pveNode: "proxmox2",
-      glancesUrl: "https://YOUR-GLANCES-HOST:61208",
+      pveNode: "pve-node-2",
+      glancesUrl: "http://YOUR_LOCAL_IP:61208",
+      glancesFallbackUrl: "https://YOUR-GLANCES-TUNNEL-HOST",
+      activeGlancesUrl: null,
       iface: "vmbr0",
-      cpuSensor: "Package id 0",
-      backupMount: "/mnt/BUP_PVE2",
+      cpuSensor: "YOUR_CPU_SENSOR",
+      backupMount: "/mnt/BACKUP",
     },
     {
-      groupName: "PVE-NODE-HP",
-      label: "HP",
+      groupName: "PVE-NODE-3",
+      label: "NODE-3",
       color: "#a78bfa",
-      pveUrl: "https://YOUR-PVE-HOST:8006",
-      prxUrl: "https://YOUR-PROXMENUX-MONITOR",
+      pveUrl: "https://YOUR_LOCAL_IP:8006",
+      pveFallbackUrl: "https://YOUR-PVE-TUNNEL-HOST",
+      activePveUrl: null,
+      prxUrl: "https://YOUR_LOCAL_IP:8008",
+      prxFallbackUrl: "https://YOUR-PROXMENUX-MONITOR",
+      activePrxUrl: null,
+      // ProxMenux Settings → API Access Tokens (365-day). NOT the 24h session JWT from localStorage.
+      // Each node needs its own token — do not reuse across MONITOR instances.
       prxToken: "",
       pveUser: "USER@pam!TOKENID",
       pveToken: "PVE_TOKEN",
-      pveNode: "proxmox3",
-      glancesUrl: "https://YOUR-GLANCES-HOST:61208",
+      pveNode: "pve-node-3",
+      glancesUrl: "http://YOUR_LOCAL_IP:61208",
+      glancesFallbackUrl: "https://YOUR-GLANCES-TUNNEL-HOST",
+      activeGlancesUrl: null,
       iface: "vmbr0",
-      cpuSensor: "Package id 0",
-      backupMount: "/mnt/photos",
+      cpuSensor: "YOUR_CPU_SENSOR",
+      backupMount: "/mnt/BACKUP",
     },
   ];
 
@@ -352,6 +377,42 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
   }
 
   // ── API fetchers ─────────────────────────────────────────────────
+  function urlTargets(primary, fallback, active) {
+    const targets = [];
+    const add = (u) => {
+      const v = String(u || "").replace(/\/$/, "");
+      if (v && !targets.includes(v)) targets.push(v);
+    };
+    add(active);
+    add(primary);
+    add(fallback);
+    return targets;
+  }
+
+  function getPveUrl(node) {
+    return node.activePveUrl || node.pveUrl || node.pveFallbackUrl || "";
+  }
+
+  function getGlancesUrl(node) {
+    return node.activeGlancesUrl || node.glancesUrl || node.glancesFallbackUrl || "";
+  }
+
+  function getPrxUrl(node) {
+    return node.activePrxUrl || node.prxUrl || node.prxFallbackUrl || "";
+  }
+
+  function pveTargets(node) {
+    return urlTargets(node.pveUrl, node.pveFallbackUrl, node.activePveUrl);
+  }
+
+  function glancesTargets(node) {
+    return urlTargets(node.glancesUrl, node.glancesFallbackUrl, node.activeGlancesUrl);
+  }
+
+  function prxTargets(node) {
+    return urlTargets(node.prxUrl, node.prxFallbackUrl, node.activePrxUrl);
+  }
+
   function pveHeaders(node) {
     return {
       "Authorization": `PVEAPIToken=${node.pveUser}=${node.pveToken}`,
@@ -360,53 +421,23 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
   }
 
   async function fetchPveNodeStatus(node) {
-    const res = await fetch(
-      `${node.pveUrl}/api2/json/nodes/${node.pveNode}/status`,
-      { headers: pveHeaders(node), signal: (() => { const c = new AbortController(); setTimeout(() => c.abort(), 8000); return c.signal; })() }
-    );
-    if (!res.ok) throw new Error(`PVE node status ${res.status}`);
-    const d = await res.json();
-    return d.data;
+    return pveGet(node, `/nodes/${node.pveNode}/status`, 8000);
   }
 
   async function fetchPveVMs(node) {
-    const res = await fetch(
-      `${node.pveUrl}/api2/json/nodes/${node.pveNode}/qemu`,
-      { headers: pveHeaders(node), signal: (() => { const c = new AbortController(); setTimeout(() => c.abort(), 8000); return c.signal; })() }
-    );
-    if (!res.ok) throw new Error(`PVE qemu ${res.status}`);
-    const d = await res.json();
-    return d.data || [];
+    return (await pveGet(node, `/nodes/${node.pveNode}/qemu`, 8000)) || [];
   }
 
   async function fetchPveLXC(node) {
-    const res = await fetch(
-      `${node.pveUrl}/api2/json/nodes/${node.pveNode}/lxc`,
-      { headers: pveHeaders(node), signal: (() => { const c = new AbortController(); setTimeout(() => c.abort(), 8000); return c.signal; })() }
-    );
-    if (!res.ok) throw new Error(`PVE lxc ${res.status}`);
-    const d = await res.json();
-    return d.data || [];
+    return (await pveGet(node, `/nodes/${node.pveNode}/lxc`, 8000)) || [];
   }
 
   async function fetchPveStorage(node) {
-    const res = await fetch(
-      `${node.pveUrl}/api2/json/nodes/${node.pveNode}/storage`,
-      { headers: pveHeaders(node), signal: (() => { const c = new AbortController(); setTimeout(() => c.abort(), 8000); return c.signal; })() }
-    );
-    if (!res.ok) throw new Error(`PVE storage ${res.status}`);
-    const d = await res.json();
-    return d.data || [];
+    return (await pveGet(node, `/nodes/${node.pveNode}/storage`, 8000)) || [];
   }
 
   async function fetchPveDisks(node) {
-    const res = await fetch(
-      `${node.pveUrl}/api2/json/nodes/${node.pveNode}/disks/list`,
-      { headers: pveHeaders(node), signal: (() => { const c = new AbortController(); setTimeout(() => c.abort(), 8000); return c.signal; })() }
-    );
-    if (!res.ok) throw new Error(`PVE disks ${res.status}`);
-    const d = await res.json();
-    const list = d.data || [];
+    const list = (await pveGet(node, `/nodes/${node.pveNode}/disks/list`, 8000)) || [];
 
     // Enrich with SMART details (temp, wear, power cycles) — limit concurrency
     const whole = list.filter((disk) => !(disk?.parent && disk.parent !== disk.devpath));
@@ -415,13 +446,12 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
       const name = String(disk.devpath || "").replace(/^\/dev\//, "");
       if (!name) return disk;
       try {
-        const smartRes = await fetch(
-          `${node.pveUrl}/api2/json/nodes/${node.pveNode}/disks/smart?disk=${encodeURIComponent(name)}`,
-          { headers: pveHeaders(node), signal: (() => { const c = new AbortController(); setTimeout(() => c.abort(), 6000); return c.signal; })() }
+        const smart = await pveGet(
+          node,
+          `/nodes/${node.pveNode}/disks/smart?disk=${encodeURIComponent(name)}`,
+          6000
         );
-        if (!smartRes.ok) return disk;
-        const smartJson = await smartRes.json();
-        return { ...disk, smart: smartJson?.data || smartJson || null };
+        return { ...disk, smart: smart || null };
       } catch {
         return disk;
       }
@@ -432,13 +462,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
   }
 
   async function fetchPveUpdates(node) {
-    const res = await fetch(
-      `${node.pveUrl}/api2/json/nodes/${node.pveNode}/apt/update`,
-      { headers: pveHeaders(node), signal: (() => { const c = new AbortController(); setTimeout(() => c.abort(), 8000); return c.signal; })() }
-    );
-    if (!res.ok) throw new Error(`PVE apt/update ${res.status}`);
-    const d = await res.json();
-    return d.data || [];
+    return (await pveGet(node, `/nodes/${node.pveNode}/apt/update`, 8000)) || [];
   }
 
   const IFACE_RANGES = [
@@ -551,25 +575,17 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
 
   async function fetchPveRrd(node, timeframe = "day") {
     const tf = encodeURIComponent(timeframe || "day");
-    const res = await fetch(
-      `${node.pveUrl}/api2/json/nodes/${node.pveNode}/rrddata?timeframe=${tf}&cf=AVERAGE`,
-      { headers: pveHeaders(node), signal: (() => { const c = new AbortController(); setTimeout(() => c.abort(), 10000); return c.signal; })() }
-    );
-    if (!res.ok) throw new Error(`PVE rrddata ${res.status}`);
-    const d = await res.json();
-    return d.data || [];
+    return (await pveGet(node, `/nodes/${node.pveNode}/rrddata?timeframe=${tf}&cf=AVERAGE`, 10000)) || [];
   }
 
   async function fetchGuestRrd(node, type, vmid, timeframe = "day") {
     const kind = type === "qemu" ? "qemu" : "lxc";
     const tf = encodeURIComponent(timeframe || "day");
-    const res = await fetch(
-      `${node.pveUrl}/api2/json/nodes/${node.pveNode}/${kind}/${vmid}/rrddata?timeframe=${tf}&cf=AVERAGE`,
-      { headers: pveHeaders(node), signal: (() => { const c = new AbortController(); setTimeout(() => c.abort(), 10000); return c.signal; })() }
-    );
-    if (!res.ok) throw new Error(`PVE guest rrddata ${res.status}`);
-    const d = await res.json();
-    return d.data || [];
+    return (await pveGet(
+      node,
+      `/nodes/${node.pveNode}/${kind}/${vmid}/rrddata?timeframe=${tf}&cf=AVERAGE`,
+      10000
+    )) || [];
   }
 
   function resolveGuestApiKind(nodeCfg, iface, target) {
@@ -609,28 +625,48 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     return `/nodes/${node.pveNode}/${kind}/${vmid}`;
   }
 
-  async function pveGet(node, path) {
-    const res = await fetch(`${node.pveUrl}/api2/json${path}`, {
-      headers: pveHeaders(node),
-      signal: (() => { const c = new AbortController(); setTimeout(() => c.abort(), 10000); return c.signal; })(),
-    });
-    if (!res.ok) throw new Error(`PVE GET ${path} ${res.status}`);
-    const d = await res.json();
-    return d.data;
+  async function pveGet(node, path, timeoutMs = 10000) {
+    const targets = pveTargets(node);
+    let lastErr = null;
+    for (const base of targets) {
+      try {
+        const res = await fetch(`${base}/api2/json${path}`, {
+          headers: pveHeaders(node),
+          signal: (() => { const c = new AbortController(); setTimeout(() => c.abort(), timeoutMs); return c.signal; })(),
+        });
+        if (!res.ok) throw new Error(`PVE GET ${path} ${res.status}`);
+        node.activePveUrl = base;
+        const d = await res.json();
+        return d.data;
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    throw lastErr || new Error(`PVE GET ${path} failed`);
   }
 
-  async function pvePost(node, path) {
-    const res = await fetch(`${node.pveUrl}/api2/json${path}`, {
-      method: "POST",
-      headers: { ...pveHeaders(node), "Content-Type": "application/x-www-form-urlencoded" },
-      signal: (() => { const c = new AbortController(); setTimeout(() => c.abort(), 15000); return c.signal; })(),
-    });
-    if (!res.ok) {
-      let msg = `HTTP ${res.status}`;
-      try { const j = await res.json(); msg = j?.errors ? JSON.stringify(j.errors) : (j?.message || msg); } catch {}
-      throw new Error(msg);
+  async function pvePost(node, path, timeoutMs = 15000) {
+    const targets = pveTargets(node);
+    let lastErr = null;
+    for (const base of targets) {
+      try {
+        const res = await fetch(`${base}/api2/json${path}`, {
+          method: "POST",
+          headers: { ...pveHeaders(node), "Content-Type": "application/x-www-form-urlencoded" },
+          signal: (() => { const c = new AbortController(); setTimeout(() => c.abort(), timeoutMs); return c.signal; })(),
+        });
+        if (!res.ok) {
+          let msg = `HTTP ${res.status}`;
+          try { const j = await res.json(); msg = j?.errors ? JSON.stringify(j.errors) : (j?.message || msg); } catch {}
+          throw new Error(msg);
+        }
+        node.activePveUrl = base;
+        try { return (await res.json()).data; } catch { return null; }
+      } catch (err) {
+        lastErr = err;
+      }
     }
-    try { return (await res.json()).data; } catch { return null; }
+    throw lastErr || new Error(`PVE POST ${path} failed`);
   }
 
   async function fetchGuestConfig(node, type, vmid) {
@@ -1155,12 +1191,21 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
 
   // ── Glances v4 API ───────────────────────────────────────────────
   async function fetchGlances(node, path) {
-    const res = await fetch(
-      `${node.glancesUrl}/api/4/${path}`,
-      { signal: AbortSignal.timeout(5000) }
-    );
-    if (!res.ok) throw new Error(`Glances ${path} ${res.status}`);
-    return res.json();
+    const targets = glancesTargets(node);
+    let lastErr = null;
+    for (const base of targets) {
+      try {
+        const res = await fetch(`${base}/api/4/${path}`, {
+          signal: AbortSignal.timeout(5000),
+        });
+        if (!res.ok) throw new Error(`Glances ${path} ${res.status}`);
+        node.activeGlancesUrl = base;
+        return res.json();
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    throw lastErr || new Error(`Glances ${path} failed`);
   }
 
   // ── Sparkline SVG ─────────────────────────────────────────────────
@@ -1932,37 +1977,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     const age = cached ? Date.now() - (cached.at || 0) : Infinity;
     if (!force && cached?.data && age < 20_000) return cached.data;
 
-    if (!nodeCfg.prxUrl) throw new Error("No ProxMenux MONITOR URL configured");
-
-    const base = String(nodeCfg.prxUrl).replace(/\/$/, "");
-    let token = getStoredPrxToken(nodeCfg);
-    if (!token) {
-      if (silent) throw new Error("ProxMenux token required");
-      const pasted = await promptPrxTokenGuide(nodeCfg, {});
-      if (!pasted) throw new Error("ProxMenux token required");
-      rememberPrxToken(nodeCfg, pasted);
-      token = pasted;
-    }
-
-    const doFetch = (t) => fetch(`${base}/api/network`, {
-      cache: "no-store",
-      headers: {
-        Accept: "application/json",
-        Authorization: `Bearer ${t}`,
-      },
-    });
-
-    let res = await doFetch(token);
-    if (res.status === 401 || res.status === 403) {
-      if (silent) throw new Error("ProxMenux token rejected");
-      const pasted = await promptPrxTokenGuide(nodeCfg, { rejected: true });
-      if (!pasted) throw new Error("ProxMenux token rejected");
-      rememberPrxToken(nodeCfg, pasted);
-      token = pasted;
-      res = await doFetch(token);
-    }
-    if (!res.ok) throw new Error(`Network API HTTP ${res.status}`);
-    const data = await res.json();
+    const data = await prxApiFetch(nodeCfg, "/api/network", { silent });
     _prxNetCache[key] = { data, at: Date.now() };
     return data;
   }
@@ -1983,33 +1998,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     const age = cached ? Date.now() - (cached.at || 0) : Infinity;
     if (!force && cached?.byVmid && age < 60_000) return cached;
 
-    if (!nodeCfg.prxUrl) throw new Error("No ProxMenux MONITOR URL configured");
-    const base = String(nodeCfg.prxUrl).replace(/\/$/, "");
-    let token = getStoredPrxToken(nodeCfg);
-    if (!token) {
-      if (silent) throw new Error("ProxMenux token required");
-      const pasted = await promptPrxTokenGuide(nodeCfg, {});
-      if (!pasted) throw new Error("ProxMenux token required");
-      rememberPrxToken(nodeCfg, pasted);
-      token = pasted;
-    }
-
-    const doFetch = (t) => fetch(`${base}/api/vms`, {
-      cache: "no-store",
-      headers: { Accept: "application/json", Authorization: `Bearer ${t}` },
-    });
-
-    let res = await doFetch(token);
-    if (res.status === 401 || res.status === 403) {
-      if (silent) throw new Error("ProxMenux token rejected");
-      const pasted = await promptPrxTokenGuide(nodeCfg, { rejected: true });
-      if (!pasted) throw new Error("ProxMenux token rejected");
-      rememberPrxToken(nodeCfg, pasted);
-      token = pasted;
-      res = await doFetch(token);
-    }
-    if (!res.ok) throw new Error(`ProxMenux /api/vms HTTP ${res.status}`);
-    const raw = await res.json();
+    const raw = await prxApiFetch(nodeCfg, "/api/vms", { silent });
     const list = Array.isArray(raw) ? raw : (raw.vms || []);
     const byVmid = {};
     list.forEach((g) => {
@@ -2223,40 +2212,64 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
   }
 
   async function issuePrxTerminalTicket(nodeCfg, { silent = false } = {}) {
-    if (!nodeCfg.prxUrl) throw new Error("No ProxMenux MONITOR URL configured");
-    const base = String(nodeCfg.prxUrl).replace(/\/$/, "");
-    let healthy = false;
-    try {
-      const h = await fetch(`${base}/api/terminal/health`, { cache: "no-store" });
-      healthy = h.ok;
-    } catch {}
-    if (!healthy) throw new Error("ProxMenux terminal unavailable");
+    const targets = prxTargets(nodeCfg);
+    if (!targets.length) throw new Error("No ProxMenux MONITOR URL configured");
 
     let token = getStoredPrxToken(nodeCfg);
-    const issue = async (bearer) => {
+    const issue = async (base, bearer) => {
       const headers = { "Content-Type": "application/json", Accept: "application/json" };
       if (bearer) headers.Authorization = `Bearer ${bearer}`;
       const res = await fetch(`${base}/api/terminal/ticket`, {
         method: "POST",
         headers,
         cache: "no-store",
+        signal: (() => { const c = new AbortController(); setTimeout(() => c.abort(), 10000); return c.signal; })(),
       });
-      if (!res.ok) return null;
+      if (res.status === 401 || res.status === 403) return { auth: true, ticket: null };
+      if (!res.ok) return { auth: false, ticket: null };
       const j = await res.json().catch(() => ({}));
-      return j?.ticket || null;
+      return { auth: false, ticket: j?.ticket || null };
     };
 
-    let ticket = await issue(token);
-    if (!ticket && !silent) {
-      const entered = await promptPrxTokenGuide(nodeCfg, { rejected: !!token });
+    const tryAll = async (bearer) => {
+      let authReject = false;
+      for (const base of targets) {
+        try {
+          // Prefer hosts that answer health, but don't hard-fail if health is flaky.
+          try {
+            const h = await fetch(`${base}/api/terminal/health`, {
+              cache: "no-store",
+              signal: (() => { const c = new AbortController(); setTimeout(() => c.abort(), 4000); return c.signal; })(),
+            });
+            if (!h.ok) continue;
+          } catch {
+            // Still attempt ticket — some builds omit health.
+          }
+          const out = await issue(base, bearer);
+          if (out.ticket) {
+            nodeCfg.activePrxUrl = base;
+            return out.ticket;
+          }
+          if (out.auth) authReject = true;
+        } catch {}
+      }
+      return authReject ? "__auth__" : null;
+    };
+
+    let ticket = await tryAll(token);
+    if (ticket && ticket !== "__auth__") return ticket;
+
+    if (!silent && (ticket === "__auth__" || !token)) {
+      const entered = await promptPrxTokenGuide(nodeCfg, { rejected: ticket === "__auth__" });
       if (entered) {
+        rememberPrxToken(nodeCfg, entered);
         token = entered;
-        rememberPrxToken(nodeCfg, token);
-        ticket = await issue(token);
+        ticket = await tryAll(token);
+        if (ticket && ticket !== "__auth__") return ticket;
       }
     }
-    if (!ticket) throw new Error("ProxMenux terminal ticket required");
-    return ticket;
+    if (ticket === "__auth__") throw new Error("ProxMenux token rejected");
+    throw new Error("ProxMenux terminal ticket required");
   }
 
   /** Live package check via ProxMenux host shell (`pct exec` / `qm guest exec`). */
@@ -2274,7 +2287,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
       let buf = "";
       let ws;
       try {
-        ws = new WebSocket(`${prxWsBase(nodeCfg.prxUrl)}?ticket=${encodeURIComponent(ticket)}`);
+        ws = new WebSocket(`${prxWsBase(getPrxUrl(nodeCfg))}?ticket=${encodeURIComponent(ticket)}`);
       } catch (err) {
         reject(err);
         return;
@@ -3863,8 +3876,8 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
   }
 
   async function prxApiFetch(nodeCfg, path, opts = {}) {
-    if (!nodeCfg.prxUrl) throw new Error("No ProxMenux MONITOR URL configured");
-    const base = String(nodeCfg.prxUrl).replace(/\/$/, "");
+    const targets = prxTargets(nodeCfg);
+    if (!targets.length) throw new Error("No ProxMenux MONITOR URL configured");
     const silent = !!opts.silent;
     let token = getStoredPrxToken(nodeCfg);
     if (!token) {
@@ -3878,7 +3891,8 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     const body = opts.body != null
       ? (typeof opts.body === "string" ? opts.body : JSON.stringify(opts.body))
       : undefined;
-    const doFetch = (t) => fetch(`${base}${path}`, {
+
+    const doFetch = (base, t) => fetch(`${base}${path}`, {
       method,
       cache: "no-store",
       headers: {
@@ -3888,28 +3902,73 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
         ...(opts.headers || {}),
       },
       body,
+      signal: (() => { const c = new AbortController(); setTimeout(() => c.abort(), opts.timeoutMs || 12000); return c.signal; })(),
     });
-    let res = await doFetch(token);
-    if (res.status === 401 || res.status === 403) {
+
+    // Pass 1: try every host with the current token. Only treat auth as failed
+    // when *all reachable* hosts return 401/403 (LAN TLS/CORS blips must not wipe tokens).
+    let lastErr = null;
+    let sawAuthReject = false;
+    let sawReachable = false;
+
+    for (const base of targets) {
+      try {
+        const res = await doFetch(base, token);
+        sawReachable = true;
+        if (res.status === 401 || res.status === 403) {
+          sawAuthReject = true;
+          continue;
+        }
+        if (!res.ok) {
+          let detail = "";
+          try {
+            const j = await res.json();
+            detail = j.error || j.message || j.detail || "";
+          } catch {}
+          throw new Error(detail || `ProxMenux ${path} HTTP ${res.status}`);
+        }
+        nodeCfg.activePrxUrl = base;
+        if (res.status === 204) return null;
+        const ct = res.headers.get("content-type") || "";
+        if (ct.includes("application/json")) return res.json();
+        return res.text();
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+
+    if (sawAuthReject && sawReachable) {
       if (silent) throw new Error("ProxMenux token rejected");
       const pasted = await promptPrxTokenGuide(nodeCfg, { rejected: true });
       if (!pasted) throw new Error("ProxMenux token rejected");
       rememberPrxToken(nodeCfg, pasted);
       token = pasted;
-      res = await doFetch(token);
+
+      for (const base of targets) {
+        try {
+          const res = await doFetch(base, token);
+          if (res.status === 401 || res.status === 403) continue;
+          if (!res.ok) {
+            let detail = "";
+            try {
+              const j = await res.json();
+              detail = j.error || j.message || j.detail || "";
+            } catch {}
+            throw new Error(detail || `ProxMenux ${path} HTTP ${res.status}`);
+          }
+          nodeCfg.activePrxUrl = base;
+          if (res.status === 204) return null;
+          const ct = res.headers.get("content-type") || "";
+          if (ct.includes("application/json")) return res.json();
+          return res.text();
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      throw lastErr || new Error("ProxMenux token rejected");
     }
-    if (!res.ok) {
-      let detail = "";
-      try {
-        const j = await res.json();
-        detail = j.error || j.message || j.detail || "";
-      } catch {}
-      throw new Error(detail || `ProxMenux ${path} HTTP ${res.status}`);
-    }
-    if (res.status === 204) return null;
-    const ct = res.headers.get("content-type") || "";
-    if (ct.includes("application/json")) return res.json();
-    return res.text();
+
+    throw lastErr || new Error(`ProxMenux ${path} failed`);
   }
 
   function bindDiskDetailsEvents(modal, nodeCfg, disk, pane) {
@@ -4139,7 +4198,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
 
   async function enrichDiskFromPrx(nodeCfg, disk) {
     const name = diskPrxName(disk);
-    if (!name || !nodeCfg.prxUrl) return disk;
+    if (!name || !getPrxUrl(nodeCfg)) return disk;
     const tasks = [
       fetchPrxSmartStatus(nodeCfg, disk, { silent: true }).catch(() => null),
     ];
@@ -4205,8 +4264,8 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
   }
 
   async function fetchPrxStorageDisks(nodeCfg) {
-    if (!nodeCfg.prxUrl) return [];
-    const key = prxUrlKey(nodeCfg.prxUrl);
+    if (!getPrxUrl(nodeCfg)) return [];
+    const key = prxUrlKey(nodeCfg.prxUrl || nodeCfg.prxFallbackUrl);
     const cached = _prxStorageDiskCache[key];
     if (cached && Date.now() - cached.at < 60_000) return cached.list;
     const storage = await prxApiFetch(nodeCfg, "/api/storage", { silent: true });
@@ -4220,7 +4279,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
 
   /** Merge ProxMenux /api/storage inventory onto PVE disk cards (power-on, cycles, health, wear). */
   async function enrichPveDisksFromPrx(nodeCfg, disks) {
-    if (!nodeCfg.prxUrl || !Array.isArray(disks) || !disks.length) return disks;
+    if (!getPrxUrl(nodeCfg) || !Array.isArray(disks) || !disks.length) return disks;
     try {
       const list = await fetchPrxStorageDisks(nodeCfg);
       disks.forEach((disk) => {
@@ -4855,7 +4914,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
 
   <div class="footer">
     <div>Report generated by ProxMenux Monitor</div>
-    <div>Opened from Homepage · ${escH(nodeCfg.prxUrl || "")}</div>
+    <div>Opened from Homepage · ${escH(getPrxUrl(nodeCfg) || "")}</div>
   </div>
 </div>
 </body></html>`;
@@ -6169,7 +6228,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     const running = !!(st.status?.running || st.localRunning);
     const installed = !!lynis?.installed;
 
-    if (!nodeCfg.prxUrl) {
+    if (!getPrxUrl(nodeCfg)) {
       return `<div class="pve-sec-tab"><div class="pve-sec-empty-block">ProxMenux MONITOR URL is not configured for this node.</div></div>`;
     }
     if (st.loading && !lynis) {
@@ -6415,7 +6474,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     try {
       const ticket = await fetchPrxTerminalTicket(nodeCfg);
       const sessionId = Math.random().toString(36).slice(2, 8);
-      const wsUrl = prxScriptWsUrl(nodeCfg.prxUrl, sessionId, ticket);
+      const wsUrl = prxScriptWsUrl(getPrxUrl(nodeCfg), sessionId, ticket);
       const ws = new WebSocket(wsUrl);
       backdrop.__ws = ws;
       statusEl.textContent = "Connected — starting installer…";
@@ -7054,8 +7113,8 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>
                 Terminal
               </button>
-              <a class="pve-open-link pve-open-link--pve" href="${escH(nodeCfg.pveUrl)}" target="_blank" rel="noopener">SERVER ↗</a>
-              <a class="prx-open-link prx-open-link--prx" href="${escH(nodeCfg.prxUrl)}" target="_blank" rel="noopener">MONITOR ↗</a>
+              <a class="pve-open-link pve-open-link--pve" href="${escH(getPveUrl(nodeCfg))}" target="_blank" rel="noopener">SERVER ↗</a>
+              <a class="prx-open-link prx-open-link--prx" href="${escH(getPrxUrl(nodeCfg))}" target="_blank" rel="noopener">MONITOR ↗</a>
             </div>
           </div>
           <div class="pve-tabs" role="tablist" aria-label="Node views" data-pve-tabs="1">
@@ -7421,33 +7480,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
   }
 
   async function fetchPrxTerminalTicket(nodeCfg) {
-    const base = String(nodeCfg.prxUrl || "").replace(/\/$/, "");
-    if (!base) throw new Error("No ProxMenux MONITOR URL configured");
-    let token = getStoredPrxToken(nodeCfg);
-    if (!token) {
-      const pasted = await promptPrxTokenGuide(nodeCfg, {});
-      if (!pasted) throw new Error("ProxMenux token required");
-      rememberPrxToken(nodeCfg, pasted);
-      token = pasted;
-    }
-    const doFetch = (t) => fetch(`${base}/api/terminal/ticket`, {
-      method: "POST",
-      cache: "no-store",
-      headers: { Accept: "application/json", Authorization: `Bearer ${t}` },
-    });
-    let res = await doFetch(token);
-    if (res.status === 401 || res.status === 403) {
-      const pasted = await promptPrxTokenGuide(nodeCfg, { rejected: true });
-      if (!pasted) throw new Error("ProxMenux token rejected");
-      rememberPrxToken(nodeCfg, pasted);
-      token = pasted;
-      res = await doFetch(token);
-    }
-    if (!res.ok) throw new Error(`Terminal ticket HTTP ${res.status}`);
-    const data = await res.json();
-    const ticket = data?.ticket || data?.data?.ticket || "";
-    if (!ticket) throw new Error("No terminal ticket returned");
-    return ticket;
+    return issuePrxTerminalTicket(nodeCfg, { silent: false });
   }
 
   function appendGpuSwitchLog(modal, text, cls = "") {
@@ -7520,7 +7553,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     try {
       const ticket = await fetchPrxTerminalTicket(nodeCfg);
       const sessionId = Math.random().toString(36).slice(2, 8);
-      const wsUrl = prxScriptWsUrl(nodeCfg.prxUrl, sessionId, ticket);
+      const wsUrl = prxScriptWsUrl(getPrxUrl(nodeCfg), sessionId, ticket);
       const ws = new WebSocket(wsUrl);
       backdrop.__ws = ws;
       statusEl.textContent = "Connected — starting switch…";
@@ -7873,12 +7906,34 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     }
   }
 
-  function prxAuthStorageKey(prxUrl) {
-    return `hp-prx-auth:${String(prxUrl || "").replace(/\/$/, "")}`;
+  // Per-node browser keys — each ProxMenux MONITOR has its own API token.
+  const PRX_AUTH_LS_PREFIX = "hp-prx-auth:node:";
+  const PRX_AUTH_LS_SHARED_LEGACY = "hp-prx-auth:v2"; // old single-token key (do not reuse)
+
+  function prxNodeAuthId(nodeCfg) {
+    return String(nodeCfg?.groupName || nodeCfg?.pveNode || nodeCfg?.label || "").trim();
+  }
+
+  function prxAuthStorageKey(nodeCfg) {
+    const id = prxNodeAuthId(nodeCfg);
+    return id ? `${PRX_AUTH_LS_PREFIX}${id}` : PRX_AUTH_LS_SHARED_LEGACY;
   }
 
   function prxUrlKey(prxUrl) {
     return String(prxUrl || "").replace(/\/$/, "");
+  }
+
+  /** Legacy URL-keyed entries for this node only (pre per-node / pre local-first). */
+  function prxLegacyAuthKeys(nodeCfg) {
+    const keys = [];
+    const add = (u) => {
+      const v = prxUrlKey(u);
+      if (v) keys.push(`hp-prx-auth:${v}`);
+    };
+    add(nodeCfg?.prxUrl);
+    add(nodeCfg?.prxFallbackUrl);
+    add(nodeCfg?.activePrxUrl);
+    return [...new Set(keys)];
   }
 
   /** JWT exp (unix seconds), or 0 if unreadable. */
@@ -7894,35 +7949,98 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     }
   }
 
-  /** Prefer the token with the later exp (fresher login). */
+  /** True when JWT is missing exp or still valid (60s skew). */
+  function isPrxTokenUsable(token) {
+    const t = String(token || "").trim();
+    if (!t || t.split(".").length < 2) return false;
+    const exp = jwtExpUnix(t);
+    if (!exp) return true; // non-expiring / opaque — allow
+    return exp * 1000 > Date.now() - 60_000;
+  }
+
+  /** Prefer later-expiring usable token; never return an expired JWT. */
   function pickFresherPrxToken(a, b) {
-    const ta = String(a || "").trim();
-    const tb = String(b || "").trim();
+    const ta = isPrxTokenUsable(a) ? String(a).trim() : "";
+    const tb = isPrxTokenUsable(b) ? String(b).trim() : "";
     if (!ta) return tb;
     if (!tb) return ta;
     return jwtExpUnix(ta) >= jwtExpUnix(tb) ? ta : tb;
   }
 
+  function readPrxTokenFromLs(nodeCfg) {
+    const candidates = [];
+    const primaryKey = prxAuthStorageKey(nodeCfg);
+    try {
+      const primary = localStorage.getItem(primaryKey) || "";
+      if (primary) candidates.push(primary);
+    } catch {}
+    try {
+      for (const key of prxLegacyAuthKeys(nodeCfg)) {
+        const v = localStorage.getItem(key) || "";
+        if (v) candidates.push(v);
+      }
+    } catch {}
+    let best = "";
+    candidates.forEach((t) => { best = pickFresherPrxToken(best, t); });
+    // Promote this node's legacy/URL-keyed token onto the per-node stable key.
+    if (best) {
+      try {
+        const cur = localStorage.getItem(primaryKey) || "";
+        if (cur !== best) localStorage.setItem(primaryKey, best);
+      } catch {}
+    }
+    return best;
+  }
+
   /**
-   * Cross-device: `prxToken` on PVE_NODES in custom.js (served to every client).
-   * This-browser backup: localStorage. Fresher JWT wins when both exist.
+   * Resolve MONITOR bearer token for one node.
+   * Priority: this node's localStorage → this node's in-memory/baked prxToken.
+   * Tokens are NEVER shared across nodes — each MONITOR issues its own API key.
    */
   function getStoredPrxToken(nodeCfg) {
-    let fromLs = "";
-    try { fromLs = localStorage.getItem(prxAuthStorageKey(nodeCfg.prxUrl)) || ""; } catch {}
-    const fromCfg = nodeCfg.prxToken ? String(nodeCfg.prxToken) : "";
+    const fromLs = readPrxTokenFromLs(nodeCfg);
+    const fromCfg = nodeCfg?.prxToken ? String(nodeCfg.prxToken) : "";
     return pickFresherPrxToken(fromLs, fromCfg);
   }
 
-  /** Save for this browser + update in-memory config for every node sharing this MONITOR URL. */
+  /** Persist token for this browser + this node only. */
   function rememberPrxToken(nodeCfg, token) {
-    const t = String(token || "").trim();
-    if (!t) return;
-    const url = prxUrlKey(nodeCfg.prxUrl);
-    PVE_NODES.forEach((n) => {
-      if (prxUrlKey(n.prxUrl) === url) n.prxToken = t;
-    });
-    try { localStorage.setItem(prxAuthStorageKey(url), t); } catch {}
+    const t = String(token || "").trim().replace(/^["']|["']$/g, "");
+    if (!t || !nodeCfg) return;
+    if (!isPrxTokenUsable(t)) {
+      console.warn("[PveWidget] Refusing to store expired ProxMenux token");
+      return;
+    }
+    nodeCfg.prxToken = t;
+    const primaryKey = prxAuthStorageKey(nodeCfg);
+    try {
+      localStorage.setItem(primaryKey, t);
+      // Keep this node's legacy URL keys in sync (not other nodes').
+      prxLegacyAuthKeys(nodeCfg).forEach((key) => {
+        try { localStorage.setItem(key, t); } catch {}
+      });
+    } catch {}
+  }
+
+  function clearStoredPrxToken(nodeCfg) {
+    if (nodeCfg) nodeCfg.prxToken = "";
+    try {
+      if (nodeCfg) {
+        localStorage.removeItem(prxAuthStorageKey(nodeCfg));
+        prxLegacyAuthKeys(nodeCfg).forEach((key) => {
+          try { localStorage.removeItem(key); } catch {}
+        });
+      } else {
+        PVE_NODES.forEach((n) => {
+          n.prxToken = "";
+          try { localStorage.removeItem(prxAuthStorageKey(n)); } catch {}
+          prxLegacyAuthKeys(n).forEach((key) => {
+            try { localStorage.removeItem(key); } catch {}
+          });
+        });
+        try { localStorage.removeItem(PRX_AUTH_LS_SHARED_LEGACY); } catch {}
+      }
+    } catch {}
   }
 
   function prxWsBase(prxUrl) {
@@ -7933,9 +8051,31 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
   }
 
 
+  /** JWT iat (unix seconds), or 0 if unreadable. */
+  function jwtIatUnix(token) {
+    try {
+      const part = String(token || "").split(".")[1];
+      if (!part) return 0;
+      const b64 = part.replace(/-/g, "+").replace(/_/g, "/");
+      const json = JSON.parse(atob(b64));
+      return Number(json?.iat) || 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  /** Session login JWTs are ~24h; API Access Tokens are ~365d. */
+  function isShortLivedPrxSessionToken(token) {
+    const exp = jwtExpUnix(token);
+    const iat = jwtIatUnix(token);
+    if (!exp || !iat) return false;
+    return (exp - iat) <= 48 * 3600;
+  }
+
   function promptPrxTokenGuide(nodeCfg, opts = {}) {
     const rejected = !!opts.rejected;
-    const monitorUrl = String(nodeCfg.prxUrl || "").replace(/\/$/, "");
+    const monitorUrl = String(getPrxUrl(nodeCfg) || "").replace(/\/$/, "");
+    const nodeLabel = escH(nodeCfg?.label || nodeCfg?.pveNode || nodeCfg?.groupName || "this node");
     return new Promise((resolve) => {
       const wrap = document.createElement("div");
       wrap.className = "pve-prx-guide-backdrop";
@@ -7943,16 +8083,14 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
         <div class="pve-prx-guide" role="dialog" aria-modal="true" aria-labelledby="pve-prx-guide-title">
           <div class="pve-prx-guide-hdr">
             <div>
-              <div class="pve-prx-guide-kicker">ProxMenux Monitor</div>
-              <h3 id="pve-prx-guide-title">${rejected ? "Token rejected — paste a fresh one" : "Connect LXC terminal"}</h3>
+              <div class="pve-prx-guide-kicker">ProxMenux Monitor · ${nodeLabel}</div>
+              <h3 id="pve-prx-guide-title">${rejected ? `API token needed for ${nodeLabel}` : `Add API token for ${nodeLabel}`}</h3>
             </div>
             <button type="button" class="pve-prx-guide-x" data-prx-cancel aria-label="Close">×</button>
           </div>
           <p class="pve-prx-guide-lead">
-            Homepage terminals use the same host shell as ProxMenux (<code>pct enter</code>).
-            Paste your MONITOR auth token below — it’s saved in <em>this browser</em>.
-            For every device (phone, other PCs), keep <code>prxToken</code> in the shared dashboard config
-            (already set when we bake it into <code>custom.js</code>).
+            Each Proxmox node has its own MONITOR. Paste the <strong>365-day API Access Token</strong>
+            generated on <strong>${nodeLabel}</strong> only — it is stored per node and will not overwrite other servers.
           </p>
           <ol class="pve-prx-guide-steps">
             <li>
@@ -7963,37 +8101,36 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
                   ${monitorUrl
                     ? `<a href="${escH(monitorUrl)}" target="_blank" rel="noopener">${escH(monitorUrl.replace(/^https?:\/\//, ""))} ↗</a>`
                     : "Use the MONITOR button on this node"}
-                  and sign in if needed.
+                  and sign in.
                 </div>
               </div>
             </li>
             <li>
               <span class="pve-prx-guide-num">2</span>
               <div>
-                <strong>Open the browser console</strong>
+                <strong>Settings → API Access Tokens</strong>
                 <div class="pve-prx-guide-sub">
-                  Press <kbd>F12</kbd> or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd>
-                  (Mac: <kbd>⌘</kbd>+<kbd>⌥</kbd>+<kbd>J</kbd>), then open the <em>Console</em> tab.
+                  Enter your MONITOR password (and 2FA if enabled), name it e.g.
+                  <em>Homepage</em>, then click <strong>Generate Token</strong>.
                 </div>
               </div>
             </li>
             <li>
               <span class="pve-prx-guide-num">3</span>
               <div>
-                <strong>Copy the token</strong>
-                <div class="pve-prx-guide-sub">Run this in the MONITOR console:</div>
-                <div class="pve-prx-guide-code">
-                  <code data-prx-cmd>localStorage.getItem('proxmenux-auth-token')</code>
-                  <button type="button" class="pve-prx-guide-copy" data-prx-copy>Copy</button>
+                <strong>Copy the token immediately</strong>
+                <div class="pve-prx-guide-sub">
+                  It is shown once. It should start with <code>eyJ…</code> and last about <strong>365 days</strong>.
+                  Do <em>not</em> use <code>localStorage.getItem('proxmenux-auth-token')</code> — that is a 24-hour login session.
                 </div>
-                <div class="pve-prx-guide-sub">Copy the printed value (starts with <code>eyJ…</code>). Quotes are optional.</div>
               </div>
             </li>
             <li>
               <span class="pve-prx-guide-num">4</span>
               <div>
                 <strong>Paste it below</strong>
-                <textarea class="pve-prx-guide-input" data-prx-input rows="3" spellcheck="false" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…"></textarea>
+                <textarea class="pve-prx-guide-input" data-prx-input rows="3" spellcheck="false" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9… (API Access Token)"></textarea>
+                <div class="pve-prx-guide-sub" data-prx-warn hidden style="color:#fb923c;margin-top:8px;"></div>
               </div>
             </li>
           </ol>
@@ -8005,6 +8142,20 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
       document.body.appendChild(wrap);
 
       const input = wrap.querySelector("[data-prx-input]");
+      const warn = wrap.querySelector("[data-prx-warn]");
+      const updateWarn = () => {
+        if (!warn) return;
+        const v = (input?.value || "").trim().replace(/^["']|["']$/g, "");
+        if (v && isShortLivedPrxSessionToken(v)) {
+          warn.hidden = false;
+          warn.textContent = "This looks like a ~24h session JWT. Generate an API Access Token in Settings instead (365 days).";
+        } else {
+          warn.hidden = true;
+          warn.textContent = "";
+        }
+      };
+      input?.addEventListener("input", updateWarn);
+
       const onKey = (e) => {
         if (e.key === "Escape") { e.stopPropagation(); finish(null); }
         if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
@@ -8019,6 +8170,15 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
       };
       const submit = () => {
         const v = (input?.value || "").trim().replace(/^["']|["']$/g, "");
+        if (v && isShortLivedPrxSessionToken(v)) {
+          updateWarn();
+          const ok = window.confirm(
+            "This token looks like a short-lived MONITOR session (~24h).\n\n" +
+            "Recommended: Settings → API Access Tokens → Generate Token (365 days).\n\n" +
+            "Save this session token anyway?"
+          );
+          if (!ok) return;
+        }
         finish(v || null);
       };
 
@@ -8026,68 +8186,27 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
       wrap.querySelectorAll("[data-prx-cancel]").forEach(btn => btn.addEventListener("click", () => finish(null)));
       wrap.addEventListener("click", (e) => { if (e.target === wrap) finish(null); });
       wrap.querySelector("[data-prx-ok]")?.addEventListener("click", submit);
-      wrap.querySelector("[data-prx-copy]")?.addEventListener("click", async () => {
-        const cmd = wrap.querySelector("[data-prx-cmd]")?.textContent || "";
-        try {
-          await navigator.clipboard.writeText(cmd);
-          const btn = wrap.querySelector("[data-prx-copy]");
-          if (btn) { btn.textContent = "Copied"; setTimeout(() => { btn.textContent = "Copy"; }, 1500); }
-        } catch {}
-      });
       setTimeout(() => input?.focus(), 50);
     });
   }
 
   async function connectProxmenuxShell(nodeCfg, vmid, term, hooks) {
     const { setStatus, showError, cleanupFns, onWs } = hooks;
-    if (!nodeCfg.prxUrl) return false;
+    if (!prxTargets(nodeCfg).length) return false;
 
-    const base = String(nodeCfg.prxUrl).replace(/\/$/, "");
-    let healthy = false;
+    let ticket = null;
     try {
-      const h = await fetch(`${base}/api/terminal/health`, { cache: "no-store" });
-      healthy = h.ok;
-    } catch {}
-    if (!healthy) return false;
-
-    let token = getStoredPrxToken(nodeCfg);
-    const issueTicket = async (bearer) => {
-      const headers = { "Content-Type": "application/json", "Accept": "application/json" };
-      if (bearer) headers.Authorization = `Bearer ${bearer}`;
-      const res = await fetch(`${base}/api/terminal/ticket`, {
-        method: "POST",
-        headers,
-        cache: "no-store",
-      });
-      if (!res.ok) return null;
-      const j = await res.json().catch(() => ({}));
-      return j?.ticket || null;
-    };
-
-    let ticket = await issueTicket(token);
-    if (!ticket && !token) {
-      const entered = await promptPrxTokenGuide(nodeCfg, { rejected: false });
-      if (entered) {
-        token = entered;
-        rememberPrxToken(nodeCfg, token);
-        ticket = await issueTicket(token);
+      ticket = await issuePrxTerminalTicket(nodeCfg, { silent: false });
+    } catch (err) {
+      if (/token|unavailable|ticket/i.test(String(err?.message || err))) {
+        showError(err.message || String(err));
+        return true;
       }
-    }
-    if (!ticket && token) {
-      const entered = await promptPrxTokenGuide(nodeCfg, { rejected: true });
-      if (entered) {
-        token = entered;
-        rememberPrxToken(nodeCfg, token);
-        ticket = await issueTicket(token);
-      }
+      return false;
     }
 
-    let wsUrl = prxWsBase(nodeCfg.prxUrl);
+    let wsUrl = prxWsBase(getPrxUrl(nodeCfg));
     if (ticket) wsUrl += `?ticket=${encodeURIComponent(ticket)}`;
-    else {
-      // last resort: unticketed (only works if ProxMenux auth is disabled)
-      wsUrl = prxWsBase(nodeCfg.prxUrl);
-    }
 
     const id = Number(vmid);
     if (!Number.isInteger(id) || id <= 0) {
@@ -8192,49 +8311,20 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
 
   async function connectProxmenuxHostShell(nodeCfg, term, hooks) {
     const { setStatus, showError, cleanupFns, onWs } = hooks;
-    if (!nodeCfg.prxUrl) return false;
+    if (!prxTargets(nodeCfg).length) return false;
 
-    const base = String(nodeCfg.prxUrl).replace(/\/$/, "");
-    let healthy = false;
+    let ticket = null;
     try {
-      const h = await fetch(`${base}/api/terminal/health`, { cache: "no-store" });
-      healthy = h.ok;
-    } catch {}
-    if (!healthy) return false;
-
-    let token = getStoredPrxToken(nodeCfg);
-    const issueTicket = async (bearer) => {
-      const headers = { "Content-Type": "application/json", "Accept": "application/json" };
-      if (bearer) headers.Authorization = `Bearer ${bearer}`;
-      const res = await fetch(`${base}/api/terminal/ticket`, {
-        method: "POST",
-        headers,
-        cache: "no-store",
-      });
-      if (!res.ok) return null;
-      const j = await res.json().catch(() => ({}));
-      return j?.ticket || null;
-    };
-
-    let ticket = await issueTicket(token);
-    if (!ticket && !token) {
-      const entered = await promptPrxTokenGuide(nodeCfg, { rejected: false });
-      if (entered) {
-        token = entered;
-        rememberPrxToken(nodeCfg, token);
-        ticket = await issueTicket(token);
+      ticket = await issuePrxTerminalTicket(nodeCfg, { silent: false });
+    } catch (err) {
+      if (/token|unavailable|ticket/i.test(String(err?.message || err))) {
+        showError(err.message || String(err));
+        return true;
       }
-    }
-    if (!ticket && token) {
-      const entered = await promptPrxTokenGuide(nodeCfg, { rejected: true });
-      if (entered) {
-        token = entered;
-        rememberPrxToken(nodeCfg, token);
-        ticket = await issueTicket(token);
-      }
+      return false;
     }
 
-    let wsUrl = prxWsBase(nodeCfg.prxUrl);
+    let wsUrl = prxWsBase(getPrxUrl(nodeCfg));
     if (ticket) wsUrl += `?ticket=${encodeURIComponent(ticket)}`;
 
     let ws;
@@ -8293,7 +8383,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     if (!node) return false;
     let port, ticket, user;
     try {
-      const res = await fetch(`${nodeCfg.pveUrl}/api2/json/nodes/${encodeURIComponent(node)}/termproxy`, {
+      const res = await fetch(`${getPveUrl(nodeCfg)}/api2/json/nodes/${encodeURIComponent(node)}/termproxy`, {
         method: "POST",
         headers: pveHeaders(nodeCfg),
       });
@@ -8319,8 +8409,9 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
 
     const fullUser = String(user || nodeCfg.pveUser || "");
     const authUser = /!/.test(fullUser) ? fullUser.replace(/!.*$/, "") : fullUser;
-    const wsProto = nodeCfg.pveUrl.startsWith("https") ? "wss" : "ws";
-    const host = nodeCfg.pveUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+    const pveBase = getPveUrl(nodeCfg);
+    const wsProto = pveBase.startsWith("https") ? "wss" : "ws";
+    const host = pveBase.replace(/^https?:\/\//, "").replace(/\/$/, "");
     const wsUrl = `${wsProto}://${host}/api2/json/nodes/${encodeURIComponent(node)}/vncwebsocket?port=${encodeURIComponent(port)}&vncticket=${encodeURIComponent(ticket)}`;
 
     let ws;
@@ -8405,7 +8496,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
       resize: "1",
       cmd: "",
     });
-    const consoleHref = `${nodeCfg.pveUrl}/?${shellParams.toString()}`;
+    const consoleHref = `${getPveUrl(nodeCfg)}/?${shellParams.toString()}`;
 
     const backdrop = document.createElement("div");
     backdrop.className = "pve-term-backdrop";
@@ -8577,7 +8668,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     setTimeout(fit, 50);
 
     // Prefer ProxMenux host shell (already on the Proxmox node)
-    if (nodeCfg.prxUrl) {
+    if (getPrxUrl(nodeCfg)) {
       const used = await connectProxmenuxHostShell(nodeCfg, term, {
         setStatus,
         showError,
@@ -8610,7 +8701,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
       resize: "1",
       cmd: "",
     });
-    const consoleHref = `${nodeCfg.pveUrl}/?${consoleParams.toString()}`;
+    const consoleHref = `${getPveUrl(nodeCfg)}/?${consoleParams.toString()}`;
 
     const backdrop = document.createElement("div");
     backdrop.className = "pve-term-backdrop";
@@ -8786,7 +8877,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     setTimeout(fit, 50);
 
     // 1) Prefer ProxMenux host shell (same as MONITOR terminal)
-    if (kind === "lxc" && nodeCfg.prxUrl) {
+    if (kind === "lxc" && getPrxUrl(nodeCfg)) {
       const used = await connectProxmenuxShell(nodeCfg, vmid, term, {
         setStatus,
         showError,
@@ -8800,7 +8891,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
     const base = guestApiBase(nodeCfg, kind, vmid);
     let port, ticket, user;
     try {
-      const res = await fetch(`${nodeCfg.pveUrl}/api2/json${base}/termproxy`, {
+      const res = await fetch(`${getPveUrl(nodeCfg)}/api2/json${base}/termproxy`, {
         method: "POST",
         headers: pveHeaders(nodeCfg),
       });
@@ -8822,7 +8913,7 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
       showError(`Connection failed (${err.message || err})`);
       setStatus("offline", false);
       term.writeln("\x1b[31mPVE termproxy failed.\x1b[0m");
-      if (nodeCfg.prxUrl) {
+      if (getPrxUrl(nodeCfg)) {
         term.writeln("Tip: use ProxMenux MONITOR token for LXC shells (prompted on open).");
       }
       return;
@@ -8830,8 +8921,9 @@ Groups: PVE-NODE-LNV1 / PVE-NODE-LNV2 / PVE-NODE-HP
 
     const fullUser = String(user || nodeCfg.pveUser || "");
     const authUser = /!/.test(fullUser) ? fullUser.replace(/!.*$/, "") : fullUser;
-    const wsProto = nodeCfg.pveUrl.startsWith("https") ? "wss" : "ws";
-    const host = nodeCfg.pveUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+    const pveBase = getPveUrl(nodeCfg);
+    const wsProto = pveBase.startsWith("https") ? "wss" : "ws";
+    const host = pveBase.replace(/^https?:\/\//, "").replace(/\/$/, "");
     const wsUrl = `${wsProto}://${host}/api2/json${base}/vncwebsocket?port=${encodeURIComponent(port)}&vncticket=${encodeURIComponent(ticket)}`;
 
     let ws;
